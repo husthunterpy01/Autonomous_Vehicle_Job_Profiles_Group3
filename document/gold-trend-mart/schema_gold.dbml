@@ -1,0 +1,11 @@
+// ============ GOLD LAYER: Trend Data Mart ============
+// Derived from silver.JobPosting / silver.JobCategory / silver.ScrapeLog after each scrape run.
+
+Table gold.CategoryTrendSnapshot {
+  snapshot_id uuid [pk, default: `gen_random_uuid()`]
+  scrape_id uuid [note: 'references silver.ScrapeLog.scrape_id, kept as plain field since this mart is decoupled from Silver schema']
+  category_id uuid [note: 'references silver.Category.category_id']
+  company_id uuid [note: 'nullable - null means aggregated across all companies; references silver.Company.company_id']
+  job_count int
+  snapshot_date date
+}

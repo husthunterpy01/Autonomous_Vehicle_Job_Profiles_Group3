@@ -1,0 +1,87 @@
+// ============ SILVER LAYER: cleaned, structured detail data ============
+// Single source of truth. All downstream Gold-layer data marts (trend, salary, etc.)
+// are derived from this layer and maintained in separate files.
+
+Table silver.Company {
+  company_id uuid [pk, default: `gen_random_uuid()`]
+  name varchar [unique]
+  website_url varchar
+  career_page_url varchar
+  company_type varchar // e.g. AV_Startup / OEM / Tier1_Supplier / Tech_Giant - supports future "company type" extension
+  data_source_status varchar // "confirmed" / "unverified" / "excluded" - e.g. flags cases like Bosch "?" or Huawei "??"
+}
+
+Table silver.CompanyLocation {
+  location_id uuid [pk, default: `gen_random_uuid()`]
+  company_id uuid [ref: > silver.Company.company_id]
+  country varchar
+  is_hq boolean
+}
+
+Table silver.JobPosting {
+  job_id uuid [pk, default: `gen_random_uuid()`]
+  company_id uuid [ref: > silver.Company.company_id]
+  title varchar
+  department varchar [note: 'nullable - not all sites provide this']
+  employment_type varchar [note: 'nullable - e.g. full-time/contract, not always specified']
+  job_location varchar [note: 'nullable - may be embedded in raw_description instead of a separate field']
+  seniority_level varchar [note: 'nullable - future extension, e.g. Junior/Mid/Senior/Lead']
+  salary_min float [note: 'nullable - future extension']
+  salary_max float [note: 'nullable - future extension']
+  salary_currency varchar [note: 'nullable - future extension']
+  raw_description text [not null, note: 'always required - fallback for LLM extraction when structured fields are missing']
+  posted_date date [note: 'nullable - some sites do not display posting date']
+  scraped_date date [not null, note: 'updated on each re-scrape via upsert - simple overwrite, no history tracking needed here']
+  source_url varchar [not null, unique, note: 'unique key for upsert - prevents duplicate entries on re-scraping the same posting']
+  source_platform varchar [note: 'e.g. Greenhouse / Lever / Workday / custom site - helps track structure origin']
+  extraction_confidence float [note: 'optional - flags how much of the structured data was LLM-inferred vs directly scraped']
+}
+
+Table silver.Category {
+  category_id uuid [pk, default: `gen_random_uuid()`]
+  main_type varchar // Development / V&V / Operations
+  sub_type varchar  // Perception / Controls / Testing etc
+  taxonomy_version int [note: 'tracks which taxonomy revision this category belongs to, supports future refinement']
+}
+
+Table silver.JobCategory {
+  job_id uuid [ref: > silver.JobPosting.job_id]
+  category_id uuid [ref: > silver.Category.category_id]
+  confidence_score float // LLM classification confidence, for spot-checking
+
+  indexes {
+    (job_id, category_id) [pk]
+  }
+}
+
+Enum skill_type_enum {
+  tool
+  programming_language
+  framework
+  domain_concept
+  certification
+}
+
+Table silver.Skill {
+  skill_id uuid [pk, default: `gen_random_uuid()`]
+  skill_name varchar [unique]
+  skill_type skill_type_enum
+}
+
+Table silver.JobSkill {
+  job_id uuid [ref: > silver.JobPosting.job_id]
+  skill_id uuid [ref: > silver.Skill.skill_id]
+
+  indexes {
+    (job_id, skill_id) [pk]
+  }
+}
+
+Table silver.ScrapeLog {
+  scrape_id uuid [pk, default: `gen_random_uuid()`]
+  company_id uuid [ref: > silver.Company.company_id]
+  scrape_date date
+  jobs_found int
+  status varchar // success / failed
+  error_message text [note: 'nullable - captures failure reason for debugging']
+}
