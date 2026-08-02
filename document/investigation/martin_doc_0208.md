@@ -32,30 +32,49 @@ The recruitment site uses a custom portal, heavy JavaScript, regional routing, C
 No reliable company-hosted job listing, API, or structured careers page was confirmed.
 k
 
-| Company | Current job source / ATS | Recommended scraping method | Anti-bot risk | Confidence |
+| Company | Current job source / ATS | Anti-bot risk | Confidence | Direct API endpoint / Career page |
 |---|---|---|---|---|
-| 42dot | Custom first-party careers site | Direct HTML or embedded JSON; inspect XHR; Selenium fallback | Low | High |
-| ADASTEC | No structured job board confirmed | Check careers/contact pages manually; periodic HTML monitoring | Low | Low |
-| Aurora | Custom careers frontend, with Greenhouse-style job identifiers | Inspect page XHR and Greenhouse integration first; Selenium fallback | Low–Medium | Medium |
-| AutoBrains | Company careers/culture pages; structured openings not confirmed | Direct HTML first; manual monitoring if no vacancy feed appears | Low | Low |
-| Apollo / Baidu | Proprietary Baidu recruitment portal | Inspect XHR; browser automation where required | High | Medium |
-| Applied Intuition | **Ashby** | **Published Ashby Job Posting API** | Low | High |
-| AImotive | Standalone current job board not confirmed; may recruit through parent-company channels | Search parent-company ATS; manual monitoring | Low–Medium | Low |
-| Avride | **Greenhouse** | **Published Greenhouse Job Board API** | Low | High |
-| Bot.Auto | **Greenhouse** | **Published Greenhouse Job Board API** | Low | High |
-| Bosch | **SmartRecruiters** | **Published SmartRecruiters Posting API** | Low | High |
-| DeepRoute | Custom company site; stable ATS not confirmed | Direct HTML/XHR investigation; Selenium fallback | Medium | Low |
-| DiDi | Mixed: proprietary global portal plus **Greenhouse for DiDi Labs** | Greenhouse API for DiDi Labs; XHR/browser method for global vacancies | Medium | High |
-| May Mobility | **Greenhouse** | **Published Greenhouse Job Board API** | Low | High |
-| Gatik | First-party careers page; current public ATS not confirmed | Direct HTML and embedded JSON; inspect XHR; Selenium fallback | Low–Medium | Medium |
-| Inceptio.ai | Stable company-hosted vacancy feed not confirmed | Manual monitoring; inspect company and regional recruiting channels | Low–Medium | Low |
-| Horizon Robotics | Proprietary or regional recruitment source | Inspect network requests; browser automation if necessary | Medium–High | Low |
-| Huawei | Proprietary Huawei recruitment portal | XHR investigation or Selenium/Playwright | High | High |
-| Kodiak | **Greenhouse** | **Published Greenhouse Job Board API** | Low | High |
-| Einride | Public careers source; ATS not confidently identified | Direct HTML/XHR first; Selenium fallback | Low–Medium | Low |
-| Latitude AI | **Greenhouse** | **Published Greenhouse Job Board API** | Low | High |
-| GM | Dynamic first-party corporate job portal, associated with enterprise ATS workflows | Inspect JSON/XHR endpoints; browser automation only when required | Medium | High |
-| Mobileye | Public careers source, but ATS/API not confirmed | Inspect HTML and XHR; Selenium fallback | Medium | Low |
-| Motional | **Greenhouse** | **Published Greenhouse Job Board API** | Low | High |
-| Momenta | Regional/custom recruitment channels | Direct HTML/XHR investigation; browser automation or manual monitoring | Medium–High | Low |
-| Nuro | Current ATS not confidently reverified | Inspect current careers links and network requests before
+| 42dot | Custom first-party careers site | Low | High | https://www.42dot.ai/ko/careers/open-roles |
+| ADASTEC | No structured job board confirmed | Low | Low | https://www.adastec.com/ |
+| Aurora | Custom careers frontend, with Greenhouse-style job identifiers | Low–Medium | Medium | https://aurora.tech/careers |
+| AutoBrains | Company careers/culture pages; structured openings not confirmed | Low | Low | https://autobrains.ai/life-at-autobrains/ |
+| Apollo / Baidu | Proprietary Baidu recruitment portal | High | Medium | No stable public URL confirmed |
+| Applied Intuition | **Ashby** | Low | High | `https://api.ashbyhq.com/posting-api/job-board/applied` |
+| AImotive | Standalone current job board not confirmed; may recruit through parent-company channels | Low–Medium | Low | No standalone careers page confirmed |
+| Avride | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/avride/jobs` |
+| Bot.Auto | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/botauto/jobs` |
+| Bosch | **SmartRecruiters** | Low | High | `https://api.smartrecruiters.com/v1/companies/BoschGroup/postings` |
+| DeepRoute | Custom company site; stable ATS not confirmed | Medium | Low | Needs direct inspection |
+| DiDi | Mixed: proprietary global portal plus **Greenhouse for DiDi Labs** | Medium | High | `https://boards-api.greenhouse.io/v1/boards/didi/jobs` |
+| May Mobility | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/maymobility/jobs` |
+| Gatik | First-party careers page; current public ATS not confirmed | Low–Medium | Medium | https://archive.gatik.ai/careers/ |
+| Inceptio.ai | Stable company-hosted vacancy feed not confirmed | Low–Medium | Low | No stable feed confirmed |
+| Horizon Robotics | Proprietary or regional recruitment source | Medium–High | Low | Needs direct inspection |
+| Huawei | Proprietary Huawei recruitment portal | High | High | https://career.huawei.com/ |
+| Kodiak | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/kodiak/jobs` |
+| Einride | Public careers source; ATS not confidently identified | Low–Medium | Low | Careers page exists; ATS unconfirmed |
+| Latitude AI | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/latitude/jobs` |
+| GM | Dynamic first-party corporate job portal, associated with enterprise ATS workflows | Medium | High | https://search-careers.gm.com/en/ |
+| Mobileye | Public careers source, but ATS/API not confirmed | Medium | Low | https://www.mobileye.com/about/ |
+| Motional | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/motional/jobs` |
+| Momenta | Regional/custom recruitment channels | Medium–High | Low | Needs direct inspection |
+| Nuro | Current ATS not confidently reverified | Medium | Low | Needs re-verification |
+| NVIDIA | Enterprise dynamic recruitment portal using Workday-related infrastructure | Medium | High | https://www.nvidia.com/en-au/about-nvidia/careers/ |
+| Pony.ai | Proprietary first-party careers portal | Medium–High | High | https://careers.pony.ai/ |
+| Plus AI | Stable ATS/API not currently confirmed | Medium | Low | https://www.plus.ai/ |
+| QCraft | Stable public job board not confirmed | Medium | Low | No stable board confirmed |
+| Stack AV | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/stackav/jobs` |
+| Tensor / AutoX | Custom first-party careers page with job IDs | Low | High | https://www.tensor.auto/careers |
+| Torc Robotics | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/torcrobotics/jobs` |
+| Tier IV | First-party careers site; public ATS API not confirmed | Low–Medium | Low | Needs direct inspection |
+| Waabi | **Lever** | Low | High | `https://api.lever.co/v0/postings/waabi?mode=json` |
+| Waymo | Custom dedicated careers platform | Medium | High | https://careers.withwaymo.com/ |
+| Wayve | **Greenhouse** | Low | Medium–High | `https://boards-api.greenhouse.io/v1/boards/wayve/jobs` |
+| WeRide | Current ATS/API not confidently confirmed | Medium | Low | Needs direct inspection |
+| Woven by Toyota | Custom first-party careers platform with structured job-detail URLs | Low–Medium | High | https://woven.toyota/en/careers |
+| Vay | **Greenhouse** | Low | High | `https://boards-api.greenhouse.io/v1/boards/vay/jobs` |
+| XPeng | First-party Join Us page | Medium | High | https://www.xpeng.com/au/join-us |
+| Zoox | Custom dynamic careers page | Medium | High | https://zoox.com/careers |
+
+
+
