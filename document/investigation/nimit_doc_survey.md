@@ -26,9 +26,16 @@ Apollo-based companies vs. Autoware-based ones.
 | Category | Apollo-specific keywords |
 |---|---|
 | Perception | perception, obstacle detection, traffic light detection, YOLO, camera-lidar-radar fusion |
-| Planning | prediction, planning, EM planner, trajectory prediction, Lane Sequence Predictor, Inter-TNT |
+| Prediction | prediction, trajectory prediction, Lane Sequence Predictor, Inter-TNT, Free Move Predictor |
+| Planning | planning, EM planner |
 | Control | control, throttle/brake/steering, PID control, MPC |
 | Cross-cutting (any category) | Cyber RT, Apollo Cyber, ApolloAuto |
+
+Note: Prediction gets its own row here to match the architecture section above — Apollo treats it as a distinct
+module, and Adrian's kickoff-meeting description of a typical AV org also called out a separate "prediction team"
+from planning/control. Worth flagging that Martin's Autoware category list doesn't currently have a standalone
+Prediction bucket either, so the same addition probably needs to happen there too before this becomes the shared
+taxonomy DOC-3 builds the ERD from.
 
 Source: [Open-Source Autonomous Driving Software Platforms: Comparison of Autoware and Apollo (arXiv 2501.18942)](https://arxiv.org/abs/2501.18942),
 [Apollo prediction module docs](https://github.com/ApolloAuto/apollo/blob/master/modules/prediction/README.md),
@@ -64,7 +71,7 @@ existing categories:
 | Category | Task keywords (from Waymo / nuScenes) |
 |---|---|
 | Perception | 2D/3D object detection, multi-object tracking, semantic segmentation, panoptic segmentation |
-| Planning | motion forecasting, trajectory prediction, interaction prediction, behavior modeling |
+| Prediction | motion forecasting, trajectory prediction, interaction prediction, behavior modeling |
 | Cross-cutting (any category) | end-to-end driving, multimodal reasoning, long-tail scenario evaluation |
 
 The dataset *names* themselves (Waymo Open Dataset, nuScenes, Argoverse, Argoverse 2, KITTI, BDD100K) are still
