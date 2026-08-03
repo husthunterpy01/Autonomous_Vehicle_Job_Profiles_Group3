@@ -45,7 +45,9 @@ The project will collect only publicly accessible job-advertisement information 
 - respect applicable website terms, robots.txt guidance, access controls, and reasonable request-rate limits;
 - avoid bypassing authentication, anti-bot controls, paywalls, or other technical restrictions;
 - avoid collecting personal information unrelated to the advertised role;
+- omit recruiter names, personal email addresses, telephone numbers, account details, and authentication credentials unless the information is explicitly approved and required for the project;
 - store only the information required for the project and retain the source URL where permitted;
+- retain raw scraped content only for the period required for validation, restrict access to the project team, and delete it according to the team-agreed retention process;
 - document any source that cannot be collected because of ethical, privacy, legal, or technical restrictions.
 
 ## 4. Proposed MVP deliverables
@@ -55,14 +57,18 @@ The minimum viable product will include the following components.
 ### 4.1 Job-data collection pipeline
 
 - Collect publicly available job advertisements from the agreed autonomous-vehicle companies or other approved sources.
-- Retain the original source URL and collection date for traceability.
+- Retain the original source URL, collection date, last-checked date, and current posting status where it can be determined.
 - Extract the fields confirmed in the project requirements.
 - Record unavailable or uncertain values clearly rather than inventing data.
+- Follow a team-agreed refresh schedule and mark advertisements as active, expired, removed, or unavailable where this can be determined instead of silently deleting them.
 
 **Acceptance criteria**
 
 - The pipeline completes a test collection from every approved and technically accessible MVP source.
-- Every successfully collected record includes its source URL and collection date.
+- Every approved source is recorded in the data-source register with its collection status, last collection attempt, and any reason for exclusion or failure.
+- Every successfully collected record includes its source URL, collection date, and last-checked date.
+- In a manually verified sample of at least 20 accessible job advertisements, at least 90% are collected successfully and the extracted core fields achieve at least 90% field-level accuracy against the source pages.
+- A repeated test collection updates the status of expired, removed, or unavailable advertisements without losing their source traceability.
 - Collection failures, inaccessible pages, and missing fields are recorded in a reviewable log.
 
 ### 4.2 Normalised job dataset
@@ -95,13 +101,16 @@ The minimum viable product will include the following components.
 
 - Show the frequency of requested technical skills and technologies.
 - Show the distribution of jobs by role or category, company, and location.
-- Provide time-based trend views when sufficient dated data is available.
+- Provide time-based trend views only when they can be supported by valid source posting dates or repeated collection snapshots.
+- Treat data from a single collection snapshot as a current market distribution rather than evidence of a longitudinal trend.
 
 **Acceptance criteria**
 
 - The dashboard includes aggregate views for skills or technologies, roles or categories, companies, and locations.
 - Aggregate counts match the underlying dataset for the records used in validation.
-- Time-based views are shown only when the dataset contains sufficient valid dates for the selected period.
+- A time-based view is shown only when the selected comparison contains at least two distinct time periods with at least 10 valid records in each period.
+- When the available data does not meet the time-based threshold, the dashboard displays an insufficient-data message instead of presenting a trend claim.
+- The documentation states whether each time-based view is based on source posting dates, repeated collection snapshots, or both.
 
 ### 4.5 Project documentation
 
@@ -145,6 +154,6 @@ The problem statement can be treated as confirmed when the team and client agree
 - curriculum planning and end-user job exploration are the intended uses, with Adrian and Lee treated as distinct user roles;
 - the proposed dataset, dashboard, and aggregate views match the intended MVP;
 - the company or source list and required data fields, including salary or compensation where available, are agreed;
-- the measurable acceptance criteria for each MVP deliverable are agreed;
+- the measurable acceptance criteria for each MVP deliverable, including collection coverage, field accuracy, refresh handling, and the minimum evidence required for time-based views, are agreed;
 - the ethical and privacy position for web scraping is agreed;
 - the stated scope limitations are acceptable.
