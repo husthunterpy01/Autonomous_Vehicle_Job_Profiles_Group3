@@ -47,12 +47,33 @@ names showing up in a job posting are a pretty strong signal on their own that i
 
 ## Why it's useful for classification
 
-Dataset/benchmark names are low-ambiguity signals, similar to how "ROS 2" / "rclcpp" work as cross-cutting
-AV-relevance keywords rather than category-specific ones. Worth adding a bucket for them:
+These datasets aren't just raw driving footage — each one is built around a specific set of benchmark tasks/
+challenges, and it turns out those task names are exactly the kind of language that shows up in job postings.
+Went through Waymo's and nuScenes' own pages to check what tasks they actually define:
+
+- **Waymo Open Dataset** (three datasets in one): Perception → 2D/3D object detection, tracking, semantic
+  segmentation. Motion → motion forecasting, interaction prediction, behavior modeling. End-to-End → end-to-end
+  driving, multimodal reasoning, long-tail/rare scenario evaluation.
+- **nuScenes**: object detection (3D bounding boxes), tracking, prediction (trajectory forecasting), semantic
+  segmentation (lidarseg), panoptic segmentation.
+
+A JD saying "3D object detection" or "motion forecasting" is more likely to show up than one literally naming a
+dataset — so these task terms are the stronger, more direct classification signal, and map straight onto our
+existing categories:
+
+| Category | Task keywords (from Waymo / nuScenes) |
+|---|---|
+| Perception | 2D/3D object detection, multi-object tracking, semantic segmentation, panoptic segmentation |
+| Planning | motion forecasting, trajectory prediction, interaction prediction, behavior modeling |
+| Cross-cutting (any category) | end-to-end driving, multimodal reasoning, long-tail scenario evaluation |
+
+The dataset *names* themselves (Waymo Open Dataset, nuScenes, Argoverse, Argoverse 2, KITTI, BDD100K) are still
+worth keeping as a secondary signal — mainly useful as a general "this is AV-relevant" flag on the rarer occasions
+a posting name-drops one directly, rather than for deciding which category it belongs to:
 
 | Category | Keywords |
 |---|---|
-| **Datasets & Benchmarks** (cross-cutting, Perception-leaning) | Waymo Open Dataset, nuScenes, Argoverse, Argoverse 2, KITTI, BDD100K |
+| **Datasets & Benchmarks** (cross-cutting, secondary AV-relevance signal) | Waymo Open Dataset, nuScenes, Argoverse, Argoverse 2, KITTI, BDD100K |
 
 Sources:
 - [Open-Source Autonomous Driving Software Platforms: Comparison of Autoware and Apollo](https://arxiv.org/abs/2501.18942)
@@ -103,8 +124,9 @@ Baidu-linked company is more likely to mention Cyber RT or EM Planner than ROS 2
 though the actual work maps onto the same categories (Perception, Planning, Control, etc.). So we've now got a
 second vocabulary to catch postings that would otherwise slip past a purely Autoware-flavoured keyword list.
 
-The dataset comparison rounds this out from a different angle: knowing what Waymo Open Dataset, nuScenes, and
-Argoverse actually contain gives a much better feel for the perception/sensing side of things than just reading
-module names off a diagram, and it turns out dataset/benchmark names showing up in a posting are themselves a
-decent signal that it's AV-relevant.
+The dataset comparison rounds this out from a different angle: each of these datasets is built around specific
+benchmark tasks (3D object detection, tracking, motion forecasting, segmentation, etc.), and that task-level
+language turns out to be the stronger classification signal — more likely to show up in a JD than the dataset
+name itself. The dataset names are still worth keeping around, just as a weaker, secondary "this is AV-relevant"
+flag rather than a category-deciding one.
 
