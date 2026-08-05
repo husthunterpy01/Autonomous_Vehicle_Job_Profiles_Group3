@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const NAV_LINKS = [
-  { href: "/", label: "Home" },
   { href: "/search", label: "Find Jobs" },
   { href: "/companies", label: "Companies" },
 ];
@@ -17,8 +16,11 @@ export default function NavBar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-line bg-surface">
       <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 font-bold text-ink">
+        {/* Logo — acts as the home link */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-bold text-ink transition-opacity hover:opacity-75"
+        >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
             AV
           </span>

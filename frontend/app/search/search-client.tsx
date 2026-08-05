@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AV_CATEGORIES, MOCK_JOBS } from "@/lib/mock-data";
-import Dropdown, { type DropdownOption } from "@/components/ui/Dropdown";
+import type { DropdownOption } from "@/components/ui/Dropdown";
 import JobCardRow from "@/components/ui/JobCardRow";
+import PageHeader from "@/components/ui/PageHeader";
+import SearchBar from "@/components/ui/SearchBar";
 
 const CATEGORY_OPTIONS: DropdownOption[] = [
   { value: "All", label: "All Categories" },
@@ -53,35 +55,24 @@ export default function SearchClient({
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-10">
-      <h1 className="text-3xl font-bold tracking-tight text-ink">
-        Find your next job
-      </h1>
-      <p className="mt-2 text-ink-secondary">
-        Search and filter autonomous vehicle job openings.
-      </p>
+      <PageHeader
+        title="Find your next job"
+        subtitle="Search and filter autonomous vehicle job openings."
+      />
 
-      {/* Search area */}
-      <form
+      <SearchBar
+        keyword={keyword}
+        onKeywordChange={setKeyword}
+        placeholder="Job title, skill or keyword"
+        dropdownValue={category}
+        onDropdownChange={setCategory}
+        dropdownOptions={CATEGORY_OPTIONS}
+        dropdownClassName="lg:w-56"
         onSubmit={(e) => {
           e.preventDefault();
           syncUrl(keyword, category);
         }}
-        className="mt-8 flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-sm lg:flex-row lg:items-center"
-      >
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="Job title, skill or keyword"
-          className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
-        />
-        <Dropdown
-          value={category}
-          onChange={setCategory}
-          options={CATEGORY_OPTIONS}
-          className="lg:w-56"
-        />
-      </form>
+      />
 
       {/* Results */}
       <div className="mt-8">

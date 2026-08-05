@@ -230,7 +230,7 @@ function TopCompanies() {
         />
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {AV_COMPANIES.map((company) => (
+          {AV_COMPANIES.slice(0, 8).map((company) => (
             <Link
               key={company.name}
               href="/companies"

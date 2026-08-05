@@ -5,8 +5,15 @@ import { useRouter } from "next/navigation";
 import { AV_COMPANIES, type CompanyType } from "@/lib/mock-data";
 import Dropdown, { type DropdownOption } from "@/components/ui/Dropdown";
 import CompanyCard from "@/components/ui/CompanyCard";
+import PageHeader from "@/components/ui/PageHeader";
+import Pagination from "@/components/ui/Pagination";
+import SearchBar from "@/components/ui/SearchBar";
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE_OPTIONS: DropdownOption[] = [
+  { value: "12", label: "12 per page" },
+  { value: "24", label: "24 per page" },
+  { value: "48", label: "48 per page" },
+];
 
 const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
   { value: "All", label: "All Company Types" },
@@ -30,6 +37,7 @@ export default function CompanyClient({
       ? (initialType as "All" | CompanyType)
       : "All",
   );
+  const [pageSize, setPageSize] = useState(12);
   const [page, setPage] = useState(1);
 
   const hasFilters = keyword.trim() !== "" || type !== "All";
@@ -52,11 +60,11 @@ export default function CompanyClient({
     });
   }, [keyword, type]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
   const pageItems = filtered.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE,
+    (safePage - 1) * pageSize,
+    safePage * pageSize,
   );
 
   const handleKeyword = (value: string) => {
@@ -69,6 +77,11 @@ export default function CompanyClient({
     setPage(1);
   };
 
+  const handlePageSize = (value: string) => {
+    setPageSize(Number(value));
+    setPage(1);
+  };
+
   const resetFilters = () => {
     setKeyword("");
     setType("All");
@@ -78,58 +91,55 @@ export default function CompanyClient({
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-10">
-      <h1 className="text-3xl font-bold tracking-tight text-ink">
-        Explore Companies
-      </h1>
-      <p className="mt-2 text-ink-secondary">
-        Browse the autonomous vehicle companies tracked by this platform.
-      </p>
+      <PageHeader
+        title="Explore Companies"
+        subtitle="Browse the autonomous vehicle companies tracked by this platform."
+      />
 
-      {/* Search + filter */}
-      <form
+      <SearchBar
+        keyword={keyword}
+        onKeywordChange={handleKeyword}
+        placeholder="Search companies..."
+        dropdownValue={type}
+        onDropdownChange={handleType}
+        dropdownOptions={COMPANY_TYPE_OPTIONS}
+        dropdownClassName="lg:w-56"
         onSubmit={(e) => {
           e.preventDefault();
           syncUrl(keyword, type);
         }}
-        className="mt-8 flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-sm lg:flex-row lg:items-center"
-      >
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => handleKeyword(e.target.value)}
-          placeholder="Search companies..."
-          className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
-        />
-        <Dropdown
-          value={type}
-          onChange={handleType}
-          options={COMPANY_TYPE_OPTIONS}
-          className="lg:w-56"
-        />
-      </form>
+      />
 
       {/* Results */}
       <div className="mt-8">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-ink-secondary">
             <span className="font-semibold text-ink">{filtered.length}</span>{" "}
             {filtered.length === 1 ? "company" : "companies"} found
             {type !== "All" ? ` · ${type}` : ""}
           </p>
-          {hasFilters && (
-            <button
-              type="button"
-              onClick={resetFilters}
-              className="text-sm font-medium text-primary hover:text-primary-hover"
-            >
-              Clear filters
-            </button>
-          )}
+          <div className="flex items-center gap-3">
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-sm font-medium text-primary hover:text-primary-hover"
+              >
+                Clear filters
+              </button>
+            )}
+            <Dropdown
+              value={String(pageSize)}
+              onChange={handlePageSize}
+              options={PAGE_SIZE_OPTIONS}
+              className="w-36"
+            />
+          </div>
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {pageItems.map((company) => (
-            <CompanyCard key={company.name} company={company} />
+            <CompanyCard key={company.id} company={company} />
           ))}
         </div>
 
@@ -142,30 +152,7 @@ export default function CompanyClient({
           </div>
         )}
 
-        {/* Pagination */}
-        {filtered.length > PAGE_SIZE && (
-          <div className="mt-10 flex items-center justify-center gap-4">
-            <button
-              type="button"
-              disabled={safePage === 1}
-              onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Prev
-            </button>
-            <span className="text-sm text-ink-secondary">
-              Page {safePage} of {pageCount}
-            </span>
-            <button
-              type="button"
-              disabled={safePage === pageCount}
-              onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Next
-            </button>
-          </div>
-        )}
+        <Pagination page={safePage} pageCount={pageCount} onPageChange={setPage} />
       </div>
     </div>
   );
