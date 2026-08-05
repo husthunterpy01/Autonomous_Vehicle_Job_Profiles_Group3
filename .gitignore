@@ -1,0 +1,5 @@
+# Reasonix tool workspace data
+.reasonix/
+
+# Temporary unpacked template folder
+.tmp_jobhunter/
