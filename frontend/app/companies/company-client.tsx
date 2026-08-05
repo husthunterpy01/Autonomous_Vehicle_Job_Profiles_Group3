@@ -2,31 +2,35 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { AV_COMPANIES, type CompanyType } from "@/lib/mock-data";
-import { CompanyLogo } from "@/components/job-ui";
+import Dropdown, { type DropdownOption } from "@/components/ui/Dropdown";
+import CompanyCard from "@/components/ui/CompanyCard";
 
-const COMPANY_TYPES: ("All" | CompanyType)[] = [
-  "All",
-  "AV Startup",
-  "OEM",
-  "Tier 1 Supplier",
-  "Tech Giant",
+const PAGE_SIZE = 12;
+
+const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
+  { value: "All", label: "All Company Types" },
+  { value: "AV Startup", label: "AV Startup" },
+  { value: "OEM", label: "OEM" },
+  { value: "Tier 1 Supplier", label: "Tier 1 Supplier" },
+  { value: "Tech Giant", label: "Tech Giant" },
 ];
 
 export default function CompanyClient({
-  initialKeyword,
-  initialType,
+  initialKeyword = "",
+  initialType = "All",
 }: {
-  initialKeyword: string;
-  initialType: string;
+  initialKeyword?: string;
+  initialType?: string;
 }) {
   const router = useRouter();
   const [keyword, setKeyword] = useState(initialKeyword);
   const [type, setType] = useState<"All" | CompanyType>(
-    COMPANY_TYPES.includes(initialType as CompanyType) ? (initialType as "All" | CompanyType) : "All",
+    COMPANY_TYPE_OPTIONS.some((o) => o.value === initialType)
+      ? (initialType as "All" | CompanyType)
+      : "All",
   );
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [page, setPage] = useState(1);
 
   const hasFilters = keyword.trim() !== "" || type !== "All";
 
@@ -38,7 +42,7 @@ export default function CompanyClient({
     router.replace(qs ? `/companies?${qs}` : "/companies");
   };
 
-  const results = useMemo(() => {
+  const filtered = useMemo(() => {
     const kw = keyword.trim().toLowerCase();
     return AV_COMPANIES.filter((company) => {
       const matchesType = type === "All" || company.type === type;
@@ -47,6 +51,30 @@ export default function CompanyClient({
       return matchesType && matchesKeyword;
     });
   }, [keyword, type]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageItems = filtered.slice(
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  const handleKeyword = (value: string) => {
+    setKeyword(value);
+    setPage(1);
+  };
+
+  const handleType = (value: string) => {
+    setType(value as "All" | CompanyType);
+    setPage(1);
+  };
+
+  const resetFilters = () => {
+    setKeyword("");
+    setType("All");
+    setPage(1);
+    router.replace("/companies");
+  };
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-10">
@@ -68,76 +96,30 @@ export default function CompanyClient({
         <input
           type="text"
           value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
+          onChange={(e) => handleKeyword(e.target.value)}
           placeholder="Search companies..."
           className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
         />
-
-        {/* Company type dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setDropdownOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary lg:w-56"
-          >
-            {type === "All" ? "All Company Types" : type}
-            <svg
-              className={`h-4 w-4 text-ink-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-
-          {dropdownOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setDropdownOpen(false)}
-              />
-              <div className="absolute left-0 right-0 z-20 mt-2 rounded-xl border border-line bg-surface p-2 shadow-lg">
-                {COMPANY_TYPES.map((t) => (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      setType(t);
-                      setDropdownOpen(false);
-                    }}
-                    className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                      type === t
-                        ? "bg-primary-light font-medium text-primary"
-                        : "text-ink-secondary hover:bg-section hover:text-ink"
-                    }`}
-                  >
-                    {t === "All" ? "All Company Types" : t}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <Dropdown
+          value={type}
+          onChange={handleType}
+          options={COMPANY_TYPE_OPTIONS}
+          className="lg:w-56"
+        />
       </form>
 
       {/* Results */}
       <div className="mt-8">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm text-ink-secondary">
-            <span className="font-semibold text-ink">{results.length}</span>{" "}
-            {results.length === 1 ? "company" : "companies"} found
+            <span className="font-semibold text-ink">{filtered.length}</span>{" "}
+            {filtered.length === 1 ? "company" : "companies"} found
             {type !== "All" ? ` · ${type}` : ""}
           </p>
           {hasFilters && (
             <button
               type="button"
-              onClick={() => {
-                setKeyword("");
-                setType("All");
-                router.replace("/companies");
-              }}
+              onClick={resetFilters}
               className="text-sm font-medium text-primary hover:text-primary-hover"
             >
               Clear filters
@@ -146,32 +128,42 @@ export default function CompanyClient({
         </div>
 
         <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {results.map((company) => (
-            <Link
-              key={company.name}
-              href="/companies"
-              className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
-            >
-              <CompanyLogo text={company.name.charAt(0)} />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-ink">{company.name}</h3>
-                <p className="mt-1 text-sm text-ink-secondary">
-                  {company.type} · {company.country}
-                </p>
-                <p className="mt-2 text-sm text-ink-muted">
-                  {company.openPositions} open positions
-                </p>
-              </div>
-            </Link>
+          {pageItems.map((company) => (
+            <CompanyCard key={company.name} company={company} />
           ))}
         </div>
 
-        {results.length === 0 && (
+        {filtered.length === 0 && (
           <div className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
             <p className="font-semibold text-ink">No companies found</p>
             <p className="mt-2 text-sm text-ink-secondary">
               Try a different name or company type.
             </p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filtered.length > PAGE_SIZE && (
+          <div className="mt-10 flex items-center justify-center gap-4">
+            <button
+              type="button"
+              disabled={safePage === 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Prev
+            </button>
+            <span className="text-sm text-ink-secondary">
+              Page {safePage} of {pageCount}
+            </span>
+            <button
+              type="button"
+              disabled={safePage === pageCount}
+              onClick={() => setPage((p) => p + 1)}
+              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              Next
+            </button>
           </div>
         )}
       </div>

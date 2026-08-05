@@ -3,14 +3,20 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AV_CATEGORIES, MOCK_JOBS } from "@/lib/mock-data";
-import { JobCardRow } from "@/components/job-ui";
+import Dropdown, { type DropdownOption } from "@/components/ui/Dropdown";
+import JobCardRow from "@/components/ui/JobCardRow";
+
+const CATEGORY_OPTIONS: DropdownOption[] = [
+  { value: "All", label: "All Categories" },
+  ...AV_CATEGORIES.map((c) => ({ value: c.name, label: c.name })),
+];
 
 export default function SearchClient({
-  initialKeyword,
-  initialCategory,
+  initialKeyword = "",
+  initialCategory = "All",
 }: {
-  initialKeyword: string;
-  initialCategory: string;
+  initialKeyword?: string;
+  initialCategory?: string;
 }) {
   const router = useRouter();
   const [keyword, setKeyword] = useState(initialKeyword);
@@ -19,7 +25,6 @@ export default function SearchClient({
       ? initialCategory
       : "All",
   );
-  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const hasFilters = keyword.trim() !== "" || category !== "All";
 
@@ -70,72 +75,12 @@ export default function SearchClient({
           placeholder="Job title, skill or keyword"
           className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
         />
-
-        {/* Category dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setDropdownOpen((open) => !open)}
-            className="flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary lg:w-56"
-          >
-            {category === "All" ? "All Categories" : category}
-            <svg
-              className={`h-4 w-4 text-ink-muted transition-transform ${dropdownOpen ? "rotate-180" : ""}`}
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={2}
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
-            </svg>
-          </button>
-
-          {dropdownOpen && (
-            <>
-              {/* click-away backdrop */}
-              <div
-                className="fixed inset-0 z-10"
-                onClick={() => setDropdownOpen(false)}
-              />
-              <div className="absolute left-0 right-0 z-20 mt-2 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-lg">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategory("All");
-                    setDropdownOpen(false);
-                  }}
-                  className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                    category === "All"
-                      ? "bg-primary-light font-medium text-primary"
-                      : "text-ink-secondary hover:bg-section hover:text-ink"
-                  }`}
-                >
-                  All Categories
-                </button>
-                {AV_CATEGORIES.map((c) => (
-                  <button
-                    key={c.name}
-                    type="button"
-                    onClick={() => {
-                      setCategory(c.name);
-                      setDropdownOpen(false);
-                    }}
-                    className={`block w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                      category === c.name
-                        ? "bg-primary-light font-medium text-primary"
-                        : "text-ink-secondary hover:bg-section hover:text-ink"
-                    }`}
-                  >
-                    {c.name}
-                    <span className="ml-2 text-xs text-ink-muted">
-                      {c.jobs}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
+        <Dropdown
+          value={category}
+          onChange={setCategory}
+          options={CATEGORY_OPTIONS}
+          className="lg:w-56"
+        />
       </form>
 
       {/* Results */}

@@ -5,12 +5,10 @@ import {
   FEATURED_JOBS,
   MOCK_JOBS,
 } from "@/lib/mock-data";
-import {
-  CompanyLogo,
-  JobCardColumn,
-  JobCardRow,
-  Salary,
-} from "@/components/job-ui";
+import CompanyLogo from "@/components/ui/CompanyLogo";
+import JobCardColumn from "@/components/ui/JobCardColumn";
+import JobCardRow from "@/components/ui/JobCardRow";
+import Salary from "@/components/ui/Salary";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
