@@ -4,62 +4,17 @@ import {
   AV_COMPANIES,
   FEATURED_JOBS,
   MOCK_JOBS,
-  type Job,
 } from "@/lib/mock-data";
+import {
+  CompanyLogo,
+  JobCardColumn,
+  JobCardRow,
+  Salary,
+} from "@/components/job-ui";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
 /* ------------------------------------------------------------------ */
-
-function CompanyLogo({
-  text,
-  size = "h-10 w-10",
-}: {
-  text: string;
-  size?: string;
-}) {
-  return (
-    <span
-      className={`flex ${size} shrink-0 items-center justify-center rounded-lg bg-ink/10 font-bold text-ink`}
-    >
-      {text}
-    </span>
-  );
-}
-
-function Tag({ label }: { label: string }) {
-  return (
-    <span className="rounded-md bg-section px-2.5 py-1 text-xs font-medium text-ink-secondary">
-      {label}
-    </span>
-  );
-}
-
-function StatusBadge({ status }: { status: Job["status"] }) {
-  const open = status === "Open";
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
-        open
-          ? "bg-success/10 text-success"
-          : "bg-section text-ink-muted"
-      }`}
-    >
-      <span
-        className={`h-1.5 w-1.5 rounded-full ${open ? "bg-success" : "bg-ink-muted"}`}
-      />
-      {status}
-    </span>
-  );
-}
-
-function Salary({ job }: { job: Job }) {
-  return (
-    <p className="text-sm font-semibold text-primary">
-      ${job.salaryMin}k – ${job.salaryMax}k
-    </p>
-  );
-}
 
 function SectionHeader({
   title,
@@ -114,6 +69,7 @@ function Hero() {
           <form className="mt-8 flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-sm sm:flex-row sm:items-center">
             <input
               type="text"
+              name="q"
               placeholder="Job title, skill or keyword"
               className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
             />
@@ -233,25 +189,7 @@ function LatestJobs() {
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {MOCK_JOBS.map((job) => (
-            <Link
-              key={job.title}
-              href="/search"
-              className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
-            >
-              <CompanyLogo text={job.company.charAt(0)} />
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-ink">{job.title}</h3>
-                <p className="mt-1 text-sm text-ink-secondary">
-                  {job.company} · {job.country}
-                </p>
-                <Salary job={job} />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <StatusBadge status={job.status} />
-                  <Tag label={job.type} />
-                  <Tag label={job.category} />
-                </div>
-              </div>
-            </Link>
+            <JobCardRow key={job.title} job={job} />
           ))}
         </div>
       </div>
@@ -273,23 +211,7 @@ function FeaturedJobs() {
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {FEATURED_JOBS.map((job) => (
-            <Link
-              key={job.title}
-              href="/search"
-              className="flex flex-col rounded-xl border border-line bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
-            >
-              <CompanyLogo text={job.company.charAt(0)} />
-              <h3 className="mt-5 font-semibold text-ink">{job.title}</h3>
-              <p className="mt-1 text-sm text-ink-secondary">
-                {job.company} · {job.country}
-              </p>
-              <Salary job={job} />
-              <div className="mt-4 flex flex-wrap gap-2">
-                <StatusBadge status={job.status} />
-                <Tag label={job.type} />
-                <Tag label={job.category} />
-              </div>
-            </Link>
+            <JobCardColumn key={job.title} job={job} />
           ))}
         </div>
       </div>
