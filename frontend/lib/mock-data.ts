@@ -169,46 +169,62 @@ export const FEATURED_JOBS: Job[] = [
 /* Companies — client-provided AV company list (~42)                   */
 /* ------------------------------------------------------------------ */
 
-export const AV_COMPANIES: string[] = [
-  "42dot",
-  "ADASTEC",
-  "Aurora",
-  "AutoBrains",
-  "Baidu Apollo",
-  "Applied Intuition",
-  "AImotive",
-  "Avride",
-  "Bot.Auto",
-  "Bosch",
-  "DeepRoute",
-  "DiDi",
-  "May Mobility",
-  "Gatik",
-  "Inceptio.ai",
-  "Horizon Robotics",
-  "Huawei",
-  "Kodiak",
-  "Einride",
-  "Latitude AI",
-  "GM",
-  "Mobileye",
-  "Motional",
-  "Momenta",
-  "Nuro",
-  "NVIDIA",
-  "Pony.ai",
-  "Plus AI",
-  "QCraft",
-  "Stack AV",
-  "Tensor / AutoX",
-  "Torc Robotics",
-  "Tier IV",
-  "Waabi",
-  "Waymo",
-  "Wayve",
-  "WeRide",
-  "Woven by Toyota",
-  "Vay",
-  "XPeng",
-  "Zoox",
+export type CompanyType =
+  | "AV Startup"
+  | "OEM"
+  | "Tier 1 Supplier"
+  | "Tech Giant";
+
+export type Company = {
+  name: string;
+  type: CompanyType;
+  country: string;
+  openPositions: number;
+};
+
+/* Type/country/openPositions below are mock values — update as real
+   scrape data becomes available. The company names mirror the client's
+   list (see document/investigation/martin_doc_0208.md). */
+export const AV_COMPANIES: Company[] = [
+  { name: "Waymo", type: "AV Startup", country: "USA", openPositions: 35 },
+  { name: "Zoox", type: "AV Startup", country: "USA", openPositions: 28 },
+  { name: "Aurora", type: "AV Startup", country: "USA", openPositions: 22 },
+  { name: "Motional", type: "AV Startup", country: "USA", openPositions: 18 },
+  { name: "Pony.ai", type: "AV Startup", country: "China", openPositions: 15 },
+  { name: "WeRide", type: "AV Startup", country: "China", openPositions: 12 },
+  { name: "Kodiak", type: "AV Startup", country: "USA", openPositions: 9 },
+  { name: "Stack AV", type: "AV Startup", country: "USA", openPositions: 8 },
+  { name: "Waabi", type: "AV Startup", country: "Canada", openPositions: 14 },
+  { name: "May Mobility", type: "AV Startup", country: "USA", openPositions: 7 },
+  { name: "Gatik", type: "AV Startup", country: "USA", openPositions: 6 },
+  { name: "Einride", type: "AV Startup", country: "Sweden", openPositions: 10 },
+  { name: "Plus AI", type: "AV Startup", country: "USA", openPositions: 5 },
+  { name: "QCraft", type: "AV Startup", country: "China", openPositions: 6 },
+  { name: "AutoBrains", type: "AV Startup", country: "Israel", openPositions: 4 },
+  { name: "DeepRoute", type: "AV Startup", country: "China", openPositions: 8 },
+  { name: "Tensor / AutoX", type: "AV Startup", country: "China", openPositions: 11 },
+  { name: "AImotive", type: "AV Startup", country: "Hungary", openPositions: 3 },
+  { name: "Avride", type: "AV Startup", country: "USA", openPositions: 5 },
+  { name: "Bot.Auto", type: "AV Startup", country: "USA", openPositions: 2 },
+  { name: "42dot", type: "AV Startup", country: "South Korea", openPositions: 9 },
+  { name: "Latitude AI", type: "AV Startup", country: "USA", openPositions: 7 },
+  { name: "Nuro", type: "AV Startup", country: "USA", openPositions: 6 },
+  { name: "Vay", type: "AV Startup", country: "Germany", openPositions: 4 },
+  { name: "Wayve", type: "AV Startup", country: "UK", openPositions: 13 },
+  { name: "Torc Robotics", type: "AV Startup", country: "USA", openPositions: 10 },
+  { name: "Inceptio.ai", type: "AV Startup", country: "China", openPositions: 5 },
+  { name: "Momenta", type: "AV Startup", country: "China", openPositions: 8 },
+  { name: "ADASTEC", type: "AV Startup", country: "USA", openPositions: 2 },
+  { name: "Tier IV", type: "AV Startup", country: "Japan", openPositions: 12 },
+  { name: "Applied Intuition", type: "AV Startup", country: "USA", openPositions: 16 },
+  { name: "GM", type: "OEM", country: "USA", openPositions: 41 },
+  { name: "XPeng", type: "OEM", country: "China", openPositions: 33 },
+  { name: "Woven by Toyota", type: "OEM", country: "Japan", openPositions: 19 },
+  { name: "Baidu Apollo", type: "Tech Giant", country: "China", openPositions: 27 },
+  { name: "Huawei", type: "Tech Giant", country: "China", openPositions: 52 },
+  { name: "DiDi", type: "Tech Giant", country: "China", openPositions: 24 },
+  { name: "NVIDIA", type: "Tech Giant", country: "USA", openPositions: 48 },
+  { name: "Mobileye", type: "Tier 1 Supplier", country: "Israel", openPositions: 21 },
+  { name: "Bosch", type: "Tier 1 Supplier", country: "Germany", openPositions: 37 },
+  { name: "Horizon Robotics", type: "Tier 1 Supplier", country: "China", openPositions: 13 },
 ];
