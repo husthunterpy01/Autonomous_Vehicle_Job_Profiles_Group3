@@ -3,17 +3,11 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AV_COMPANIES, type CompanyType } from "@/lib/mock-data";
-import Dropdown, { type DropdownOption } from "@/components/ui/Dropdown";
+import type { DropdownOption } from "@/components/ui/Dropdown";
 import CompanyCard from "@/components/ui/CompanyCard";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
-
-const PAGE_SIZE_OPTIONS: DropdownOption[] = [
-  { value: "12", label: "12" },
-  { value: "24", label: "24" },
-  { value: "48", label: "48" },
-];
 
 const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
   { value: "All", label: "All Company Types" },
@@ -38,6 +32,7 @@ export default function CompanyClient({
       : "All",
   );
   const [pageSize, setPageSize] = useState(12);
+  const [pageSizeInput, setPageSizeInput] = useState("12");
   const [page, setPage] = useState(1);
 
   const hasFilters = keyword.trim() !== "" || type !== "All";
@@ -77,8 +72,10 @@ export default function CompanyClient({
     setPage(1);
   };
 
-  const handlePageSize = (value: string) => {
-    setPageSize(Number(value));
+  const handlePageSize = (raw: string) => {
+    const n = Math.max(1, Math.floor(Number(raw) || 1));
+    setPageSize(n);
+    setPageSizeInput(String(n));
     setPage(1);
   };
 
@@ -150,11 +147,16 @@ export default function CompanyClient({
         {filtered.length > 0 && (
           <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-2">
-              <Dropdown
-                value={String(pageSize)}
-                onChange={handlePageSize}
-                options={PAGE_SIZE_OPTIONS}
-                className="w-24"
+              <input
+                type="number"
+                min={1}
+                value={pageSizeInput}
+                onChange={(e) => setPageSizeInput(e.target.value)}
+                onBlur={() => handlePageSize(pageSizeInput)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handlePageSize(pageSizeInput);
+                }}
+                className="w-24 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
               />
               <span className="text-xs text-ink-muted">per page</span>
             </div>
