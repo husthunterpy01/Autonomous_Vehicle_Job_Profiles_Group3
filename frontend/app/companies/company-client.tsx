@@ -10,9 +10,9 @@ import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
 
 const PAGE_SIZE_OPTIONS: DropdownOption[] = [
-  { value: "12", label: "12 per page" },
-  { value: "24", label: "24 per page" },
-  { value: "48", label: "48 per page" },
+  { value: "12", label: "12" },
+  { value: "24", label: "24" },
+  { value: "48", label: "48" },
 ];
 
 const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
@@ -128,12 +128,6 @@ export default function CompanyClient({
                 Clear filters
               </button>
             )}
-            <Dropdown
-              value={String(pageSize)}
-              onChange={handlePageSize}
-              options={PAGE_SIZE_OPTIONS}
-              className="w-36"
-            />
           </div>
         </div>
 
@@ -152,7 +146,25 @@ export default function CompanyClient({
           </div>
         )}
 
-        <Pagination page={safePage} pageCount={pageCount} onPageChange={setPage} />
+        {/* Bottom bar: page size selector (left) + pagination (right) */}
+        {filtered.length > 0 && (
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <Dropdown
+                value={String(pageSize)}
+                onChange={handlePageSize}
+                options={PAGE_SIZE_OPTIONS}
+                className="w-24"
+              />
+              <span className="text-xs text-ink-muted">per page</span>
+            </div>
+            <Pagination
+              page={safePage}
+              pageCount={pageCount}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ export default function Pagination({
   if (pageCount <= 1) return null;
 
   return (
-    <div className="mt-10 flex items-center justify-center gap-4">
+    <div className="flex items-center justify-center gap-4">
       <button
         type="button"
         disabled={page === 1}
