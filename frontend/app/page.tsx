@@ -282,14 +282,33 @@ function CtaSection() {
 }
 
 function Footer() {
-  const columns: { title: string; links: string[] }[] = [
-    { title: "Product", links: ["Find Jobs", "Companies", "Categories"] },
-    { title: "Company", links: ["About", "Contact", "Careers"] },
-    {
-      title: "Resources",
-      links: ["Help Center", "Privacy", "Terms"],
-    },
-  ];
+  const columns: { title: string; links: { label: string; href: string }[] }[] =
+    [
+      {
+        title: "Product",
+        links: [
+          { label: "Find Jobs", href: "/search" },
+          { label: "Companies", href: "/companies" },
+          { label: "Categories", href: "/search" },
+        ],
+      },
+      {
+        title: "Company",
+        links: [
+          { label: "About", href: "#" },
+          { label: "Contact", href: "#" },
+          { label: "Careers", href: "#" },
+        ],
+      },
+      {
+        title: "Resources",
+        links: [
+          { label: "Help Center", href: "#" },
+          { label: "Privacy", href: "#" },
+          { label: "Terms", href: "#" },
+        ],
+      },
+    ];
 
   return (
     <footer className="bg-ink text-white">
@@ -312,13 +331,13 @@ function Footer() {
               <h4 className="text-sm font-semibold">{col.title}</h4>
               <ul className="mt-4 space-y-3">
                 {col.links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
                       className="text-sm text-white/60 transition-colors hover:text-white"
                     >
-                      {link}
-                    </a>
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
