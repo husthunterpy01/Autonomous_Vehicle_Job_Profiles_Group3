@@ -28,14 +28,14 @@ export type Category = {
 };
 
 export const AV_CATEGORIES: Category[] = [
+  { name: "Sensing", jobs: 62 },
+  { name: "Localization", jobs: 54 },
   { name: "Perception", jobs: 86 },
-  { name: "Localization & Mapping", jobs: 54 },
   { name: "Planning", jobs: 61 },
   { name: "Control", jobs: 42 },
-  { name: "System Integration", jobs: 73 },
-  { name: "V&V & Safety", jobs: 58 },
-  { name: "Simulation", jobs: 39 },
-  { name: "Data Infrastructure", jobs: 47 },
+  { name: "System", jobs: 73 },
+  { name: "Vehicle Interface", jobs: 25 },
+  { name: "Map", jobs: 38 },
 ];
 
 export type CategoryName = (typeof AV_CATEGORIES)[number]["name"];
@@ -277,7 +277,7 @@ const MOCK_JOB_INPUTS: JobInput[] = [
     salaryMax: 165,
     status: "Open",
     type: "Full-time",
-    category: "Localization & Mapping",
+    category: "Localization",
     postedDate: "2026-07-15",
     description:
       "Join Zoox's Localization & Mapping team to build the systems that let our robotaxi know exactly where it is on the road at all times.\n\nYou'll work on HD map generation and real-time pose estimation, combining lidar, GPS, and IMU data to keep localization accurate down to the centimeter.",
@@ -365,7 +365,7 @@ const MOCK_JOB_INPUTS: JobInput[] = [
     salaryMax: 120,
     status: "Open",
     type: "Full-time",
-    category: "V&V & Safety",
+    category: "System",
     postedDate: "2026-07-05",
     description:
       "Bosch is looking for a V&V Test Engineer to design and run the verification and validation processes behind our driver-assistance and autonomous systems.\n\nYou'll build test scenarios, run simulation and track-based validation, and help define the safety cases our systems need to pass before deployment.",
@@ -379,28 +379,6 @@ const MOCK_JOB_INPUTS: JobInput[] = [
     sourceUrl: "https://jobs.smartrecruiters.com/BoschGroup",
   },
   {
-    title: "Simulation Engineer",
-    company: "Applied Intuition",
-    companyId: "applied-intuition",
-    country: "USA",
-    salaryMin: 120,
-    salaryMax: 170,
-    status: "Open",
-    type: "Full-time",
-    category: "Simulation",
-    postedDate: "2026-07-12",
-    description:
-      "Applied Intuition is hiring a Simulation Engineer to build the tools automakers and AV companies use to test self-driving software before it ever touches the road.\n\nYou'll work on scenario generation, sensor simulation, and the infrastructure that lets our customers run millions of test miles virtually.",
-    requirements: [
-      "Experience building or working with simulation software",
-      "Strong software engineering fundamentals (C++, Python, or similar)",
-      "Understanding of autonomous vehicle software stacks is a plus",
-      "Comfortable working across a fast-moving, customer-facing product",
-    ],
-    skills: ["Simulation", "Scenario Generation", "C++", "Python"],
-    sourceUrl: "https://jobs.ashbyhq.com/applied",
-  },
-  {
     title: "Autonomous Driving Engineer",
     company: "Baidu Apollo",
     companyId: "baidu-apollo",
@@ -409,7 +387,7 @@ const MOCK_JOB_INPUTS: JobInput[] = [
     salaryMax: 90,
     status: "Open",
     type: "Full-time",
-    category: "System Integration",
+    category: "System",
     postedDate: "2026-07-08",
     description:
       "Baidu Apollo is looking for an Autonomous Driving Engineer to help integrate perception, planning, and control modules into a reliable end-to-end system.\n\nYou'll work across the Apollo open-source stack, debugging system-level issues and helping ship updates to our robotaxi fleet.",
@@ -478,7 +456,7 @@ const FEATURED_JOB_INPUTS: JobInput[] = [
     salaryMax: 150,
     status: "Open",
     type: "Full-time",
-    category: "Localization & Mapping",
+    category: "Map",
     postedDate: "2026-07-14",
     description:
       "Mobileye is hiring an HD Map Engineer to work on the crowdsourced mapping technology behind our autonomous driving systems.\n\nYou'll build pipelines that turn crowdsourced camera data into high-definition maps used for localization across millions of vehicles.",

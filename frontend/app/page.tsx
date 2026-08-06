@@ -89,7 +89,7 @@ function Hero() {
           <p className="mt-4 text-sm text-ink-muted">
             Popular searches:{" "}
             <span className="font-medium text-ink-secondary">
-              Perception · Planning · Sensor Fusion · V&V
+              Perception · Planning · Control · Localization
             </span>
           </p>
         </div>
