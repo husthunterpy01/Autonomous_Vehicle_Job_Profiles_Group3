@@ -20,14 +20,14 @@ export type Category = {
 };
 
 export const AV_CATEGORIES: Category[] = [
+  { name: "Sensing", jobs: 62 },
+  { name: "Localization", jobs: 54 },
   { name: "Perception", jobs: 86 },
-  { name: "Localization & Mapping", jobs: 54 },
   { name: "Planning", jobs: 61 },
   { name: "Control", jobs: 42 },
-  { name: "System Integration", jobs: 73 },
-  { name: "V&V & Safety", jobs: 58 },
-  { name: "Simulation", jobs: 39 },
-  { name: "Data Infrastructure", jobs: 47 },
+  { name: "System", jobs: 73 },
+  { name: "Vehicle Interface", jobs: 25 },
+  { name: "Map", jobs: 38 },
 ];
 
 /* ------------------------------------------------------------------ */
@@ -61,14 +61,14 @@ export const MOCK_JOBS: Job[] = [
     category: "Perception",
   },
   {
-    title: "Localization & Mapping Engineer",
+    title: "Localization Engineer",
     company: "Zoox",
     country: "USA",
     salaryMin: 120,
     salaryMax: 165,
     status: "Open",
     type: "Full-time",
-    category: "Localization & Mapping",
+    category: "Localization",
   },
   {
     title: "Motion Planning Engineer",
@@ -108,17 +108,7 @@ export const MOCK_JOBS: Job[] = [
     salaryMax: 120,
     status: "Open",
     type: "Full-time",
-    category: "V&V & Safety",
-  },
-  {
-    title: "Simulation Engineer",
-    company: "Applied Intuition",
-    country: "USA",
-    salaryMin: 120,
-    salaryMax: 170,
-    status: "Open",
-    type: "Full-time",
-    category: "Simulation",
+    category: "System",
   },
   {
     title: "Autonomous Driving Engineer",
@@ -128,7 +118,17 @@ export const MOCK_JOBS: Job[] = [
     salaryMax: 90,
     status: "Open",
     type: "Full-time",
-    category: "System Integration",
+    category: "System",
+  },
+  {
+    title: "Vehicle Interface Engineer",
+    company: "Tier IV",
+    country: "Japan",
+    salaryMin: 90,
+    salaryMax: 130,
+    status: "Open",
+    type: "Full-time",
+    category: "Vehicle Interface",
   },
 ];
 
@@ -144,14 +144,14 @@ export const FEATURED_JOBS: Job[] = [
     category: "Perception",
   },
   {
-    title: "Staff ML Engineer",
+    title: "Localization Engineer",
     company: "NVIDIA",
     country: "USA",
-    salaryMin: 180,
-    salaryMax: 240,
+    salaryMin: 150,
+    salaryMax: 200,
     status: "Open",
     type: "Full-time",
-    category: "Perception",
+    category: "Localization",
   },
   {
     title: "HD Map Engineer",
@@ -161,7 +161,7 @@ export const FEATURED_JOBS: Job[] = [
     salaryMax: 150,
     status: "Open",
     type: "Full-time",
-    category: "Localization & Mapping",
+    category: "Map",
   },
 ];
 
