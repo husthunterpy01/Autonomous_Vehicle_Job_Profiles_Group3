@@ -35,7 +35,7 @@ export default function CompanySummaryCard({ company }: { company: Company }) {
       </dl>
 
       <Link
-        href="/companies"
+        href={`/companies/${company.id}`}
         className="mt-4 block rounded-lg border border-primary px-4 py-2 text-center text-sm font-medium text-primary transition-colors hover:bg-primary-light"
       >
         View company profile

@@ -232,8 +232,8 @@ function TopCompanies() {
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
           {AV_COMPANIES.slice(0, 8).map((company) => (
             <Link
-              key={company.name}
-              href="/companies"
+              key={company.id}
+              href={`/companies/${company.id}`}
               className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
             >
               <CompanyLogo text={company.name.charAt(0)} size="h-9 w-9" />
