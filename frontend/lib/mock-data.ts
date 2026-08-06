@@ -120,16 +120,6 @@ export const MOCK_JOBS: Job[] = [
     type: "Full-time",
     category: "System",
   },
-  {
-    title: "Vehicle Interface Engineer",
-    company: "Tier IV",
-    country: "Japan",
-    salaryMin: 90,
-    salaryMax: 130,
-    status: "Open",
-    type: "Full-time",
-    category: "Vehicle Interface",
-  },
 ];
 
 export const FEATURED_JOBS: Job[] = [
