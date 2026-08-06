@@ -109,7 +109,7 @@ function Hero() {
 
               {MOCK_JOBS.slice(0, 4).map((job) => (
                 <div
-                  key={job.title}
+                  key={job.id}
                   className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
                 >
                   <CompanyLogo text={job.company.charAt(0)} size="h-9 w-9" />
@@ -187,7 +187,7 @@ function LatestJobs() {
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           {MOCK_JOBS.map((job) => (
-            <JobCardRow key={job.title} job={job} />
+            <JobCardRow key={job.id} job={job} />
           ))}
         </div>
       </div>
@@ -209,7 +209,7 @@ function FeaturedJobs() {
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {FEATURED_JOBS.map((job) => (
-            <JobCardColumn key={job.title} job={job} />
+            <JobCardColumn key={job.id} job={job} />
           ))}
         </div>
       </div>

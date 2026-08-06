@@ -9,7 +9,7 @@ import Tag from "./Tag";
 export default function JobCardRow({ job }: { job: Job }) {
   return (
     <Link
-      href="/search"
+      href={`/jobs/${job.id}`}
       className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
     >
       <CompanyLogo text={job.company.charAt(0)} />
