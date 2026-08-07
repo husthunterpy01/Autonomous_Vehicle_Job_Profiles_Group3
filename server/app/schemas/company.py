@@ -1,15 +1,14 @@
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, validator
 
 
 class CompanyCreate(BaseModel):
-    name: Optional[str] = None
-    website_url: Optional[str] = None
-    career_page_url: Optional[str] = None
-    company_type: Optional[str] = None
-    datasource_status: Optional[str] = None
+    name: str | None = None
+    website_url: str | None = None
+    career_page_url: str | None = None
+    company_type: str | None = None
+    datasource_status: str | None = None
 
     @validator("name")
     def normalize_name(cls, value):
@@ -24,11 +23,11 @@ class CompanyCreate(BaseModel):
 class CompanyResponse(BaseModel):
     company_id: UUID
     name: str
-    website_url: Optional[str] = None
-    career_page_url: Optional[str] = None
-    company_type: Optional[str] = None
-    datasource_status: Optional[str] = None
+    website_url: str | None = None
+    career_page_url: str | None = None
+    company_type: str | None = None
+    datasource_status: str | None = None
 
 
 class CompanyUpdate(BaseModel):
-    name: Optional[str] = None
+    name: str | None = None

@@ -1,9 +1,8 @@
 # app/core/logging_config.py
-import logging
 import sys
 from logging.config import dictConfig
 
-LOG_LEVEL = "INFO"  
+LOG_LEVEL = "INFO"
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -24,12 +23,12 @@ LOGGING_CONFIG = {
             "class": "logging.handlers.RotatingFileHandler",
             "formatter": "default",
             "filename": "app.log",
-            "maxBytes": 10_000_000, 
+            "maxBytes": 10_000_000,
             "backupCount": 5,
         },
     },
     "loggers": {
-        "": {  
+        "": {
             "handlers": ["console", "file"],
             "level": LOG_LEVEL,
         },

@@ -1,5 +1,5 @@
-from uuid import UUID, uuid4
 import logging
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
 from sqlalchemy import or_
@@ -7,12 +7,23 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.company import Company
-from app.schemas.company import CompanyCreate
+from app.schemas.company import CompanyCreate, CompanyResponse
 
 logger = logging.getLogger(__name__)
 
 
 class CompanyService:
+    @classmethod
+    def to_response(cls, company: Company) -> CompanyResponse:
+        return CompanyResponse(
+            company_id=company.company_id,
+            name=company.name,
+            website_url=company.website_url,
+            career_page_url=company.career_page_url,
+            company_type=company.company_type,
+            datasource_status=company.datasource_status,
+        )
+
     @classmethod
     def get_companies(cls, db: Session) -> list[Company]:
         return db.query(Company).order_by(Company.name.asc()).all()
@@ -63,10 +74,9 @@ class CompanyService:
             return company
         except IntegrityError:
             db.rollback()
-            logger.error(
+            logger.exception(
                 "Integrity error creating company=%s",
                 data.name,
-                exc_info=True,
             )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -74,9 +84,8 @@ class CompanyService:
             )
         except Exception:
             db.rollback()
-            logger.error(
+            logger.exception(
                 "Error creating new company=%s",
                 data.name,
-                exc_info=True,
             )
             raise

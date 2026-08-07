@@ -2,12 +2,11 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
-from app.middleware.logging import setup_logging
+
 from app.core.config import settings
 from app.core.database import init_db, seed_db
 from app.middleware.cors import add_cors
-from app.models.company import Company
-from app.models.company_location import CompanyLocation
+from app.middleware.logging import setup_logging
 from app.routers import api_router
 
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.routers import companies
+from app.routers import company
 
 api_router = APIRouter()
-api_router.include_router(companies.router)
+api_router.include_router(company.router)
