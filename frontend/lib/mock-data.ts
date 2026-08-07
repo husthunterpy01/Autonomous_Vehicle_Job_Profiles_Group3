@@ -62,6 +62,11 @@ export type Company = {
   about?: string;
   /** Employee-count bucket, same coverage caveat as `about`. */
   size?: string;
+  /** Careers page URL, from the investigation doc's confirmed sources
+   *  (document/investigation/martin_doc_0208.md). Left unset for companies
+   *  the doc marks as "needs direct inspection" / unconfirmed, rather than
+   *  guessing a URL. */
+  careersUrl?: string;
 };
 
 /* Type/country/openPositions below are mock values — update as real
@@ -77,6 +82,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Waymo is Alphabet's autonomous driving technology company, operating a driverless ride-hailing service across multiple US cities.",
     size: "1,001–5,000 employees",
+    careersUrl: "https://careers.withwaymo.com/",
   },
   {
     id: "zoox",
@@ -87,6 +93,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Zoox, an Amazon company, is building a purpose-built autonomous robotaxi designed from the ground up for self-driving, without a traditional steering wheel or pedals.",
     size: "1,001–5,000 employees",
+    careersUrl: "https://zoox.com/careers",
   },
   {
     id: "aurora",
@@ -97,6 +104,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Aurora Innovation develops self-driving technology for commercial trucking, aiming to bring driverless freight to highways across the US.",
     size: "1,001–5,000 employees",
+    careersUrl: "https://aurora.tech/careers",
   },
   {
     id: "motional",
@@ -107,32 +115,33 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Motional is a robotaxi joint venture between Hyundai and Aptiv, developing SAE Level 4 autonomous vehicles for ride-hailing.",
     size: "1,001–5,000 employees",
+    careersUrl: "https://boards.greenhouse.io/motional",
   },
-  { id: "pony-ai", name: "Pony.ai", type: "AV Startup", country: "China", openPositions: 15 },
+  { id: "pony-ai", name: "Pony.ai", type: "AV Startup", country: "China", openPositions: 15, careersUrl: "https://careers.pony.ai/" },
   { id: "weride", name: "WeRide", type: "AV Startup", country: "China", openPositions: 12 },
-  { id: "kodiak", name: "Kodiak", type: "AV Startup", country: "USA", openPositions: 9 },
-  { id: "stack-av", name: "Stack AV", type: "AV Startup", country: "USA", openPositions: 8 },
-  { id: "waabi", name: "Waabi", type: "AV Startup", country: "Canada", openPositions: 14 },
-  { id: "may-mobility", name: "May Mobility", type: "AV Startup", country: "USA", openPositions: 7 },
-  { id: "gatik", name: "Gatik", type: "AV Startup", country: "USA", openPositions: 6 },
+  { id: "kodiak", name: "Kodiak", type: "AV Startup", country: "USA", openPositions: 9, careersUrl: "https://boards.greenhouse.io/kodiak" },
+  { id: "stack-av", name: "Stack AV", type: "AV Startup", country: "USA", openPositions: 8, careersUrl: "https://boards.greenhouse.io/stackav" },
+  { id: "waabi", name: "Waabi", type: "AV Startup", country: "Canada", openPositions: 14, careersUrl: "https://jobs.lever.co/waabi" },
+  { id: "may-mobility", name: "May Mobility", type: "AV Startup", country: "USA", openPositions: 7, careersUrl: "https://boards.greenhouse.io/maymobility" },
+  { id: "gatik", name: "Gatik", type: "AV Startup", country: "USA", openPositions: 6, careersUrl: "https://archive.gatik.ai/careers/" },
   { id: "einride", name: "Einride", type: "AV Startup", country: "Sweden", openPositions: 10 },
-  { id: "plus-ai", name: "Plus AI", type: "AV Startup", country: "USA", openPositions: 5 },
+  { id: "plus-ai", name: "Plus AI", type: "AV Startup", country: "USA", openPositions: 5, careersUrl: "https://www.plus.ai/" },
   { id: "qcraft", name: "QCraft", type: "AV Startup", country: "China", openPositions: 6 },
-  { id: "autobrains", name: "AutoBrains", type: "AV Startup", country: "Israel", openPositions: 4 },
+  { id: "autobrains", name: "AutoBrains", type: "AV Startup", country: "Israel", openPositions: 4, careersUrl: "https://autobrains.ai/life-at-autobrains/" },
   { id: "deeproute", name: "DeepRoute", type: "AV Startup", country: "China", openPositions: 8 },
-  { id: "tensor-autox", name: "Tensor / AutoX", type: "AV Startup", country: "China", openPositions: 11 },
+  { id: "tensor-autox", name: "Tensor / AutoX", type: "AV Startup", country: "China", openPositions: 11, careersUrl: "https://www.tensor.auto/careers" },
   { id: "aimotive", name: "AImotive", type: "AV Startup", country: "Hungary", openPositions: 3 },
-  { id: "avride", name: "Avride", type: "AV Startup", country: "USA", openPositions: 5 },
-  { id: "bot-auto", name: "Bot.Auto", type: "AV Startup", country: "USA", openPositions: 2 },
-  { id: "42dot", name: "42dot", type: "AV Startup", country: "South Korea", openPositions: 9 },
-  { id: "latitude-ai", name: "Latitude AI", type: "AV Startup", country: "USA", openPositions: 7 },
+  { id: "avride", name: "Avride", type: "AV Startup", country: "USA", openPositions: 5, careersUrl: "https://boards.greenhouse.io/avride" },
+  { id: "bot-auto", name: "Bot.Auto", type: "AV Startup", country: "USA", openPositions: 2, careersUrl: "https://boards.greenhouse.io/botauto" },
+  { id: "42dot", name: "42dot", type: "AV Startup", country: "South Korea", openPositions: 9, careersUrl: "https://www.42dot.ai/ko/careers/open-roles" },
+  { id: "latitude-ai", name: "Latitude AI", type: "AV Startup", country: "USA", openPositions: 7, careersUrl: "https://boards.greenhouse.io/latitude" },
   { id: "nuro", name: "Nuro", type: "AV Startup", country: "USA", openPositions: 6 },
-  { id: "vay", name: "Vay", type: "AV Startup", country: "Germany", openPositions: 4 },
-  { id: "wayve", name: "Wayve", type: "AV Startup", country: "UK", openPositions: 13 },
-  { id: "torc-robotics", name: "Torc Robotics", type: "AV Startup", country: "USA", openPositions: 10 },
+  { id: "vay", name: "Vay", type: "AV Startup", country: "Germany", openPositions: 4, careersUrl: "https://boards.greenhouse.io/vay" },
+  { id: "wayve", name: "Wayve", type: "AV Startup", country: "UK", openPositions: 13, careersUrl: "https://boards.greenhouse.io/wayve" },
+  { id: "torc-robotics", name: "Torc Robotics", type: "AV Startup", country: "USA", openPositions: 10, careersUrl: "https://boards.greenhouse.io/torcrobotics" },
   { id: "inceptio-ai", name: "Inceptio.ai", type: "AV Startup", country: "China", openPositions: 5 },
   { id: "momenta", name: "Momenta", type: "AV Startup", country: "China", openPositions: 8 },
-  { id: "adastec", name: "ADASTEC", type: "AV Startup", country: "USA", openPositions: 2 },
+  { id: "adastec", name: "ADASTEC", type: "AV Startup", country: "USA", openPositions: 2, careersUrl: "https://www.adastec.com/" },
   { id: "tier-iv", name: "Tier IV", type: "AV Startup", country: "Japan", openPositions: 12 },
   {
     id: "applied-intuition",
@@ -143,6 +152,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Applied Intuition builds simulation and toolchain software used by automakers and AV companies to develop and test autonomous vehicles.",
     size: "201–1,000 employees",
+    careersUrl: "https://jobs.ashbyhq.com/applied",
   },
   {
     id: "gm",
@@ -153,9 +163,10 @@ export const AV_COMPANIES: Company[] = [
     about:
       "General Motors is a major American automaker developing autonomous driving and EV technology across its vehicle lineup.",
     size: "10,001+ employees",
+    careersUrl: "https://search-careers.gm.com/en/",
   },
-  { id: "xpeng", name: "XPeng", type: "OEM", country: "China", openPositions: 33 },
-  { id: "woven-by-toyota", name: "Woven by Toyota", type: "OEM", country: "Japan", openPositions: 19 },
+  { id: "xpeng", name: "XPeng", type: "OEM", country: "China", openPositions: 33, careersUrl: "https://www.xpeng.com/au/join-us" },
+  { id: "woven-by-toyota", name: "Woven by Toyota", type: "OEM", country: "Japan", openPositions: 19, careersUrl: "https://woven.toyota/en/careers" },
   {
     id: "baidu-apollo",
     name: "Baidu Apollo",
@@ -165,9 +176,12 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Baidu Apollo is Baidu's autonomous driving platform, one of the world's largest open-source self-driving ecosystems and a leading robotaxi operator in China.",
     size: "10,001+ employees",
+    // No careersUrl: the investigation doc marks this as "no stable public
+    // URL confirmed" — left unset rather than guessing, unlike the job-level
+    // sourceUrl which needed some fallback value.
   },
-  { id: "huawei", name: "Huawei", type: "Tech Giant", country: "China", openPositions: 52 },
-  { id: "didi", name: "DiDi", type: "Tech Giant", country: "China", openPositions: 24 },
+  { id: "huawei", name: "Huawei", type: "Tech Giant", country: "China", openPositions: 52, careersUrl: "https://career.huawei.com/" },
+  { id: "didi", name: "DiDi", type: "Tech Giant", country: "China", openPositions: 24, careersUrl: "https://boards.greenhouse.io/didi" },
   {
     id: "nvidia",
     name: "NVIDIA",
@@ -177,6 +191,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "NVIDIA provides the GPU computing platforms and software stack used across much of the autonomous vehicle industry for AI training and in-vehicle inference.",
     size: "10,001+ employees",
+    careersUrl: "https://www.nvidia.com/en-au/about-nvidia/careers/",
   },
   {
     id: "mobileye",
@@ -187,6 +202,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Mobileye, an Intel company, develops camera-based ADAS and autonomous driving technology used by automakers worldwide.",
     size: "1,001–5,000 employees",
+    careersUrl: "https://www.mobileye.com/about/",
   },
   {
     id: "bosch",
@@ -197,6 +213,7 @@ export const AV_COMPANIES: Company[] = [
     about:
       "Bosch is a global engineering and technology company supplying automotive components and driver-assistance/autonomous systems to major automakers.",
     size: "10,001+ employees",
+    careersUrl: "https://jobs.smartrecruiters.com/BoschGroup",
   },
   { id: "horizon-robotics", name: "Horizon Robotics", type: "Tier 1 Supplier", country: "China", openPositions: 13 },
 ];

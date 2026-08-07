@@ -27,14 +27,27 @@ export default async function CompanyDetailPage({
 
       {/* Header */}
       <div className="mt-4 rounded-xl border border-line bg-surface p-6 shadow-sm">
-        <div className="flex items-start gap-4">
-          <CompanyLogo text={company.name.charAt(0)} size="h-14 w-14" />
-          <div>
-            <PageHeader
-              title={company.name}
-              subtitle={`${company.type} · ${company.country}`}
-            />
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <CompanyLogo text={company.name.charAt(0)} size="h-14 w-14" />
+            <div>
+              <PageHeader
+                title={company.name}
+                subtitle={`${company.type} · ${company.country}`}
+              />
+            </div>
           </div>
+
+          {company.careersUrl && (
+            <a
+              href={company.careersUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+            >
+              View careers page ↗
+            </a>
+          )}
         </div>
 
         <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-line pt-6 sm:grid-cols-3">
