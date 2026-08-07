@@ -90,7 +90,7 @@ Use the same password you set when creating the Postgres user. If you used the D
 
 ### CI note
 
-GitHub Actions reads the Postgres password from the repository secret `POSTGRES_PASSWORD` (Settings → Secrets and variables → Actions). Set that secret before relying on backend CI.
+Backend CI starts an ephemeral Postgres service with `POSTGRES_HOST_AUTH_METHOD=trust` (no password). That is for GitHub Actions only — local Postgres should still use a password in `.env`.
 
 ## Run
 
