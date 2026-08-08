@@ -7,4 +7,4 @@ The proposed architecture of the system can be recorded as followed:
 
 ## Backend
 
-See [server/README.md](./server/README.md) for setup and how to run the FastAPI API.
+See [backend/README.md](./backend/README.md) for setup and how to run the FastAPI API.
