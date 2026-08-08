@@ -66,7 +66,7 @@ Then use port `5433` in `.env` (see below). Later starts: `docker start autojob-
 ### 2. Python environment
 
 ```bash
-cd server
+cd backend
 pip install -r requirements.txt
 ```
 
@@ -94,7 +94,7 @@ Backend CI starts an ephemeral Postgres service with `POSTGRES_HOST_AUTH_METHOD=
 
 ## Run
 
-From the `server/` directory (Postgres must already be running):
+From the `backend/` directory (Postgres must already be running):
 
 ```bash
 python3 -m uvicorn app.main:app --reload
