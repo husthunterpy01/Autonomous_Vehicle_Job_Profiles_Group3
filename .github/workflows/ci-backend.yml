@@ -1,0 +1,43 @@
+name: autonomous-job-backend-ci
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_USER: team3
+      POSTGRES_DB: autojobdatabase
+      DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: team3
+          POSTGRES_DB: autojobdatabase
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.10'
+    - name: Install dependencies
+      working-directory: backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Check convention
+      working-directory: backend
+      run: |
+        pip install ruff
+        ruff check .
