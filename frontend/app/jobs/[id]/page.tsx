@@ -5,8 +5,8 @@ import {
   getJobById,
   getSimilarJobs,
 } from "@/lib/mock-data";
-import CompanyLogo from "@/components/ui/CompanyLogo";
 import CompanySummaryCard from "@/components/ui/CompanySummaryCard";
+import DetailHeaderCard from "@/components/ui/DetailHeaderCard";
 import JobCardRow from "@/components/ui/JobCardRow";
 import Salary from "@/components/ui/Salary";
 import StatusBadge from "@/components/ui/StatusBadge";
@@ -56,32 +56,18 @@ export default async function JobDetailPage({
       </Link>
 
       {/* Header */}
-      <div className="mt-4 flex flex-col gap-6 rounded-xl border border-line bg-surface p-6 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-4">
-          <CompanyLogo text={job.company.charAt(0)} size="h-14 w-14" />
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-ink">
-              {job.title}
-            </h1>
-            <p className="mt-1 text-sm text-ink-secondary">
-              {job.company} · {job.country} · {job.type}
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <StatusBadge status={job.status} />
-              <Tag label={job.category} />
-            </div>
+      <DetailHeaderCard
+        logoText={job.company.charAt(0)}
+        title={job.title}
+        subtitle={`${job.company} · ${job.country} · ${job.type}`}
+        action={{ href: job.sourceUrl, label: "View original posting" }}
+        meta={
+          <div className="flex flex-wrap gap-2">
+            <StatusBadge status={job.status} />
+            <Tag label={job.category} />
           </div>
-        </div>
-
-        <a
-          href={job.sourceUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-        >
-          View original posting ↗
-        </a>
-      </div>
+        }
+      />
 
       {/* Body */}
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">

@@ -1,9 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCompanyById, getJobsByCompanyId } from "@/lib/mock-data";
-import CompanyLogo from "@/components/ui/CompanyLogo";
+import DetailHeaderCard from "@/components/ui/DetailHeaderCard";
 import JobCardRow from "@/components/ui/JobCardRow";
-import PageHeader from "@/components/ui/PageHeader";
 
 export default async function CompanyDetailPage({
   params,
@@ -26,53 +25,40 @@ export default async function CompanyDetailPage({
       </Link>
 
       {/* Header */}
-      <div className="mt-4 rounded-xl border border-line bg-surface p-6 shadow-sm">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-4">
-            <CompanyLogo text={company.name.charAt(0)} size="h-14 w-14" />
+      <DetailHeaderCard
+        logoText={company.name.charAt(0)}
+        title={company.name}
+        subtitle={`${company.type} · ${company.country}`}
+        action={
+          company.careersUrl
+            ? { href: company.careersUrl, label: "View careers page" }
+            : undefined
+        }
+        footer={
+          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {company.size && (
+              <div>
+                <dt className="text-xs text-ink-muted">Company size</dt>
+                <dd className="mt-1 text-sm font-semibold text-ink">
+                  {company.size}
+                </dd>
+              </div>
+            )}
             <div>
-              <PageHeader
-                title={company.name}
-                subtitle={`${company.type} · ${company.country}`}
-              />
-            </div>
-          </div>
-
-          {company.careersUrl && (
-            <a
-              href={company.careersUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center rounded-lg bg-primary px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-            >
-              View careers page ↗
-            </a>
-          )}
-        </div>
-
-        <dl className="mt-6 grid grid-cols-1 gap-4 border-t border-line pt-6 sm:grid-cols-3">
-          {company.size && (
-            <div>
-              <dt className="text-xs text-ink-muted">Company size</dt>
+              <dt className="text-xs text-ink-muted">Location</dt>
               <dd className="mt-1 text-sm font-semibold text-ink">
-                {company.size}
+                {company.country}
               </dd>
             </div>
-          )}
-          <div>
-            <dt className="text-xs text-ink-muted">Location</dt>
-            <dd className="mt-1 text-sm font-semibold text-ink">
-              {company.country}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-xs text-ink-muted">Open positions</dt>
-            <dd className="mt-1 text-sm font-semibold text-ink">
-              {company.openPositions}
-            </dd>
-          </div>
-        </dl>
-      </div>
+            <div>
+              <dt className="text-xs text-ink-muted">Open positions</dt>
+              <dd className="mt-1 text-sm font-semibold text-ink">
+                {company.openPositions}
+              </dd>
+            </div>
+          </dl>
+        }
+      />
 
       {/* About */}
       {company.about && (
