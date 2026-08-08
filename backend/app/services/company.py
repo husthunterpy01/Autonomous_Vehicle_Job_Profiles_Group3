@@ -10,8 +10,6 @@ from app.schemas.company import CompanyCreate, CompanyResponse
 
 logger = logging.getLogger(__name__)
 
-PG_UNIQUE_VIOLATION = "23505"
-
 
 class CompanyService:
     @classmethod
@@ -97,16 +95,13 @@ class CompanyService:
                 "Integrity error creating company=%s",
                 data.name,
             )
-            pgcode = getattr(getattr(exc, "orig", None), "pgcode", None)
-            if pgcode == PG_UNIQUE_VIOLATION:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail=(
-                        "Company already exists "
-                        "(name, website_url, or career_page_url must be unique)"
-                    ),
-                ) from exc
-            raise
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "Company already exists "
+                    "(name, website_url, or career_page_url must be unique)"
+                ),
+            ) from exc
         except Exception:
             db.rollback()
             logger.exception(
