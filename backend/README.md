@@ -84,9 +84,12 @@ Example for a manual local install (port `5432`):
 DATABASE_URL=postgresql://team3:<password>@localhost:5432/autojobdatabase
 DATABASE_USER=team3
 DATABASE_PASSWORD=<password>
+SEED_ON_STARTUP=true
 ```
 
 Use the same password you set when creating the Postgres user. If you used the Docker option above, use port `5433` instead.
+
+`SEED_ON_STARTUP=true` reseeds companies on every API start (local/dev). Leave it unset or `false` outside local development so production data is not truncated.
 
 ### CI note
 
@@ -103,7 +106,7 @@ python3 -m uvicorn app.main:app --reload
 On startup the API:
 
 1. Creates tables if they do not exist
-2. Reseeds the company list from `app/sql/seed_companies.sql` (runs on every start)
+2. If `SEED_ON_STARTUP=true`, reseeds the company list from `app/sql/seed_companies.sql`
 
 The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
@@ -142,4 +145,4 @@ curl -X POST http://127.0.0.1:8000/api/v1/companies \
   }'
 ```
 
-Note: created rows are replaced when the server restarts, because startup reseeds from the SQL file.
+Note: when `SEED_ON_STARTUP=true`, created rows are replaced on restart because startup reseeds from the SQL file.

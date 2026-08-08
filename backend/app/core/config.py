@@ -11,6 +11,12 @@ class Settings:
         self.database_url = os.getenv("DATABASE_URL")
         self.app_name = os.getenv("APP_NAME", "AV Job Profiles API")
         self.api_prefix = os.getenv("API_PREFIX", "/api/v1")
+        self.seed_on_startup = os.getenv("SEED_ON_STARTUP", "false").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         cors_origins = os.getenv("CORS_ORIGINS")
         if cors_origins:
             self.cors_origins = [origin.strip() for origin in cors_origins.split(",")]

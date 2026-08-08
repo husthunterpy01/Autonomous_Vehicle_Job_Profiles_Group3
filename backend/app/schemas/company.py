@@ -4,19 +4,17 @@ from pydantic import BaseModel, validator
 
 
 class CompanyCreate(BaseModel):
-    name: str | None = None
-    website_url: str | None = None
-    career_page_url: str | None = None
-    company_type: str | None = None
-    datasource_status: str | None = None
+    name: str
+    website_url: str
+    career_page_url: str
+    company_type: str
+    datasource_status: str
 
-    @validator("name")
-    def normalize_name(cls, value):
-        if value is None:
-            return value
+    @validator("name", "website_url", "career_page_url", "company_type", "datasource_status")
+    def normalize_required_str(cls, value):
         value = value.strip()
         if not value:
-            raise ValueError("Company name cannot be empty")
+            raise ValueError("must not be empty")
         return value
 
 

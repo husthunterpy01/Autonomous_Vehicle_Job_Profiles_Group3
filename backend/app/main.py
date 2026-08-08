@@ -13,7 +13,8 @@ from app.routers import api_router
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
-    seed_db()
+    if settings.seed_on_startup:
+        seed_db()
     yield
 
 setup_logging()

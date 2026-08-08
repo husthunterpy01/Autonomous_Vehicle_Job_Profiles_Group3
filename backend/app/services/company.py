@@ -2,7 +2,6 @@ import logging
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
-from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -10,6 +9,8 @@ from app.models.company import Company
 from app.schemas.company import CompanyCreate, CompanyResponse
 
 logger = logging.getLogger(__name__)
+
+PG_UNIQUE_VIOLATION = "23505"
 
 
 class CompanyService:
@@ -40,25 +41,41 @@ class CompanyService:
 
     @classmethod
     def add_new_company(cls, db: Session, data: CompanyCreate) -> Company:
-        company = (
-            db.query(Company)
-            .filter(
-                or_(
-                    Company.name == data.name,
-                    Company.website_url == data.website_url,
-                    Company.career_page_url == data.career_page_url,
-                )
-            )
-            .first()
-        )
-        if company:
-            logger.info("Company already exists: %s", company.name)
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Company already exists: {company.name}",
-            )
-
         try:
+            existing_by_name = (
+                db.query(Company).filter(Company.name == data.name).first()
+            )
+            if existing_by_name:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Company already exists with name: {data.name}",
+                )
+
+            existing_by_website = (
+                db.query(Company)
+                .filter(Company.website_url == data.website_url)
+                .first()
+            )
+            if existing_by_website:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Company already exists with website_url: {data.website_url}",
+                )
+
+            existing_by_career_page = (
+                db.query(Company)
+                .filter(Company.career_page_url == data.career_page_url)
+                .first()
+            )
+            if existing_by_career_page:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        "Company already exists with career_page_url: "
+                        f"{data.career_page_url}"
+                    ),
+                )
+
             logger.info("Creating new company=%s", data.name)
             company = Company(
                 company_id=uuid4(),
@@ -72,16 +89,24 @@ class CompanyService:
             db.commit()
             db.refresh(company)
             return company
-        except IntegrityError:
+        except HTTPException:
+            raise
+        except IntegrityError as exc:
             db.rollback()
             logger.exception(
                 "Integrity error creating company=%s",
                 data.name,
             )
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Company already exists (name, website_url, or career_page_url must be unique)",
-            )
+            pgcode = getattr(getattr(exc, "orig", None), "pgcode", None)
+            if pgcode == PG_UNIQUE_VIOLATION:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=(
+                        "Company already exists "
+                        "(name, website_url, or career_page_url must be unique)"
+                    ),
+                ) from exc
+            raise
         except Exception:
             db.rollback()
             logger.exception(
