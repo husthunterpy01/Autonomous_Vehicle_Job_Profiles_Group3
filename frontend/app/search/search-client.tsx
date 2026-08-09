@@ -100,7 +100,7 @@ export default function SearchClient({
 
         <div className="mt-4 grid grid-cols-1 gap-5 lg:grid-cols-2">
           {results.map((job) => (
-            <JobCardRow key={job.title} job={job} />
+            <JobCardRow key={job.id} job={job} />
           ))}
         </div>
 

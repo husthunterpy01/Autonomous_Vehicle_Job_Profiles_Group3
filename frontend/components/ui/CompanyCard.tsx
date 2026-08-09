@@ -5,7 +5,7 @@ import CompanyLogo from "./CompanyLogo";
 export default function CompanyCard({ company }: { company: Company }) {
   return (
     <Link
-      href="/companies"
+      href={`/companies/${company.id}`}
       className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
     >
       <CompanyLogo text={company.name.charAt(0)} />
