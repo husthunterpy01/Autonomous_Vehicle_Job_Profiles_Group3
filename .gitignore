@@ -33,6 +33,9 @@ htmlcov/
 *.log
 logs/
 
+# Generated scraper output (BE-1)
+/data/*.json
+
 # IDE / editor
 .idea/
 .vscode/

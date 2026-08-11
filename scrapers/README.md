@@ -1,72 +1,75 @@
-# Company job scrapers
+# BE-1 company job scrapers
 
-## Waabi
+This directory implements the BE-1 data-collection task for three approved
+company career sources:
 
-The Waabi scraper reads currently published vacancies from Waabi's public
-Lever Postings API and normalizes them into the project's common job schema.
-It does not submit applications or collect applicant information.
+| Company | ATS | Scraper |
+|---|---|---|
+| Waabi | Lever | `waabi_scraper.py` |
+| Bosch | SmartRecruiters | `bosch_scraper.py` |
+| Stack AV | Greenhouse | `stackav_scraper.py` |
 
-From the project root, activate a Python environment and run:
+The scrapers only read public job advertisements. They do not submit job
+applications or collect applicant information.
+
+## Shared design
+
+`base_scraper.py` contains the common behavior used by every scraper:
+
+- HTTP headers, retries, rate-limit handling, and errors;
+- nested HTML/entity decoding;
+- required-field and duplicate-ID validation;
+- atomic UTF-8 JSON output;
+- shared command-line arguments and status messages.
+
+Each company module contains only its ATS-specific fetching and normalization.
+All three produce the same required fields: company, job ID, title, location,
+description, posting date, source URL, collection method, ATS, and collection
+timestamp. Optional ATS-specific fields are retained when available.
+
+## Run the scrapers
+
+From the repository root:
 
 ```powershell
-conda activate cits5508-a1
 python scrapers\waabi_scraper.py
-```
-
-The command creates or refreshes:
-
-```text
-data\waabi_jobs.json
-```
-
-Run the automated checks with:
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-The scraper refuses to replace the existing JSON output if the API returns no
-jobs, a record is missing a required field, or duplicate job IDs are detected.
-
-## Bosch
-
-Bosch publishes jobs through SmartRecruiters. The Bosch scraper collects the
-latest 100 public jobs by default, follows each posting to collect its full
-description, and writes:
-
-```text
-data\bosch_jobs.json
-```
-
-Run the default batch with:
-
-```powershell
 python scrapers\bosch_scraper.py
+python scrapers\stackav_scraper.py
 ```
 
-Use a smaller batch while developing:
+Bosch exposes thousands of postings, so its default Sprint 1 batch is the
+latest 100. Use a smaller smoke-test batch with:
 
 ```powershell
 python scrapers\bosch_scraper.py --max-jobs 10
 ```
 
-Or choose a larger batch later:
+Generated files are written under `data/` for local analysis. They are ignored
+by Git and must not be included in a PR.
+
+## Run automated tests
 
 ```powershell
-python scrapers\bosch_scraper.py --max-jobs 250
+python -m unittest discover -s tests -v
 ```
 
-## Stack AV
+The tests cover shared helpers, nested HTML decoding, atomic output, validation,
+duplicate detection, and each company's normalization.
 
-Stack AV publishes jobs through Greenhouse. Greenhouse returns the complete
-public board, including job descriptions, in one request. Run:
+## PR evidence checklist
 
-```powershell
-python scrapers\stackav_scraper.py
-```
+For the BE-1 PR description, attach dated screenshots showing:
 
-The command creates or refreshes:
+1. each scraper completing successfully;
+2. the automated test command passing;
+3. the local job counts printed by each scraper;
+4. `git status --short` confirming `data/*.json` is not included.
+
+Suggested PR title:
 
 ```text
-data\stackav_jobs.json
+[BE-1] Refactor and validate company job scrapers
 ```
+
+Reference the actual GitHub issue number in the PR body, for example
+`Closes #123`, and replace `#123` with the issue corresponding to BE-1.
