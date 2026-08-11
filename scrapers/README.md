@@ -55,3 +55,18 @@ Or choose a larger batch later:
 ```powershell
 python scrapers\bosch_scraper.py --max-jobs 250
 ```
+
+## Stack AV
+
+Stack AV publishes jobs through Greenhouse. Greenhouse returns the complete
+public board, including job descriptions, in one request. Run:
+
+```powershell
+python scrapers\stackav_scraper.py
+```
+
+The command creates or refreshes:
+
+```text
+data\stackav_jobs.json
+```
