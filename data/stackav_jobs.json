@@ -1,0 +1,392 @@
+[
+  {
+    "company": "Stack AV",
+    "job_id": "5208820007",
+    "job_title": "Software Engineer, Onboard Infrastructure",
+    "location": "Pittsburgh, PA or Remote",
+    "all_locations": [
+      "Pittsburgh, PA or Remote"
+    ],
+    "country_code": "",
+    "team": "Autonomy",
+    "department": "Autonomy",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nJoin a high-caliber team of experienced software engineers responsible for delivering some of Stack AV's most foundational technology. The team owns Clockwork, Stack's custom-built, high-performance robotics middleware powering production-grade autonomy applications — as well as StackOS, the operating system that underpins the entire vehicle software stack, and the onboard portion of Deploy Manager, which governs how software is delivered and updated on the vehicle itself. Together, these systems form the critical infrastructure backbone of Stack's safety-critical self-driving platform, operating seamlessly across the vehicle, in simulation, in the cloud, and in HIL testing environments. In this role, you will design, implement, test, and deploy new features and optimizations across this portfolio of systems to extend their capabilities, usability, performance, and reliability.\nResponsibilities:\nDesign and implementation of high-throughput, low-latency logging frameworks capable of handling massively parallel data streams - telemetry, event and console logs.\nDesign, development, and implementation of features, interfaces, and optimizations for Clockwork in collaboration with Autonomy, Cloud, and Safety teams.\nContinually identify opportunities for improving the performance, reliability, and usability of Clockwork, evaluating tradeoffs amongst multiple options in a resource-constrained environment.\nContribute to the prototyping, development, and maintenance of new and existing sensor interfaces that drive the Perception system of the AV.\nEnsure delivery of high quality software through the principled and consistent use of best practices including robust automated testing, manual and automated code review.\nQualifications:\nSystems Programming: Proficiency of C++, with deep understanding of multi-threading, concurrency models, lock-free data structures, and memory management.\nKnowledge of software engineering life cycle and algorithm design principles.\nExperience developing high performance software systems, deployed in resource constrained environments, preferably for safety critical applications.\nStrong understanding of the POSIX programming environment, Linux, and concurrent programming.\nA passion for writing robust, intuitive, and pragmatic production code.\nStrong understanding of Networking fundamentals.\nComfortable working with & debugging embedded systems.\nExperience working with common tooling such as Bazel, Boost, etc.\nExcellent communication skills and ability to work in a team environment.\nExperience with performance evaluation and optimization is highly desired.\nDomain experience working in autonomous driving, robotics or related industry is highly desired.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-08-10T21:14:53-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5208820007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5208820007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC203",
+    "internal_job_id": "4667017007",
+    "updated_at": "2026-08-10T21:14:53-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh/Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5207120007",
+    "job_title": "Senior Software Engineer, Onboard Infrastructure",
+    "location": "Pittsburgh, PA or Remote",
+    "all_locations": [
+      "Pittsburgh, PA or Remote"
+    ],
+    "country_code": "",
+    "team": "Autonomy",
+    "department": "Autonomy",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nJoin a high-caliber team of experienced software engineers responsible for delivering some of Stack AV's most foundational technology. The team owns Clockwork, Stack's custom-built, high-performance robotics middleware powering production-grade autonomy applications — as well as StackOS, the operating system that underpins the entire vehicle software stack, and the onboard portion of Deploy Manager, which governs how software is delivered and updated on the vehicle itself. Together, these systems form the critical infrastructure backbone of Stack's safety-critical self-driving platform, operating seamlessly across the vehicle, in simulation, in the cloud, and in HIL testing environments. In this role, you will design, implement, test, and deploy new features and optimizations across this portfolio of systems to extend their capabilities, usability, performance, and reliability.\nResponsibilities:\nDesign, implement, and maintain StackOS, Stack AV's vehicle operating system, ensuring it meets the reliability and performance demands of a safety-critical autonomy platform.\nDrive the architecture and implementation of the onboard portion of Deploy Manager, ensuring safe, reliable, and efficient software delivery to the vehicle.\nProactively work with internal customers to design & implement new features from ideation to deployment.\nAutomate processes related to assembling new self-driving vehicles from-scratch, and updating their software on an ongoing basis.\nContinually identify opportunities for improving the performance, reliability, and usability of StackOS and Deploy, evaluating tradeoffs amongst multiple options.\nPartner with safety and validation teams to ensure StackOS and Deploy Manager meet functional safety requirements.\nEnsure delivery of high quality software through the principled and consistent use of best practices including robust automated testing, manual and automated code review.\nQualifications:\nStrong C++ development experience is required, some Python experience highly preferred.\nExpert knowledge of software engineering and algorithm design principles.\nSignificant experience developing high performance software systems, deployed in resource constrained environments, preferably for safety critical applications.\nExpert level understanding of Linux and building Linux distributions via Yocto.\nStrong understanding of the POSIX programming environment, Linux, and concurrent programming.\nStrong understanding of Networking fundamentals.\nComfortable working with & debugging embedded systems.\nExperience working with common tooling such as Bazel, Boost, etc.\nExcellent communication skills and ability to work in a team environment.\nDomain experience working in autonomous driving, robotics or related industry is highly desired.\nExperience with the Nvidia ecosystem and DriveOS, QNX.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-08-10T19:53:40-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5207120007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5207120007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC202",
+    "internal_job_id": "4666185007",
+    "updated_at": "2026-08-10T21:13:18-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh/Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5196009007",
+    "job_title": "CDL | Hourly Pay with OT | FREE benefits (Operations Specialist)",
+    "location": "New Stanton, PA",
+    "all_locations": [
+      "New Stanton, PA"
+    ],
+    "country_code": "",
+    "team": "Fleet Operations",
+    "department": "Fleet Operations",
+    "commitment": "",
+    "workplace_type": "onsite",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Team:\nThe Fleet Operations team is responsible for the safe testing and operation of the newest technologies. As an Operations Specialist, you will contribute to the daily driving and testing of autonomous trucks, own the safety of the operation, and provide feedback on system performance and behaviors while hauling commercial freight.\nResponsibilities:\nSafely operate autonomous trucks on the public roads to support development testing and commercial pilot operations.\nHaul commercial freight between customer locations and/or meet points.\nProvide feedback on system performance to advance self-driving technology.\nUtilize internal tools on a smartphone/tablet to track work assigned and completed.\nUphold industry-leading safety standards, remaining compliant with internal benchmarks.\nRemain alert and attentive while operating during extended stretches of autonomy.\nBenefits & Perks to joining Stack AV:\nCompensation: $32.00 – $37.00/hr + Annual Bonus + Profit Sharing\n$0 Healthcare Premiums: Stack covers 100% of Medical, Dental, and Vision for you and your family\nPaid Winter Break: Company is closed and employees are paid from Dec 24 – Jan 1\nRetirement: 401(k) plan with generous company match and annual profit-sharing contribution\nTime Off: Open PTO policy and 14 paid company holidays\nNo-Touch Freight: 100% no loading or unloading of trailers\nQualifications & Safety Standards:\nExperience: 7+ years of Class A driving experience\nLicense: Valid Class A CDL (Airbrake Endorsement) and current DOT Medical Certificate\nZero-Tolerance Safety Record: We require a strictly clean MVR. You must have no history of:\nReckless Driving, Leaving the scene of an accident, or License suspensions/revocations\nNo Moving Violations within the last 7 years, including: Speeding, running red lights/stop signs, failure to yield, tailgating, improper turns/lane changes, distracted driving, seat belt violations, or unlawful passing (school buses/railroad crossings)\nTesting: Must pass pre-employment drug/alcohol screening and sleep apnea screening\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-07-24T16:44:11-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5196009007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5196009007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC201",
+    "internal_job_id": "4660781007",
+    "updated_at": "2026-07-29T15:24:01-04:00",
+    "application_deadline": "",
+    "offices": [
+      "New Stanton, PA"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5188096007",
+    "job_title": "Senior Software Engineer, Perception Architecture",
+    "location": "Pittsburgh, PA or Remote",
+    "all_locations": [
+      "Pittsburgh, PA or Remote"
+    ],
+    "country_code": "",
+    "team": "Autonomy",
+    "department": "Autonomy",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nThe Perception Architecture team is responsible for tackling complex, cross-cutting issues in Stack AV’s approach to perception development and accelerating our delivery of perception capabilities. Many problems in the self-driving trucking industry are not well represented in the literature, requiring novel approaches or formulations to tackle challenging perception problems for the product.\nAs a Senior Software Engineer, you will develop foundational ML architecture and systematic approaches to challenging, cross-cutting perception problems to ensure the self-driving system scales robustly and efficiently. This role will work closely with other teams to identify pain points and forward looking challenges, develop novel experiments to define future direction, and collaborate with other AI teams to convert these discoveries into products.\nResponsibilities:\nContribute to the technical direction of the Perception Architecture team and the broader perception organization.\nDesign and develop core machine learning components and architectures that enable the perception system to scale and reliably address complex, long-tail driving scenarios.\nDrive the initial implementation and prototyping of key architectural decisions, such as handling long tail challenges or long range detection.\nContribute to the improvement of model frameworks, architecture, and data pipelines to eliminate development bottlenecks and accelerate model iteration.\nLead challenging technical topics and build consensus across sister teams (e.g., Actor Detection, Scene Understanding, Tracking) and stakeholders to ensure autonomy-wide alignment.\nQualifications:\nBS (with 4+ years of experience), MS (with 2+ years of experience), or PhD (with 1+ years of experience) in a perception-related field, such as Robotics, Computer Vision, or Machine Learning.\nExtensive experience architecting, training, and evaluating deep learning models for challenging problem spaces.\nTrack record of driving applied research or engineering projects from conception and experimentation to successful productization.\nStrong experience in software engineering, machine learning algorithm design, and building data/metrics pipelines for ML development.\nFluency in Python and hands-on experience with C++.\nExperience delivering detection, segmentation, tracking, or other perception solutions for real-time robotic applications, with prior experience in sensor fusion being highly desirable.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-07-15T16:42:57-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5188096007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5188096007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC200",
+    "internal_job_id": "4631283007",
+    "updated_at": "2026-07-27T11:18:31-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh/Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5171813007",
+    "job_title": "Staff Technical Program Manager",
+    "location": "Pittsburgh, PA or Remote",
+    "all_locations": [
+      "Pittsburgh, PA or Remote"
+    ],
+    "country_code": "",
+    "team": "Technical Project Management",
+    "department": "Technical Project Management",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nThe Technical Program Management (TPM) team at Stack is a high-caliber, close-knit group of industry veterans with deep expertise spanning autonomous vehicles, commercial robotics, and startups. We operate as trusted strategic advisors to leadership, leveraging our technical background and talent for leading through influence to align diverse, elite engineering teams toward a shared vision.\nAs organizational multipliers, we own the execution of Stack's most complex, ambiguous, and high-stakes cross-functional programs. Leadership trusts us with the keys to our commercial autonomy roadmap, relying on our ability to break down silos, bridge hardware and software ecosystems, and synthesize executive strategy into operational reality. We don't just manage timelines; we design the communication loops and engineering frameworks that amplify the output of the entire organization.\nResponsibilities:\nManage the execution and communication of major, high-stakes cross-functional programs that require end-to-end alignment across the entire organization.\nDevelop and maintain comprehensive technical roadmaps and tactical schedules, balancing near-term delivery milestones with Stack’s long-term commercial autonomy vision.\nBuild deep, trust-based relationships with diverse cross-functional stakeholders to align engineering teams, push technical paths forward, and unify the organization around shared goals.\nAnalyze plans and requirements with engineering leads to uncover opportunities, challenge assumptions, and safely accelerate the development and deployment schedule.\nEvaluate complex technical and resource trade-offs in constrained environments, framing clear choices and recommendations for leadership.\nSynthesize granular technical progress into high-impact insights for senior leadership, delivering data-driven arguments that help executives make difficult decisions in reviews and all-hands.\nDesign and scale engineering processes within your programs, establishing operational frameworks that reduce friction and elevate efficiency across the broader organization.\nExplore new, highly complex technical domains as needed, stepping in proactively to fill leadership, execution, or process gaps to ensure program success.\nQualifications:\nStrong experience as a hands on engineer prior to becoming a TPM required in robotics, automotive, aerospace or technology domains is desired.\nProven experience managing the integration of highly complex, multi-domain technical systems.\nDemonstrated experience effectively presenting to and interacting with executive leadership in a dynamic environment.\nFamiliarity with typical agile software development lifecycles and waterfall hardware development lifecycles.\nExceptional interpersonal and teamwork skills, with a demonstrated ability to build deep, trusting relationships.\nThe ability to digest dense, complex technical discussions and accurately extract core conclusions, action items, and trade-offs.\nA hyper-organized mindset focusing with breath and depth on the technical details.\nMastery over standard TPM toolbox (Managing burndown lists, Developing Roadmaps, building dependency maps, running workshops, and using the right amount of process in Jira).\nA proactive personal quality characterized by a willingness to fearlessly jump into unknown areas and learn new technical domains quickly.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-06-23T13:22:01-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5171813007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5171813007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC191",
+    "internal_job_id": "4649094007",
+    "updated_at": "2026-07-27T11:18:31-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh/Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5160264007",
+    "job_title": "CDL | Hourly Pay with OT | FREE benefits (Operations Specialist)",
+    "location": "Chicago, IL",
+    "all_locations": [
+      "Chicago, IL"
+    ],
+    "country_code": "",
+    "team": "Fleet Operations",
+    "department": "Fleet Operations",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Team:\nThe Development Fleet Operations team is responsible for the safe testing and operation of the newest technologies. As an Operations Specialist you will contribute to the daily driving and testing of autonomous trucks, own the safety of the operation, and provide feedback on system performance and behaviors while hauling commercial freight.\nResponsibilities:\nSafely operate autonomous trucks on the public roads to support development testing and commercial pilot operations.\nHaul commercial freight between customer locations and/or meet points.\nProvide feedback on system performance to advance self-driving technology.\nUtilize internal tools on a smartphone/tablet to track work assigned and completed.\nUphold industry-leading safety standards, remaining compliant with internal benchmarks.\nRemain alert and attentive while operating during extended stretches of autonomy.\nBenefits & Perks to joining Stack AV:\nCompensation: $32.00 – $37.00/hr + Annual Bonus + Profit Sharing\n$0 Healthcare Premiums: Stack covers 100% of Medical, Dental, and Vision for you and your family\nRetirement: 401(k) plan with generous company match and annual profit-sharing contribution\nTime Off: Open PTO policy and 14 paid company holidays\nNo-Touch Freight: 100% no loading or unloading of trailers\nQualifications & Safety Standards:\nExperience: 7+ years of Class A driving experience\nLicense: Valid Class A CDL (Airbrake Endorsement) and current DOT Medical Certificate\nZero-Tolerance Safety Record: We require a strictly clean MVR. You must have no history of:\nReckless Driving, Leaving the scene of an accident, or License suspensions/revocations\nNo Moving Violations within the last 7 years, including: Speeding, running red lights/stop signs, failure to yield, tailgating, improper turns/lane changes, distracted driving, seat belt violations, or unlawful passing (school buses/railroad crossings)\nTesting: Must pass pre-employment drug/alcohol screening and sleep apnea screening\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-06-09T15:28:43-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5160264007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5160264007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC172",
+    "internal_job_id": "4643429007",
+    "updated_at": "2026-07-29T15:21:21-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5155660007",
+    "job_title": "Freight Logistics Manager",
+    "location": "Pittsburgh, PA",
+    "all_locations": [
+      "Pittsburgh, PA"
+    ],
+    "country_code": "",
+    "team": "Product Operations",
+    "department": "Product Operations",
+    "commitment": "",
+    "workplace_type": "onsite",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nProduct Operations is Stack’s Customer-Facing Operations team. We focus on understanding our customer’s needs and ensuring that we execute daily missions in support of those needs. Internally we seek continuous improvement, working to streamline tools and processes used in  daily operations to keep our team safe, deliver loads on time, and gather the information our engineering team needs to improve our systems.\nAs a Freight Logistics Manager within Product Operations, you will serve as Stack’s go-to person for orchestrating safe, efficient, and compliant freight movements. In this role, you will lead both the implementation and execution phases of commercial pilots to guarantee successful customer onboarding, seamless lane launches, and strict SLA adherence. By managing vital external communications to prepare pilot customers for new lanes and expanded scope, you will bridge the gap between commercial growth and operational excellence to enable scalable business expansion.\nResponsibilities:\nEnsure all pilot and test missions comply with Department of Transportation (DOT) and Federal Motor Carrier Safety Administration (FMCSA) regulations, as well as state-specific autonomous vehicle (AV) testing and deployment mandates.\nEstablish and maintain standard operating procedures for freight disruptions, weather delays, and operational exceptions, ensuring minimal impact on customer supply chains.\nIdentify operational bottlenecks and implement process improvements to lower unnecessary dwell time and delays on route.\nOversee day-to-day freight movement for commercial pilot partners, ensuring delivery SLA is met and seamless hub-to-hub operations achieved.\nAct as a primary operational point of contact for pilot customers. Conduct regular operational reviews, provide performance metrics, and translate customer feedback into operational workflows.\nPartner with the product and engineering teams to provide operational feedback, helping to shape the internal dispatching tools, driver scheduling, asset and service tracking, and freight management software.\nQualifications:\n5+ years in freight brokerage, carrier operations, or fleet management. Experience managing fleets or commercial accounts is highly preferred.\nDeep, practical knowledge of FMCSA regulations, Hours of Service (HOS) exceptions, and DOT safety management controls.\nStrong analytical skills with the ability to leverage transportation management systems (TMS) to optimize Stack’s delivery SLA performance and overall efficiency.\nProven ability to thrive in a fast-paced, evolving environment where operational workflows are being built from the ground up.\nExceptional communication and relationship-building skills, with a track record of managing enterprise-level corporate clients.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-06-04T12:32:35-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5155660007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5155660007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC162",
+    "internal_job_id": "4641192007",
+    "updated_at": "2026-08-06T11:32:20-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh, PA"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5132879007",
+    "job_title": "Service Operations Technician",
+    "location": "New Stanton, PA",
+    "all_locations": [
+      "New Stanton, PA"
+    ],
+    "country_code": "",
+    "team": "Development Operations",
+    "department": "Development Operations",
+    "commitment": "",
+    "workplace_type": "onsite",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nOur Mission is to safely deliver focused, end to end testing and execution of Stack AV's autonomous driving business. Service Operation’s mission is to create and maintain a service operations strategy to enable Stack AV Operations.\nThis position is located in New Stanton, PA but requires 50-70% travel.\nResponsibilities:\nConduct detailed inspections and routine maintenance of vehicle systems, including chassis, suspension, brakes, steering, and throttle.\nDiagnose and repair mechanical issues specific to autonomous vehicles like sensor installation and alignments.\nCollaborate closely with Fleet Operations and respond to fleet blocking issues in a timely manner.\nWork cross functionally with Engineering & Hardware teams to deliver diagnostic solutions on complex issues.\nExperience with vehicle maintenance including diagnostic and repairs.\nTravel as business needs require in order to provide service coverage (50-70%).\nBenefits & Perks to joining Stack AV:\nCompensation: $35.00 – $42.00/hr + Annual Bonus\n$0 Healthcare Premiums: Stack covers 100% of Medical, Dental, and Vision for you and your family\nRetirement: 401(k) plan with generous company match and annual profit-sharing contribution\nTime Off: Open PTO policy and 11 paid company holidays\nQualifications:\nA safety first mindset.\nClear communication, attention to detail, consistent execution, excellent problem-solving abilities, and disciplined organization skills.\nExperience with diagnosing and repairing modern CAN bus-based automotive systems.\nFunctional understanding of tractor/trailer repairs and maintenance including tires, brakes, and air systems.\nAbility to diagnose and repair automotive electrical systems and sensors.\nAbility to obtain and maintain Class A CDL.\nMust be able to pass a DOT Physical and maintain a valid medical examiners certificate.\nMust be able to successfully complete & pass pre-employment background, drug & breath alcohol screens; to include inquiries into prior employment and drug & alcohol testing history.\nMust be able to successfully complete & maintain all requirements for enrollment in the DOT FMCSA Drug & Alcohol Consortium & Clearinghouse.\nFlexibility to work varying shifts and traveling, as required.\nFunctional understanding of 49 CFR Parts 379, 390 & 396.\nPreferred:\nCurrent CDL with a good standing driving record (Class A preferred).\nExperience in troubleshooting advanced driver-assistance systems (ADAS).\nPrevious Autonomous Vehicle experience.\nExperience with basic hardware networking.\nExperience with Linux / command line.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-05-08T13:15:42-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5132879007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5132879007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC166",
+    "internal_job_id": "4630006007",
+    "updated_at": "2026-07-27T11:19:15-04:00",
+    "application_deadline": "",
+    "offices": [
+      "New Stanton, PA"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5118030007",
+    "job_title": "CDL | Hourly Pay with OT | FREE benefits (Operations Specialist)",
+    "location": "Dallas, TX",
+    "all_locations": [
+      "Dallas, TX"
+    ],
+    "country_code": "",
+    "team": "Fleet Operations",
+    "department": "Fleet Operations",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Team:\nThe Development Fleet Operations team is responsible for the safe testing and operation of the newest technologies. As an Operations Specialist you will contribute to the daily driving and testing of autonomous trucks, own the safety of the operation, and provide feedback on system performance and behaviors while hauling commercial freight.\nResponsibilities:\nSafely operate autonomous trucks on the public roads to support development testing and commercial pilot operations.\nHaul commercial freight between customer locations and/or meet points.\nProvide feedback on system performance to advance self-driving technology.\nUtilize internal tools on a smartphone/tablet to track work assigned and completed.\nUphold industry-leading safety standards, remaining compliant with internal benchmarks.\nRemain alert and attentive while operating during extended stretches of autonomy.\nBenefits & Perks to joining Stack AV:\nCompensation: $32.00 – $37.00/hr + Annual Bonus + Profit Sharing\n$0 Healthcare Premiums: Stack covers 100% of Medical, Dental, and Vision for you and your family\nRetirement: 401(k) plan with generous company match and annual profit-sharing contribution\nTime Off: Open PTO policy and 14 paid company holidays\nNo-Touch Freight: 100% no loading or unloading of trailers\nQualifications & Safety Standards:\nExperience: 7+ years of Class A driving experience\nLicense: Valid Class A CDL (Airbrake Endorsement) and current DOT Medical Certificate\nZero-Tolerance Safety Record: We require a strictly clean MVR. You must have no history of:\nReckless Driving, Leaving the scene of an accident, or License suspensions/revocations\nNo Moving Violations within the last 7 years, including: Speeding, running red lights/stop signs, failure to yield, tailgating, improper turns/lane changes, distracted driving, seat belt violations, or unlawful passing (school buses/railroad crossings)\nTesting: Must pass pre-employment drug/alcohol screening and sleep apnea screening\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-04-22T17:46:19-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5118030007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5118030007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC154",
+    "internal_job_id": "4623032007",
+    "updated_at": "2026-07-29T15:22:06-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5106195007",
+    "job_title": "CDL A | Hourly Pay with OT | FREE benefits (Operations Specialist)",
+    "location": "Denver, CO",
+    "all_locations": [
+      "Denver, CO"
+    ],
+    "country_code": "",
+    "team": "Fleet Operations",
+    "department": "Fleet Operations",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Team:\nThe Development Fleet Operations team is responsible for the safe testing and operation of the newest technologies. As an Operations Specialist you will contribute to the daily driving and testing of autonomous trucks, own the safety of the operation, and provide feedback on system performance and behaviors while hauling commercial freight.\nResponsibilities:\nSafely operate autonomous trucks on the public roads to support development testing and commercial pilot operations.\nHaul commercial freight between customer locations and/or meet points.\nProvide feedback on system performance to advance self-driving technology.\nUtilize internal tools on a smartphone/tablet to track work assigned and completed.\nUphold industry-leading safety standards, remaining compliant with internal benchmarks.\nRemain alert and attentive while operating during extended stretches of autonomy.\nBenefits & Perks to joining Stack AV:\nCompensation: $32.00 – $37.00/hr + Annual Bonus + Profit Sharing\n$0 Healthcare Premiums: Stack covers 100% of Medical, Dental, and Vision for you and your family\nRetirement: 401(k) plan with generous company match and annual profit-sharing contribution\nTime Off: Open PTO policy and 14 paid company holidays\nNo-Touch Freight: 100% no loading or unloading of trailers\nQualifications & Safety Standards:\nExperience: 7+ years of Class A driving experience\nLicense: Valid Class A CDL (Airbrake Endorsement) and current DOT Medical Certificate\nZero-Tolerance Safety Record: We require a strictly clean MVR. You must have no history of:\nReckless Driving, Leaving the scene of an accident, or License suspensions/revocations\nNo Moving Violations within the last 7 years, including: Speeding, running red lights/stop signs, failure to yield, tailgating, improper turns/lane changes, distracted driving, seat belt violations, or unlawful passing (school buses/railroad crossings)\nTesting: Must pass pre-employment drug/alcohol screening and sleep apnea screening\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-04-13T11:19:49-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5106195007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5106195007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC151",
+    "internal_job_id": "4617282007",
+    "updated_at": "2026-07-29T15:22:30-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5105771007",
+    "job_title": "Staff Software Engineer, ML Acceleration",
+    "location": "Pittsburgh, PA or Remote",
+    "all_locations": [
+      "Pittsburgh, PA or Remote"
+    ],
+    "country_code": "",
+    "team": "Autonomy",
+    "department": "Autonomy",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nThe ML Training Acceleration team is dedicated to increasing Stack AV's product development velocity by accelerating machine learning iterations. Our core mission is to deliver a training system that is reliable, scalable, user-friendly and observable. This involves profiling, optimizing, and fine-tuning our ML models, as well as evangelizing best practices and frameworks among Machine Learning Engineers (MLEs) across the company.\nResponsibilities:\nAnalyze ML models to identify and resolve performance bottlenecks.\nIncorporate OSS tools to enable ML engineers self-sufficiently profile and optimize models.\nDeliver solutions to streamline model deployment across various hardware platforms.\nCollaborate with ML researchers to balance model accuracy and speed.\nImplement optimizations using CUDA, Triton, and custom kernels.\nPromote Engineering Excellence: Maintain a high bar for engineering excellence in their own work but also set a culture of engineering excellence within the team.\nQualifications:\nEducation: Bachelor’s or Master’s degree in Computer Science, Engineering, or a related field\nExperience: 5+ years of experience (including experience with GPU programming and optimization)\nTechnical Skills:\nStrong programming skills in C++ and Python\nProven experience in GPU programming and optimization\nFamiliarity with deep learning frameworks, especially PyTorch\nCUDA programming\nTriton language for GPU kernels\nPyTorch optimization techniques\nTensorRT implementation\nONNX model conversion and deployment\nCustom GPU kernel development\nDeep understanding of GPU architectures and performance optimization\nProblem-Solving: Strong analytical and problem-solving skills\nCommunication: Excellent verbal and written communication skills, with the ability to convey complex technical concepts to non-technical stakeholders\nAutonomous vehicles (AV) experience is a bonus\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-04-10T18:31:29-04:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5105771007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5105771007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC148",
+    "internal_job_id": "4617100007",
+    "updated_at": "2026-07-27T11:18:31-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh/Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "5061686007",
+    "job_title": "CDL | Hourly Pay with OT | FREE benefits (Operations Specialist)",
+    "location": "Phoenix, AZ",
+    "all_locations": [
+      "Phoenix, AZ"
+    ],
+    "country_code": "",
+    "team": "Fleet Operations",
+    "department": "Fleet Operations",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Team:\nThe Development Fleet Operations team is responsible for the safe testing and operation of the newest technologies. As an Operations Specialist you will contribute to the daily driving and testing of autonomous trucks, own the safety of the operation, and provide feedback on system performance and behaviors while hauling commercial freight.\nResponsibilities:\nSafely operate autonomous trucks on the public roads to support development testing and commercial pilot operations.\nHaul commercial freight between customer locations and/or meet points.\nProvide feedback on system performance to advance self-driving technology.\nUtilize internal tools on a smartphone/tablet to track work assigned and completed.\nUphold industry-leading safety standards, remaining compliant with internal benchmarks.\nRemain alert and attentive while operating during extended stretches of autonomy.\nSchedule:\n9/3 rotation: Work 9 days, then enjoy 3 full days of reset at home.\nBenefits & Perks to joining Stack AV:\nCompensation: $32.00 – $37.00/hr + Annual Bonus + Profit Sharing\n$0 Healthcare Premiums: Stack covers 100% of Medical, Dental, and Vision for you and your family\nRetirement: 401(k) plan with generous company match and annual profit-sharing contribution\nTime Off: Open PTO policy and 14 paid company holidays\nNo-Touch Freight: 100% no loading or unloading of trailers\nQualifications & Safety Standards:\nExperience: 7+ years of Class A driving experience\nLicense: Valid Class A CDL (Airbrake Endorsement) and current DOT Medical Certificate\nZero-Tolerance Safety Record: We require a strictly clean MVR. You must have no history of:\nReckless Driving, Leaving the scene of an accident, or License suspensions/revocations\nNo Moving Violations within the last 7 years, including: Speeding, running red lights/stop signs, failure to yield, tailgating, improper turns/lane changes, distracted driving, seat belt violations, or unlawful passing (school buses/railroad crossings)\nTesting: Must pass pre-employment drug/alcohol screening and sleep apnea screening\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2026-02-24T13:58:57-05:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/5061686007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/5061686007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC171",
+    "internal_job_id": "4597123007",
+    "updated_at": "2026-07-29T15:24:33-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Remote"
+    ]
+  },
+  {
+    "company": "Stack AV",
+    "job_id": "4988221007",
+    "job_title": "Staff ML Engineer, Dynamic World Perception",
+    "location": "Pittsburgh, PA or Remote",
+    "all_locations": [
+      "Pittsburgh, PA or Remote"
+    ],
+    "country_code": "",
+    "team": "Autonomy",
+    "department": "Autonomy",
+    "commitment": "",
+    "workplace_type": "remote",
+    "description": "About Stack:\nStack is developing revolutionary AI and advanced autonomous systems designed to enhance safety, reliability, and efficiency of modern operations. Stack's autonomous technology incorporates cutting-edge advancements in artificial intelligence, robotics, machine learning, and cloud technologies, empowering us to create innovative solutions that address the needs and challenges of the dynamic trucking transportation industry. With decades of experience creating and deploying real world systems for demanding environments, the Stack team is dedicated to developing an autonomous solution ecosystem tailored to the trucking industry's unique demands.\nAbout the Role:\nThe Dynamic World Perception team is responsible for real-time detection of road actors and properties. This includes developing occupancy networks and other perception algorithms to accurately identify and classify all dynamic elements within the driving environment. We're looking for a Staff or Senior Engineer to lead the development, maintenance, and enhancement of our long-range detection capabilities, ensuring the required safety and performance standards are met or exceeded.\nResponsibilities:\nLead initiatives in the team to deliver state-of-the-art closed-and open-world detection capabilities.\nContribute to expansion and fusion of existing detection models to support improving performance and extending performance at range.\nContribute to improvement of model frameworks, architecture, and data pipelines.\nDevelop robust software for onboard vehicle deployment, optimizing for real-time, resource-constrained, and safety-critical environments.\nDrive highly cross-functional features and workstreams from problem statement to delivery.\nContribute to the technical direction of the team and broader perception org.\nAlign stakeholders with strong presentation and communication skills.\nLead challenging technical topics and build consensus.\nQualifications:\nExtensive experience architecting, training, and deploying deep learning models into real-world environments.\nTrack record of driving applied research projects from start to completion, including conception, problem definition, experimentation, iteration, and finally publication or productization.\nExperience delivering detection, segmentation, and/or tracking solutions for real-time robotic applications. Prior experience in sensor fusion is highly desirable.\nStrong experience in software engineering and machine learning algorithm design.\nFluency in Python.\nExperience with C++.\nWe are proud to be an equal opportunity workplace. We believe that diverse teams produce the best ideas and outcomes. We are committed to building a culture of inclusion, entrepreneurship, and innovation across gender, race, age, sexual orientation, religion, disability, and identity.\nCheck out our Privacy Policy.\nPlease Note: Pursuant to its business activities and use of technology, Stack AV complies with all applicable U.S. national security laws, regulations, and administrative requirements, which can restrict Stack AV’s ability to employ certain persons in certain positions pursuant to a range of national security-related requirements. As such, this position may be contingent upon Stack AV verifying a candidate’s residence, U.S. person status, and/or citizenship status. This position may also involve working with software and technologies subject to U.S. export control regulations. Under these regulations, it may be necessary for Stack AV to obtain a U.S. government export license prior to releasing its technologies to certain persons. If Stack AV determines that a candidate’s residence, U.S. person status, and/or citizenship status will require a license, prohibit the candidate from working in this position, or otherwise be subject to national security-related restrictions, Stack AV expressly reserves the right to either consider the candidate for a different position that is not subject to such restrictions, on whatever terms and conditions Stack AV shall establish in its sole discretion, or, in the alternative, decline to move forward with the candidate’s application.",
+    "salary_range": null,
+    "posting_date": "2025-11-20T11:51:23-05:00",
+    "source_url": "https://job-boards.greenhouse.io/stackav/jobs/4988221007",
+    "apply_url": "https://job-boards.greenhouse.io/stackav/jobs/4988221007",
+    "collection_method": "API",
+    "ats": "Greenhouse",
+    "collected_at": "2026-08-11T06:50:09.796075Z",
+    "language": "en",
+    "job_reference": "HC128",
+    "internal_job_id": "4562272007",
+    "updated_at": "2026-07-27T11:18:31-04:00",
+    "application_deadline": "",
+    "offices": [
+      "Pittsburgh/Remote"
+    ]
+  }
+]
