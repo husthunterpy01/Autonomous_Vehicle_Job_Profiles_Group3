@@ -70,28 +70,15 @@ class WaabiScraper(BaseJobScraper):
             "workplace_type": self.clean_text(job.get("workplaceType")),
             "description": description,
             "salary_range": salary_range,
-            "posting_date": self.timestamp_to_iso8601(job.get("createdAt")),
+            "posting_date": self.to_utc_iso8601(
+                job.get("createdAt"), epoch_milliseconds=True
+            ),
             "source_url": self.clean_text(job.get("hostedUrl")),
             "apply_url": self.clean_text(job.get("applyUrl")),
             "collection_method": "API",
             "ats": self.ats_name,
             "collected_at": collected_at,
         }
-
-    @staticmethod
-    def timestamp_to_iso8601(value: Any) -> str | None:
-        """Convert Lever's optional millisecond timestamp without guessing."""
-
-        if not isinstance(value, (int, float)):
-            return None
-        try:
-            from datetime import datetime, timezone
-
-            result = datetime.fromtimestamp(value / 1000, tz=timezone.utc)
-        except (OSError, OverflowError, ValueError):
-            return None
-        return result.isoformat().replace("+00:00", "Z")
-
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     scraper = WaabiScraper()

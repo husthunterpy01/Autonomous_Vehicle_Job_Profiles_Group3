@@ -34,7 +34,7 @@ From the repository root:
 ```powershell
 python scrapers\waabi_scraper.py
 python scrapers\bosch_scraper.py
-python scrapers\stackav_scraper.py
+python -m scrapers.stackav_scraper
 ```
 
 Bosch exposes thousands of postings, so its default Sprint 1 batch is the

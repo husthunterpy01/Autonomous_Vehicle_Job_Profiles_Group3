@@ -3,28 +3,23 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
-if __package__:
-    from .base_scraper import (
-        BaseJobScraper,
-        build_common_parser,
-        validate_common_args,
-    )
-else:
-    from base_scraper import (  # type: ignore[no-redef]
-        BaseJobScraper,
-        build_common_parser,
-        validate_common_args,
-    )
+from scrapers.base_scraper import (
+    BaseJobScraper,
+    build_common_parser,
+    validate_common_args,
+)
 
 
 class StackAVScraper(BaseJobScraper):
     company_name = "Stack AV"
     ats_name = "Greenhouse"
     output_filename = "stackav_jobs.json"
-    api_url = "https://boards-api.greenhouse.io/v1/boards/stackav/jobs?content=true"
+    API_URL = (
+        "https://boards-api.greenhouse.io/v1/boards/stackav/jobs?content=true"
+    )
 
     def fetch_jobs(self, timeout: float = 30.0) -> list[dict[str, Any]]:
-        payload = self.fetch_json(self.api_url, timeout=timeout)
+        payload = self.fetch_json(self.API_URL, timeout=timeout)
         if not isinstance(payload, dict):
             raise ValueError("Greenhouse returned an invalid JSON response.")
 
@@ -68,7 +63,7 @@ class StackAVScraper(BaseJobScraper):
             "workplace_type": self._workplace_type(location, offices),
             "description": self.html_to_text(job.get("content")),
             "salary_range": None,
-            "posting_date": self.clean_text(job.get("first_published")),
+            "posting_date": self.to_utc_iso8601(job.get("first_published")),
             "source_url": source_url,
             "apply_url": source_url,
             "collection_method": "API",

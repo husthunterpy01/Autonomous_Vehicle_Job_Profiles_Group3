@@ -121,6 +121,40 @@ class BaseJobScraper(ABC):
 
         return cls.clean_text(value.get("label")) if isinstance(value, dict) else ""
 
+    @staticmethod
+    def to_utc_iso8601(value: Any, *, epoch_milliseconds: bool = False) -> str:
+        """Normalize an ATS timestamp to second-precision UTC ISO 8601."""
+
+        if value is None or isinstance(value, bool):
+            return ""
+
+        parsed: datetime
+        try:
+            if isinstance(value, (int, float)):
+                divisor = 1000 if epoch_milliseconds else 1
+                parsed = datetime.fromtimestamp(value / divisor, tz=timezone.utc)
+            elif isinstance(value, datetime):
+                parsed = value
+            elif isinstance(value, str):
+                text = value.strip()
+                if not text:
+                    return ""
+                if text[-1:].casefold() == "z":
+                    text = f"{text[:-1]}+00:00"
+                parsed = datetime.fromisoformat(text)
+            else:
+                return ""
+        except (OSError, OverflowError, TypeError, ValueError):
+            return ""
+
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return (
+            parsed.astimezone(timezone.utc)
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z")
+        )
+
     def fetch_json(
         self,
         url: str,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+from itertools import repeat
 from typing import Any
 from urllib.parse import urlencode
 
@@ -43,14 +44,20 @@ class BoschScraper(BaseJobScraper):
         if any(not posting_id for posting_id in posting_ids):
             raise ValueError("A Bosch posting summary was missing its job ID.")
 
-        def fetch_detail(posting_id: str) -> dict[str, Any]:
-            payload = self.fetch_json(f"{self.api_base}/{posting_id}", timeout=timeout)
-            if not isinstance(payload, dict):
-                raise ValueError("SmartRecruiters returned an invalid job detail.")
-            return payload
-
         with ThreadPoolExecutor(max_workers=self.detail_workers) as executor:
-            return list(executor.map(fetch_detail, posting_ids))
+            return list(
+                executor.map(self._fetch_detail, posting_ids, repeat(timeout))
+            )
+
+    def _fetch_detail(
+        self, posting_id: str, timeout: float = 30.0
+    ) -> dict[str, Any]:
+        """Fetch and validate one SmartRecruiters job-detail response."""
+
+        payload = self.fetch_json(f"{self.api_base}/{posting_id}", timeout=timeout)
+        if not isinstance(payload, dict):
+            raise ValueError("SmartRecruiters returned an invalid job detail.")
+        return payload
 
     def _fetch_summaries(self, timeout: float) -> list[dict[str, Any]]:
         summaries: list[dict[str, Any]] = []
@@ -121,7 +128,7 @@ class BoschScraper(BaseJobScraper):
             "workplace_type": self._workplace_type(location),
             "description": self._build_description(job),
             "salary_range": None,
-            "posting_date": self.clean_text(job.get("releasedDate")),
+            "posting_date": self.to_utc_iso8601(job.get("releasedDate")),
             "source_url": source_url,
             "apply_url": apply_url,
             "collection_method": "API",
@@ -195,4 +202,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
