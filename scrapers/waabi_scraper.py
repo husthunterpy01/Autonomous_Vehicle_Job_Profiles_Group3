@@ -3,18 +3,11 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
-if __package__:
-    from .base_scraper import (
-        BaseJobScraper,
-        build_common_parser,
-        validate_common_args,
-    )
-else:
-    from base_scraper import (  # type: ignore[no-redef]
-        BaseJobScraper,
-        build_common_parser,
-        validate_common_args,
-    )
+from scrapers.base_scraper import (
+    BaseJobScraper,
+    build_common_parser,
+    validate_common_args,
+)
 
 
 class WaabiScraper(BaseJobScraper):

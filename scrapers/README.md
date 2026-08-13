@@ -32,8 +32,8 @@ timestamp. Optional ATS-specific fields are retained when available.
 From the repository root:
 
 ```powershell
-python scrapers\waabi_scraper.py
-python scrapers\bosch_scraper.py
+python -m scrapers.waabi_scraper
+python -m scrapers.bosch_scraper
 python -m scrapers.stackav_scraper
 ```
 
@@ -41,7 +41,7 @@ Bosch exposes thousands of postings, so its default Sprint 1 batch is the
 latest 100. Use a smaller smoke-test batch with:
 
 ```powershell
-python scrapers\bosch_scraper.py --max-jobs 10
+python -m scrapers.bosch_scraper --max-jobs 10
 ```
 
 Generated files are written under `data/` for local analysis. They are ignored

@@ -6,18 +6,11 @@ from itertools import repeat
 from typing import Any
 from urllib.parse import urlencode
 
-if __package__:
-    from .base_scraper import (
-        BaseJobScraper,
-        build_common_parser,
-        validate_common_args,
-    )
-else:
-    from base_scraper import (  # type: ignore[no-redef]
-        BaseJobScraper,
-        build_common_parser,
-        validate_common_args,
-    )
+from scrapers.base_scraper import (
+    BaseJobScraper,
+    build_common_parser,
+    validate_common_args,
+)
 
 
 class BoschScraper(BaseJobScraper):
