@@ -21,6 +21,7 @@ We picked this over a longer/looser cycle for a few reasons:
   size for how we're splitting tasks — most people are handling ~3 story points per sprint comfortably.
 
 ## 2. Plan for the Next Stage
+
 Sprint 1 (28 Jul – 10 Aug) is nearly wrapped — DOC-1 through DOC-6, plus FE-0, BE-0, FE-1 and BE-1 are all
 done. The one thing still stuck is the Adrian demo meeting, which is blocked until we get a date confirmed.
 
