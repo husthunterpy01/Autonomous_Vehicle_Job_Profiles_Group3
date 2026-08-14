@@ -59,7 +59,7 @@ Each functional requirement is written as a verifiable system behaviour.
 - salary or compensation when available;
 - source metadata.
 
-Unavailable values shall remain missing rather than being inferred without evidence.
+Unavailable values shall be represented using an agreed placeholder such as N/A or Unknown, rather than being inferred without evidence.
 
 **Verification:** Compare a manually reviewed sample of source advertisements with their structured records and check that available fields are captured correctly and unavailable fields are not invented.
 
@@ -77,7 +77,7 @@ Unavailable values shall remain missing rather than being inferred without evide
 
 ### FR-07 — Extract skills and technologies
 
-**Requirement:** The system shall identify and store job-related technical information available in the advertisement, including programming languages, frameworks, tools, platforms, domain concepts, certifications, datasets, and other agreed technology terms.
+**Requirement:** The system shall identify and store job-related technical information available in the advertisement, including programming languages, frameworks, tools, platforms, libraries, cloud technologies, domain-specific technical skills, and other agreed technology terms.
 
 **Verification:** Compare extracted skill and technology values with a manually reviewed sample of advertisements.
 
@@ -147,9 +147,9 @@ Each accepted NFR below includes a measurable or inspectable verification condit
 
 ### NFR-05 — Uncertainty handling
 
-**Requirement:** Missing source values shall remain null or explicitly unavailable. Ambiguous automated classifications shall retain a confidence value, multi-label result, or review status rather than being represented as certain.
+**Requirement:** Changes to one source-specific collection adapter shall not require changes to unrelated source adapters or the shared core data model, unless a new agreed data field is introduced.
 
-**Verification:** Test records with missing fields and ambiguous classification examples and confirm that uncertainty is preserved in stored and displayed results.
+**Verification:** Modify or replace one source adapter and confirm that unrelated adapters and the shared core data model continue to operate without modification.
 
 ### NFR-06 — Maintainability
 
@@ -165,7 +165,7 @@ Each accepted NFR below includes a measurable or inspectable verification condit
 
 ### NFR-08 — Usability and responsive presentation
 
-**Requirement:** Core search, filtering, navigation, company, and job-detail functions shall remain usable at the project’s supported responsive breakpoints, with primary controls visible and usable and without layout failure that prevents task completion.
+**Requirement:** Core search, filtering, navigation, company, and job-detail functions shall remain usable at viewport widths of 375 px, 768 px, and 1280 px, with primary controls visible and without layout failure that prevents task completion.
 
 **Verification:** Execute the main user flows at each supported breakpoint and confirm that users can complete the required search and detail-view tasks.
 
