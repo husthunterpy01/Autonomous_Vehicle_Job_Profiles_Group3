@@ -212,11 +212,11 @@ This section compares technology options against the MVP requirements and curren
 
 | Option | Strengths for this project | Limitations / Cost |
 |---|---|---|
-| **PostgreSQL + SQLAlchemy** | Strong relational support, many-to-many relationships, shared-service use, and a consistent Python ORM. | Requires database service configuration and migrations. |
+| **PostgreSQL** | Strong relational support, many-to-many relationships, and shared-service use. | Requires database service configuration and migrations. |
 | **SQLite** | Very simple for local prototyping. | Less suitable for a shared and growing multi-source application. |
 | **MongoDB / document database** | Flexible document storage. | Less aligned with the project’s explicit relational company/job/category/skill model. |
 
-**Decision:** Continue with **PostgreSQL + SQLAlchemy** because the Silver and Gold models are primarily relational and depend on structured relationships.
+**Decision:** Continue with **PostgreSQL** because the Silver and Gold models are primarily relational and depend on structured relationships.
 
 ### 4.4 Data-collection technology options
 
