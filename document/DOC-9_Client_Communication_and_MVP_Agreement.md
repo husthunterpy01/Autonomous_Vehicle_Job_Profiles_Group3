@@ -20,15 +20,15 @@ Adrian also confirmed that Lee Le, an AV PhD researcher, had agreed to act as a 
 
 
 
-Figure 1. Initial project meeting request sent to Adrian and Sumayyah.
+[Figure 1. Initial project meeting request sent to Adrian and Sumayyah.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 
 
-Figure 2. Adrian's response with available meeting times and confirmation of Lee Le as the customer/end-user representative.
+[Figure 2. Adrian's response with available meeting times and confirmation of Lee Le as the customer/end-user representative.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 
 
-Figure 3. Outlook confirmation of the first client meeting on 27 July 2026.
+[Figure 3. Outlook confirmation of the first client meeting on 27 July 2026.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 2.2 First Client Discussion and Domain Guidance
 
@@ -54,7 +54,7 @@ The company list provided a concrete starting point for the project's data-colle
 
 
 
-Figure 4. Adrian's follow-up email containing AV resources, datasets, architecture references, and the initial company source list.
+[Figure 4. Adrian's follow-up email containing AV resources, datasets, architecture references, and the initial company source list.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 3. Communication with Lee Le
 
@@ -64,7 +64,7 @@ A follow-up reminder was sent when no response was received. At the time of writ
 
 
 
-Figure 5. Teams messages requesting a client meeting and follow-up review of the Project Description and MVP.
+[Figure 5. Teams messages requesting a client meeting and follow-up review of the Project Description and MVP.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 4. Communication with Facilitator Sumayyah Ahmad
 
@@ -90,7 +90,7 @@ Document blockers and incomplete client tasks professionally.
 
 
 
-Figure 6. Email evidence confirming the first facilitator meeting with Sumayyah.
+[Figure 6. Email evidence confirming the first facilitator meeting with Sumayyah.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 4.2 Second Facilitator Meeting — 12 August 2026
 
@@ -220,11 +220,11 @@ GitHub has been used to document implementation and project-management activity.
 
 
 
-Figure 7. GitHub Issues showing completed and tracked project tasks.
+[Figure 7. GitHub Issues showing completed and tracked project tasks.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 
 
-Figure 8. GitHub Pull Requests showing merged implementation and documentation work.
+[Figure 8. GitHub Pull Requests showing merged implementation and documentation work.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
 10. Communication and Approval Summary
 
