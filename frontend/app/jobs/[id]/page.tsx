@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
+  ALL_JOBS,
   getCompanyById,
   getJobById,
   getSimilarJobs,
@@ -13,6 +14,11 @@ import JobCardRow from "@/components/ui/JobCardRow";
 import Salary from "@/components/ui/Salary";
 import StatusBadge from "@/components/ui/StatusBadge";
 import Tag from "@/components/ui/Tag";
+
+/* Pre-render every mock job for static export (GitHub Pages). */
+export function generateStaticParams() {
+  return ALL_JOBS.map((job) => ({ id: job.id }));
+}
 
 function CheckIcon() {
   return (

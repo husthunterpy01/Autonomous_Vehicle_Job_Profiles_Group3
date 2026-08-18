@@ -60,3 +60,6 @@ pnpm-debug.log*
 
 # Temporary unpacked template folder
 .tmp_jobhunter/
+
+# Reasonix tool workspace data
+.reasonix/
