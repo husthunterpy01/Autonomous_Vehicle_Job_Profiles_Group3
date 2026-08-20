@@ -1,8 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getCompanyById, getJobsByCompanyId } from "@/lib/mock-data";
+import { AV_COMPANIES, getCompanyById, getJobsByCompanyId } from "@/lib/mock-data";
 import DetailHeaderCard from "@/components/ui/DetailHeaderCard";
 import JobCardRow from "@/components/ui/JobCardRow";
+
+/* Pre-render every mock company for static export (GitHub Pages). */
+export function generateStaticParams() {
+  return AV_COMPANIES.map((company) => ({ id: company.id }));
+}
 
 export default async function CompanyDetailPage({
   params,
