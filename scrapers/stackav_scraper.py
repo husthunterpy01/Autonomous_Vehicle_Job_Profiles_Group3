@@ -79,6 +79,10 @@ class StackAVScraper(BaseJobScraper):
             "offices": offices,
         }
 
+    def source_url_for_job(self, job: dict[str, Any]) -> str:
+        source_url = job.get("absolute_url")
+        return source_url if isinstance(source_url, str) else ""
+
     @classmethod
     def _names(cls, values: Any) -> list[str]:
         if not isinstance(values, list):

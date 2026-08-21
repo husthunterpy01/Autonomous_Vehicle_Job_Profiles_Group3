@@ -22,6 +22,12 @@ applications or collect applicant information.
 - atomic UTF-8 JSON output;
 - shared command-line arguments and status messages.
 
+`bronze_storage.py` stores every raw ATS job object immediately after fetching
+and before normalization. Each capture is a new UUID-based JSON record under
+`data/bronze/`; records are never overwritten or deduplicated. See
+[`data/bronze/README.md`](../data/bronze/README.md) for the Bronze schema and
+the Silver-layer reading contract.
+
 Each company module contains only its ATS-specific fetching and normalization.
 All three produce the same required fields: company, job ID, title, location,
 description, posting date, source URL, collection method, ATS, and collection
@@ -44,7 +50,8 @@ latest 100. Use a smaller smoke-test batch with:
 python -m scrapers.bosch_scraper --max-jobs 10
 ```
 
-Generated files are written under `data/` for local analysis. They are ignored
+Normalized files are written directly under `data/` for local analysis. Raw
+append-only records are written below `data/bronze/`. Generated data is ignored
 by Git and must not be included in a PR.
 
 ## Run automated tests

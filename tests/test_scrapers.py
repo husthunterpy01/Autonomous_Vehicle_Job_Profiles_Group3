@@ -11,7 +11,7 @@ from unittest.mock import Mock, call, patch
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, urlparse
 
-from scrapers.base_scraper import BaseJobScraper, COMMON_REQUIRED_FIELDS
+from scrapers.base_scraper import COMMON_REQUIRED_FIELDS, BaseJobScraper
 from scrapers.bosch_scraper import BoschScraper
 from scrapers.stackav_scraper import StackAVScraper
 from scrapers.waabi_scraper import WaabiScraper
@@ -29,6 +29,10 @@ class DummyScraper(BaseJobScraper):
         self, job: dict[str, Any], collected_at: str
     ) -> dict[str, Any]:
         return job
+
+    def source_url_for_job(self, job: dict[str, Any]) -> str:
+        source_url = job.get("source_url")
+        return source_url if isinstance(source_url, str) else ""
 
 
 def valid_record(job_id: str = "1") -> dict[str, Any]:

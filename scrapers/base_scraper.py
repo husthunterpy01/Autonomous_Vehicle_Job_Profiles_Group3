@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import re
 import sys
 import time
@@ -16,8 +17,13 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from scrapers.bronze_storage import (
+    BronzeStorage,
+    BronzeStorageError,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+logger = logging.getLogger(__name__)
 DEFAULT_USER_AGENT = (
     "AutonomousVehicleJobProfiles/1.0 (academic job-market research)"
 )
@@ -77,8 +83,13 @@ class BaseJobScraper(ABC):
     output_filename: str
     required_fields: tuple[str, ...] = COMMON_REQUIRED_FIELDS
 
-    def __init__(self, user_agent: str = DEFAULT_USER_AGENT) -> None:
+    def __init__(
+        self,
+        user_agent: str = DEFAULT_USER_AGENT,
+        bronze_storage: BronzeStorage | None = None,
+    ) -> None:
         self.user_agent = user_agent
+        self.bronze_storage = bronze_storage or BronzeStorage()
 
     @property
     def default_output(self) -> Path:
@@ -208,11 +219,34 @@ class BaseJobScraper(ABC):
     ) -> dict[str, Any]:
         """Map one ATS object into the project's common job schema."""
 
+    @abstractmethod
+    def source_url_for_job(self, job: dict[str, Any]) -> str:
+        """Read a posting's public source URL from its raw ATS object."""
+
     def scrape(self, timeout: float = 30.0) -> list[dict[str, Any]]:
         """Execute the shared scraper lifecycle."""
 
         raw_jobs = self.fetch_jobs(timeout=timeout)
         collected_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        try:
+            bronze_paths = self.bronze_storage.persist_jobs(
+                raw_jobs,
+                source_company=self.company_name,
+                source_url_for_job=self.source_url_for_job,
+                scrape_timestamp=collected_at,
+            )
+        except BronzeStorageError as exc:
+            raise RuntimeError(
+                f"Bronze persistence failed for {self.company_name}."
+            ) from exc
+
+        logger.info(
+            "Bronze persistence completed company=%s records=%d "
+            "scrape_timestamp=%s",
+            self.company_name,
+            len(bronze_paths),
+            collected_at,
+        )
         records = [self.normalize_job(job, collected_at) for job in raw_jobs]
         self.validate_records(records)
         return records
@@ -257,15 +291,31 @@ class BaseJobScraper(ABC):
     def execute(self, output_path: Path, timeout: float = 30.0) -> int:
         """Run one scraper and provide a consistent command-line result."""
 
+        configure_scraper_logging()
         try:
             records = self.scrape(timeout=timeout)
             self.write_json(records, output_path)
         except (RuntimeError, ValueError) as exc:
+            logger.exception(
+                "Scraper failed company=%s output_path=%s",
+                self.company_name,
+                output_path,
+            )
             print(f"{self.company_name} scraper failed: {exc}", file=sys.stderr)
             return 1
 
         print(f"Saved {len(records)} {self.company_name} jobs to {output_path}")
         return 0
+
+
+def configure_scraper_logging() -> None:
+    """Provide concise standard logging for standalone scraper commands."""
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
 
 def build_common_parser(description: str, default_output: Path) -> argparse.ArgumentParser:
