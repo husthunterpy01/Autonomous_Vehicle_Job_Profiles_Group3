@@ -41,3 +41,5 @@ jobs:
       run: |
         pip install ruff
         ruff check .
+    - name: Run scraper unit tests
+      run: python -m unittest discover -s tests -v

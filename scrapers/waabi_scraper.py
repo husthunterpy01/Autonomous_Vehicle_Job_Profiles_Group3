@@ -73,6 +73,11 @@ class WaabiScraper(BaseJobScraper):
             "collected_at": collected_at,
         }
 
+    def source_url_for_job(self, job: dict[str, Any]) -> str:
+        source_url = job.get("hostedUrl")
+        return source_url if isinstance(source_url, str) else ""
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     scraper = WaabiScraper()
     parser = build_common_parser(

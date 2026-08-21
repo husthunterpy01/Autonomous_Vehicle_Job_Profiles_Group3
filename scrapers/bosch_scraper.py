@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import logging
 from concurrent.futures import ThreadPoolExecutor
-from itertools import repeat
 from typing import Any
 from urllib.parse import urlencode
 
@@ -11,6 +11,8 @@ from scrapers.base_scraper import (
     build_common_parser,
     validate_common_args,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BoschScraper(BaseJobScraper):
@@ -25,8 +27,8 @@ class BoschScraper(BaseJobScraper):
     page_size = 100
     detail_workers = 5
 
-    def __init__(self, max_jobs: int = 100) -> None:
-        super().__init__()
+    def __init__(self, max_jobs: int = 100, **kwargs: Any) -> None:
+        super().__init__(**kwargs)
         if max_jobs < 1:
             raise ValueError("max_jobs must be at least 1")
         self.max_jobs = max_jobs
@@ -37,10 +39,38 @@ class BoschScraper(BaseJobScraper):
         if any(not posting_id for posting_id in posting_ids):
             raise ValueError("A Bosch posting summary was missing its job ID.")
 
+        details: list[dict[str, Any]] = []
+        failures: list[str] = []
         with ThreadPoolExecutor(max_workers=self.detail_workers) as executor:
-            return list(
-                executor.map(self._fetch_detail, posting_ids, repeat(timeout))
+            futures = [
+                (posting_id, executor.submit(self._fetch_detail, posting_id, timeout))
+                for posting_id in posting_ids
+            ]
+            for posting_id, future in futures:
+                try:
+                    details.append(future.result())
+                except Exception:
+                    failures.append(posting_id)
+                    logger.exception(
+                        "Bosch detail fetch failed posting_id=%s source_url=%s",
+                        posting_id,
+                        f"{self.api_base}/{posting_id}",
+                    )
+
+        if failures:
+            logger.error(
+                "Bosch detail scrape was partial succeeded=%d failed=%d "
+                "failed_posting_ids=%s",
+                len(details),
+                len(failures),
+                ",".join(failures),
             )
+            raise RuntimeError(
+                "SmartRecruiters detail scrape was partial: "
+                f"{len(details)} succeeded and {len(failures)} failed."
+            )
+
+        return details
 
     def _fetch_detail(
         self, posting_id: str, timeout: float = 30.0
@@ -159,6 +189,15 @@ class BoschScraper(BaseJobScraper):
             if text:
                 parts.append(f"{title}\n{text}" if title else text)
         return "\n\n".join(parts)
+
+    def source_url_for_job(self, job: dict[str, Any]) -> str:
+        posting_url = job.get("postingUrl")
+        if isinstance(posting_url, str) and posting_url:
+            return posting_url
+        apply_url = job.get("applyUrl")
+        if isinstance(apply_url, str):
+            return apply_url.split("?", maxsplit=1)[0]
+        return ""
 
     @staticmethod
     def _workplace_type(location: dict[str, Any]) -> str:
