@@ -39,9 +39,8 @@ export const AV_CATEGORIES: Category[] = [
 ];
 
 export type CategoryName = (typeof AV_CATEGORIES)[number]["name"];
-
 /* ------------------------------------------------------------------ */
-/* Job trend — prototype data for the landing-page chart              */
+/* Job trend — prototype data                                         */
 /* ------------------------------------------------------------------ */
 
 export type JobTrendPoint = {
@@ -49,12 +48,7 @@ export type JobTrendPoint = {
   jobCount: number;
 };
 
-/**
- * Prototype-only trend data. Sprint 2 keeps the landing-page chart on
- * mock data until the scraper/aggregation API is connected. The latest
- * value matches the current category total so the landing-page mocks stay
- * internally consistent.
- */
+// Prototype data until the aggregation API is available.
 export const JOB_TREND_DATA: JobTrendPoint[] = [
   { period: "Mar", jobCount: 412 },
   { period: "Apr", jobCount: 405 },

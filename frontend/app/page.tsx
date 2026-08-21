@@ -9,7 +9,6 @@ import CompanyLogo from "@/components/ui/CompanyLogo";
 import JobCardColumn from "@/components/ui/JobCardColumn";
 import JobCardRow from "@/components/ui/JobCardRow";
 import Salary from "@/components/ui/Salary";
-import JobTrendChart from "@/components/ui/JobTrendChart";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -288,7 +287,6 @@ export default function HomePage() {
   return (
     <>
       <Hero />
-      <JobTrendChart />
       <JobCategories />
       <LatestJobs />
       <FeaturedJobs />

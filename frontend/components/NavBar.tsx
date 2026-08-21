@@ -7,6 +7,7 @@ import { useState } from "react";
 const NAV_LINKS = [
   { href: "/search", label: "Find Jobs" },
   { href: "/companies", label: "Companies" },
+  { href: "/trends", label: "Market Trends" },
 ];
 
 export default function NavBar() {
@@ -24,9 +25,7 @@ export default function NavBar() {
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-white">
             AV
           </span>
-          <span>
-            AV Job Finder
-          </span>
+          <span>AV Job Finder</span>
         </Link>
 
         {/* Desktop nav */}
@@ -41,9 +40,7 @@ export default function NavBar() {
                 key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors ${
-                  active
-                    ? "text-primary"
-                    : "text-ink-secondary hover:text-ink"
+                  active ? "text-primary" : "text-ink-secondary hover:text-ink"
                 }`}
               >
                 {link.label}
