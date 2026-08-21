@@ -8,6 +8,8 @@ This section documents Group 3's communication with the key project stakeholders
 
 The purpose is to demonstrate active stakeholder engagement, provide traceable evidence of communication, and clearly distinguish between requirements that have been discussed and formal client approval that has not yet been received.
 
+MVP status: End-user clarification was received from Lee Le during the 19 August 2026 review; the proposed MVP direction has been refined, while formal client sign-off from Adrian Boeing remains pending.
+
 2. Communication with Adrian Boeing
 
 2.1 Initial Contact and Meeting Arrangement
@@ -60,7 +62,7 @@ The company list provided a concrete starting point for the project's data-colle
 
 Lee Le was introduced by Adrian as a representative customer/end-user for the proposed platform. The team later contacted both Adrian and Lee through the shared Teams channel to request a further meeting, present the current web application, discuss the planned scraping strategy, and request review of the Project Description document.
 
-A follow-up reminder was sent when no response was received. At the time of writing, the team has not received enough feedback from Adrian or Lee to treat the final MVP as formally approved.
+Following the earlier Teams follow-ups, the team met with Lee on 19 August 2026 for a client/end-user review. Lee reviewed the frontend prototype and provided specific guidance on job-result presentation, technical skill naming, skill-based search, category specificity, and the proposed LLM-classification workflow. Adrian was unable to attend, and Lee agreed to communicate the meeting outcomes to him.
 
 
 
@@ -100,41 +102,61 @@ The meeting also reviewed the status of communication with Adrian. The team repo
 
 5. MVP Agreement Status
 
-The team has discussed the proposed MVP with stakeholders and has actively attempted to obtain explicit client confirmation. However, formal client sign-off has not yet been received from Adrian.
+The team has discussed the proposed MVP with stakeholders and has actively attempted to obtain explicit client confirmation. End-user clarification was received from Lee Le on 19 August 2026; however, formal client sign-off has not yet been received from Adrian, who was unable to attend that review.
 
 The team has:
 
-Sent a request for a follow-up meeting to demonstrate the current web application and scraping strategy.
+A client/end-user review meeting was held with Lee Le on 19 August 2026; Adrian was unable to attend.
 
-Sent a reminder asking Adrian and Lee to review the Project Description document.
+Lee reviewed the frontend and LLM-classification direction and agreed to relay the outcomes to Adrian.
 
-Sent a further follow-up requesting approval before the reporting deadline.
+The meeting clarified the functional MVP direction but did not constitute formal client sign-off.
 
-Recorded that no response was received within the required timeframe.
+Confirmation is still required from Adrian regarding final MVP approval and any budget for paid LLM or API usage.
 
-Raised the issue with academic staff and received additional time due to the outstanding client response.
+Development will continue using the clarified end-user direction while open client decisions are documented and escalated as needed.
 
-Current MVP status: Proposed and developed based on previous client discussions, but formal client sign-off is still pending.
+Current MVP status: Clarified with Lee Le as the end-user representative on 19 August 2026; formal client approval and the paid-LLM budget decision remain pending Adrian's confirmation.
 
-6. Current MVP Direction
+6. MVP Clarifications from End-User Review - 19 August 2026
 
-Based on the client discussions and project work completed so far, the proposed MVP is a read-only autonomous-vehicle job exploration platform.
+A client/end-user review was held on 19 August 2026 with Martin, Weishan, Harshil, and Lee Le. Adrian was unable to attend, and Lee agreed to relay the outcomes to him. Lee's feedback clarified the following directions for MVP refinement:
+
+Present Find Jobs results in a structured table-style layout that supports comparison of job titles, skills, required skills, requirements, and other key information.
+
+Keep recognised technical skill names distinct and unchanged, including C and C++.
+
+Give greater priority to skill-based search and filtering.
+
+Refine broad categories into more specific job profiles where the available job-advertisement evidence supports that detail.
+
+Apply a low-cost pre-filter to remove clearly irrelevant or non-AV jobs before sending candidate job descriptions to an LLM.
+
+Use the LLM for detailed classification and skill extraction only after pre-filtering, with scalability, token usage, and cost monitored before processing hundreds of jobs.
+
+Open decision: Adrian's confirmation is still required on whether the project may use a paid LLM subscription or API and on the available budget. Until that decision is received, the team will investigate free or low-cost options and design the workflow to minimise LLM calls.
+
+Evidence record: Client Meeting Minutes, "Frontend Review and LLM Classification Discussion", 19 August 2026 (retained in the Group 3 evidence archive).
+
+7. Current MVP Direction
+
+Based on the initial client discussions, the 19 August 2026 end-user review, and project work completed so far, the proposed MVP remains a read-only autonomous-vehicle job exploration platform.
 
 The current direction includes:
 
 Collect publicly available job advertisements from relevant AV companies.
 
-Provide a central interface for searching and comparing job opportunities.
+Provide a central interface with structured table-style results for searching and comparing job opportunities.
 
-Extract and structure skills, technologies, tools, qualifications, functional areas, and role profiles.
+Extract and visibly present job titles, relevant and required skills, technologies, tools, qualifications, key requirements, and job profiles, while preserving recognised technical names such as C and C++.
 
-Include adjacent technical roles where their responsibilities are relevant to AV systems, even when the job title itself does not explicitly mention autonomous vehicles.
+Support skill-based search and more specific job-profile categories, including adjacent technical roles relevant to AV systems.
 
-Preserve original source links and collection information for traceability.
+Pre-filter clearly irrelevant jobs before detailed LLM classification, while preserving original source links and collection information for traceability.
 
 Provide dashboard or trend views, initially using mock data where live integration is not yet complete.
 
-7. Core Project Objectives
+8. Core Project Objectives
 
 Objective
 
@@ -168,7 +190,7 @@ Traceability
 
 Maintain original source links and relevant source information for validation.
 
-8. Predefined Scope and Upcoming Metrics
+9. Predefined Scope and Upcoming Metrics
 
 Area
 
@@ -188,15 +210,15 @@ Lever, Greenhouse, SmartRecruiters
 
 Frontend MVP
 
-Landing, job search, company list, job detail, and company detail pages
+Landing, structured table-style job search, company list, job detail, and company detail pages; skill-based search and filtering refinement requested
 
 Current taxonomy
 
-8 categories represented in the frontend prototype
+8 categories in the current prototype; refinement toward more specific job profiles requested by Lee
 
 Client communication
 
-Initial client meeting completed; follow-up meeting requested
+Initial client meeting completed; end-user review with Lee held on 19 August 2026
 
 Facilitator communication
 
@@ -212,9 +234,9 @@ Mock/trend representation initially; live-data connection planned later
 
 Client MVP approval
 
-Pending
+End-user clarification received from Lee; formal approval and LLM budget confirmation pending Adrian
 
-9. Evidence of Active Project Progress
+10. Evidence of Active Project Progress
 
 GitHub has been used to document implementation and project-management activity. The repository contains evidence of completed frontend and backend setup, scraping work, documentation, research, and merged pull requests associated with Sprint 1 tasks.
 
@@ -226,7 +248,7 @@ GitHub has been used to document implementation and project-management activity.
 
 [Figure 8. GitHub Pull Requests showing merged implementation and documentation work.](https://uniwa.sharepoint.com/:f:/t/CITS5206-InformationTechnologyCapstoneProjectSEM-22026-Group3/IgDdbRTrlREdSoqRAkrW2eoIAf5ZIz6_mSNIKvtcB4RRLZE?e=dB7ZCS)
 
-10. Communication and Approval Summary
+11. Communication and Approval Summary
 
 Stakeholder
 
@@ -238,13 +260,13 @@ Adrian Boeing
 
 Email, initial client meeting, follow-up resources, Teams follow-ups
 
-Initial requirements and domain direction established; final MVP approval pending
+Initial requirements and domain direction established; final MVP approval and LLM budget decision pending
 
 Lee Le
 
-Introduced as customer/end-user; included in Teams meeting and approval requests
+Introduced as customer/end-user; Teams follow-ups; frontend and classification review on 19 August 2026
 
-End-user role established; further feedback/approval pending
+Provided MVP clarification on result layout, skills, search, category specificity, and LLM pre-filtering; agreed to update Adrian
 
 Sumayyah Ahmad
 
@@ -258,7 +280,7 @@ Team raised inability to obtain client response before deadline
 
 Additional time provided due to outstanding client response
 
-11. Conclusion
+12. Conclusion
 
 The evidence demonstrates that Group 3 has actively engaged with the project stakeholders throughout the early stages of the Autonomous Vehicle Job Profiles project.
 
@@ -266,6 +288,6 @@ The first client communication established Adrian's expectations, introduced Lee
 
 Regular facilitator meetings with Sumayyah have provided additional oversight regarding project management, documentation, task allocation, evidence collection, and client communication.
 
-The team has repeatedly attempted to arrange a follow-up client demonstration and obtain approval for the Project Description and proposed MVP. Because no response has yet been received, the team has explicitly recorded that formal MVP approval remains pending rather than assuming approval.
+Following repeated contact attempts, the team met with Lee on 19 August 2026 and received end-user clarification on the frontend and classification direction. Adrian was unable to attend, so formal MVP approval and the paid-LLM budget decision remain pending rather than being assumed.
 
-Development has continued in parallel so that progress is not blocked, with evidence of frontend, backend, scraping, documentation, and project-management work maintained through GitHub issues, pull requests, meeting records, and stakeholder communications.
+Development has continued in parallel using the clarified end-user direction, with evidence of frontend, backend, scraping, documentation, meeting minutes, and project-management work maintained through GitHub issues, pull requests, meeting records, and stakeholder communications.
