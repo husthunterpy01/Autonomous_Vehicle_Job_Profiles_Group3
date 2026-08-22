@@ -180,24 +180,24 @@ export default function SearchClient() {
         subtitle="Search and filter autonomous vehicle job openings."
       />
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-        <div className="min-w-0 flex-1">
-          <SearchBar
-            className="mt-0"
-            keyword={keyword}
-            onKeywordChange={handleKeyword}
-            placeholder="Job title, skill or keyword"
-            dropdownValue={category}
-            onDropdownChange={handleCategory}
-            dropdownOptions={CATEGORY_OPTIONS}
-            dropdownClassName="lg:w-56"
-            onSubmit={(e) => {
-              e.preventDefault();
-              syncUrl(keyword, category);
-            }}
-          />
+      <div>
+        <SearchBar
+          className="mt-0"
+          keyword={keyword}
+          onKeywordChange={handleKeyword}
+          placeholder="Job title, skill or keyword"
+          dropdownValue={category}
+          onDropdownChange={handleCategory}
+          dropdownOptions={CATEGORY_OPTIONS}
+          dropdownClassName="lg:w-56"
+          onSubmit={(e) => {
+            e.preventDefault();
+            syncUrl(keyword, category);
+          }}
+        />
+        <div className="mt-4 flex justify-end">
+          <ViewToggle view={view} onChange={setView} />
         </div>
-        <ViewToggle view={view} onChange={setView} />
       </div>
 
       <div className="mt-8">

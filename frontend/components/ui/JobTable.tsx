@@ -61,6 +61,39 @@ function SortIndicator({ direction }: { direction?: JobSortDirection }) {
   );
 }
 
+function JobTableRow({ job }: { job: Job }) {
+  return (
+    <tr
+      className="border-b border-line last:border-b-0 hover:bg-section/40"
+    >
+      <td className="px-4 py-4 pl-5 align-middle">
+        <Link
+          href={`/jobs/${job.id}`}
+          className="font-semibold text-ink hover:text-primary"
+        >
+          {job.title}
+        </Link>
+      </td>
+      <td className="px-4 py-4 text-sm text-ink-secondary">
+        {job.company}
+      </td>
+      <td className="px-4 py-4 text-sm text-ink">{job.country}</td>
+      <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-primary">
+        {formatSalary(job)}
+      </td>
+      <td className="px-4 py-4">
+        <StatusBadge status={job.status} />
+      </td>
+      <td className="whitespace-nowrap px-4 py-4 text-center align-middle text-sm text-ink-secondary">
+        <Tag label={job.type} />
+      </td>
+      <td className="px-4 py-4 pr-5">
+        <CategoryTag category={job.category} />
+      </td>
+    </tr>
+  );
+}
+
 export default function JobTable({
   jobs,
   sorts,
@@ -111,33 +144,7 @@ export default function JobTable({
         </thead>
         <tbody>
           {jobs.map((job) => (
-            <tr
-              key={job.id}
-              className="border-b border-line last:border-b-0 hover:bg-section/40"
-            >
-              <td className="px-4 py-4 pl-5 align-middle">
-                <Link
-                  href={`/jobs/${job.id}`}
-                  className="font-semibold text-ink hover:text-primary"
-                >
-                  {job.title}
-                </Link>
-              </td>
-              <td className="px-4 py-4 text-sm text-ink-secondary">{job.company}</td>
-              <td className="px-4 py-4 text-sm text-ink">{job.country}</td>
-              <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-primary">
-                {formatSalary(job)}
-              </td>
-              <td className="px-4 py-4">
-                <StatusBadge status={job.status} />
-              </td>
-              <td className="whitespace-nowrap px-4 py-4 text-center align-middle text-sm text-ink-secondary">
-                <Tag label={job.type} />
-              </td>
-              <td className="px-4 py-4 pr-5">
-                <CategoryTag category={job.category} />
-              </td>
-            </tr>
+            <JobTableRow key={job.id} job={job} />
           ))}
         </tbody>
       </table>
