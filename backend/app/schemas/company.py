@@ -29,3 +29,10 @@ class CompanyResponse(BaseModel):
 
 class CompanyUpdate(BaseModel):
     name: str | None = None
+
+class CompanyWithJobNumberResponse(BaseModel):
+    company_id: UUID
+    name: str
+    company_type: str
+    location: str | None
+    number_of_jobs: int

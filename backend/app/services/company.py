@@ -2,11 +2,18 @@ import logging
 from uuid import UUID, uuid4
 
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
+from app.models import JobPosting
 from app.models.company import Company
-from app.schemas.company import CompanyCreate, CompanyResponse
+from app.schemas.company import (
+    CompanyCreate,
+    CompanyResponse,
+    CompanyWithJobNumberResponse,
+)
+from app.utils.pagination import PageResponse
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +24,69 @@ class CompanyService:
         return CompanyResponse(
             company_id=company.company_id,
             name=company.name,
+            company_type=company.company_type,
             website_url=company.website_url,
             career_page_url=company.career_page_url,
-            company_type=company.company_type,
             datasource_status=company.datasource_status,
         )
 
     @classmethod
     def get_companies(cls, db: Session) -> list[Company]:
         return db.query(Company).order_by(Company.name.asc()).all()
+
+    @classmethod
+    def get_companies_with_num_jobs(cls, db:Session, page: int, page_size: int) -> PageResponse[CompanyWithJobNumberResponse]:
+        job_count_subquery = (
+            db.query(
+                JobPosting.company_id.label("company_id"),
+                func.count(JobPosting.job_id).label("job_count"),
+            )
+            .group_by(JobPosting.company_id)
+            .subquery()
+        )
+
+        # Return the relevant company information combined with job count
+        company_with_job_count = (
+            db.query(
+                Company,
+                func.coalesce(
+                    job_count_subquery.c.job_count,
+                    0
+                ).label("job_count"),
+            )
+            .outerjoin(
+                job_count_subquery,
+                Company.company_id == job_count_subquery.c.company_id,
+            )
+            .options(selectinload(Company.locations))
+            .order_by(Company.name.asc())
+        )
+
+        # Paginate the result
+        paginate_response = PageResponse.paginate(
+            query=company_with_job_count,
+            page=page,
+            page_size=page_size
+        )
+        # We take the first country of that company as representative
+        items = [
+            CompanyWithJobNumberResponse(
+                company_id=company.company_id,
+                name=company.name,
+                company_type=company.company_type,
+                location= company.locations[0].country if company.locations else None,
+                number_of_jobs=job_count,
+            )
+            for company, job_count in paginate_response.items
+        ]
+
+        return PageResponse(
+            items=items,
+            total=paginate_response.total,
+            page=paginate_response.page,
+            page_size=paginate_response.page_size,
+            total_pages=paginate_response.total_pages,
+        )
 
     @classmethod
     def get_company_by_id(cls, db: Session, company_id: UUID) -> Company:
@@ -78,9 +139,9 @@ class CompanyService:
             company = Company(
                 company_id=uuid4(),
                 name=data.name,
+                company_type=data.company_type,
                 website_url=data.website_url,
                 career_page_url=data.career_page_url,
-                company_type=data.company_type,
                 datasource_status=data.datasource_status,
             )
             db.add(company)
@@ -109,3 +170,4 @@ class CompanyService:
                 data.name,
             )
             raise
+
