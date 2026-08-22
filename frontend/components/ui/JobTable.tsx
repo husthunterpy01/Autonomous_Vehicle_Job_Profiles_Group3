@@ -14,11 +14,17 @@ export type JobSortKey =
   | "type"
   | "category";
 
+export type JobSortDirection = "asc" | "desc";
+
+export type JobSortRule = {
+  key: JobSortKey;
+  direction: JobSortDirection;
+};
+
 type JobTableProps = {
   jobs: Job[];
-  sortBy: JobSortKey | null;
-  sortDir: "asc" | "desc";
-  onSort: (key: JobSortKey) => void;
+  sorts: JobSortRule[];
+  onSort: (key: JobSortKey, additive: boolean) => void;
 };
 
 const COLUMNS: { key: JobSortKey; label: string }[] = [
@@ -31,11 +37,11 @@ const COLUMNS: { key: JobSortKey; label: string }[] = [
   { key: "category", label: "Category" },
 ];
 
-function SortIndicator({ direction }: { direction: "asc" | "desc" }) {
+function SortIndicator({ direction }: { direction?: JobSortDirection }) {
   return (
     <svg
       aria-hidden="true"
-      className="h-4 w-4 text-primary"
+      className={`h-4 w-4 ${direction ? "text-primary" : "text-ink-muted"}`}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -43,8 +49,13 @@ function SortIndicator({ direction }: { direction: "asc" | "desc" }) {
     >
       {direction === "asc" ? (
         <path strokeLinecap="round" strokeLinejoin="round" d="m5 15 7-7 7 7" />
-      ) : (
+      ) : direction === "desc" ? (
         <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
+      ) : (
+        <>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m5 10 7-6 7 6" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="m5 14 7 6 7-6" />
+        </>
       )}
     </svg>
   );
@@ -52,8 +63,7 @@ function SortIndicator({ direction }: { direction: "asc" | "desc" }) {
 
 export default function JobTable({
   jobs,
-  sortBy,
-  sortDir,
+  sorts,
   onSort,
 }: JobTableProps) {
   return (
@@ -62,14 +72,16 @@ export default function JobTable({
         <thead>
           <tr className="border-b border-line bg-section/60">
             {COLUMNS.map((column) => {
-              const isActive = sortBy === column.key;
+              const sortIndex = sorts.findIndex((sort) => sort.key === column.key);
+              const activeSort = sorts[sortIndex];
+              const isActive = activeSort !== undefined;
               return (
                 <th
                   key={column.key}
                   scope="col"
                   aria-sort={
                     isActive
-                      ? sortDir === "asc"
+                      ? activeSort.direction === "asc"
                         ? "ascending"
                         : "descending"
                       : "none"
@@ -78,14 +90,19 @@ export default function JobTable({
                 >
                   <button
                     type="button"
-                    aria-label={`Sort by ${column.label}`}
-                    onClick={() => onSort(column.key)}
+                    aria-label={`Sort by ${column.label}. Hold Shift while clicking to add a secondary sort.`}
+                    onClick={(event) => onSort(column.key, event.shiftKey)}
                     className={`inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:text-primary ${
                       isActive ? "text-primary" : "text-ink-secondary"
                     }`}
                   >
                     {column.label}
-                    {isActive && <SortIndicator direction={sortDir} />}
+                    <SortIndicator direction={activeSort?.direction} />
+                    {isActive && sorts.length > 1 && (
+                      <span className="text-xs font-semibold text-ink-muted">
+                        {sortIndex + 1}
+                      </span>
+                    )}
                   </button>
                 </th>
               );

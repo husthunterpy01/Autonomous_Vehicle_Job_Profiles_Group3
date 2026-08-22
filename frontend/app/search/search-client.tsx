@@ -5,7 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { AV_CATEGORIES, MOCK_JOBS, type Job } from "@/lib/mock-data";
 import type { DropdownOption } from "@/components/ui/Dropdown";
 import JobCardRow from "@/components/ui/JobCardRow";
-import JobTable, { type JobSortKey } from "@/components/ui/JobTable";
+import JobTable, {
+  type JobSortDirection,
+  type JobSortKey,
+  type JobSortRule,
+} from "@/components/ui/JobTable";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
@@ -54,8 +58,7 @@ export default function SearchClient() {
     return value && AV_CATEGORIES.some((c) => c.name === value) ? value : "All";
   });
   const [view, setView] = useState<ViewMode>("table");
-  const [sortBy, setSortBy] = useState<JobSortKey | null>(null);
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [sorts, setSorts] = useState<JobSortRule[]>([]);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
   const [perPageInput, setPerPageInput] = useState(String(DEFAULT_PER_PAGE));
@@ -86,13 +89,18 @@ export default function SearchClient() {
   }, [keyword, category]);
 
   const sorted = useMemo(() => {
-    if (!sortBy) return filtered;
+    if (sorts.length === 0) return filtered;
 
     return [...filtered].sort((a, b) => {
-      const comparison = compareJobs(a, b, sortBy);
-      return sortDir === "asc" ? comparison : -comparison;
+      for (const sort of sorts) {
+        const comparison = compareJobs(a, b, sort.key);
+        if (comparison !== 0) {
+          return sort.direction === "asc" ? comparison : -comparison;
+        }
+      }
+      return 0;
     });
-  }, [filtered, sortBy, sortDir]);
+  }, [filtered, sorts]);
 
   const pageCount = Math.max(1, Math.ceil(sorted.length / perPage));
   const safePage = Math.min(page, pageCount);
@@ -111,13 +119,30 @@ export default function SearchClient() {
     setPage(1);
   };
 
-  const handleSort = (key: JobSortKey) => {
-    if (sortBy === key) {
-      setSortDir((direction) => (direction === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(key);
-      setSortDir("asc");
-    }
+  const handleSort = (key: JobSortKey, additive: boolean) => {
+    setSorts((current) => {
+      const existingIndex = current.findIndex((sort) => sort.key === key);
+
+      if (!additive) {
+        const existing = current[existingIndex];
+        const direction: JobSortDirection =
+          existingIndex === 0 && existing?.direction === "asc" ? "desc" : "asc";
+        return [{ key, direction }];
+      }
+
+      if (existingIndex >= 0) {
+        return current.map((sort, index) =>
+          index === existingIndex
+            ? {
+                ...sort,
+                direction: sort.direction === "asc" ? "desc" : "asc",
+              }
+            : sort,
+        );
+      }
+
+      return [...current, { key, direction: "asc" }];
+    });
     setPage(1);
   };
 
@@ -183,6 +208,11 @@ export default function SearchClient() {
             {category !== "All" ? ` in ${category}` : ""}
             {keyword.trim() !== "" ? ` for "${keyword.trim()}"` : ""}
           </p>
+          {view === "table" && (
+            <p className="w-full text-xs text-ink-muted">
+              Click a column to sort. Hold Shift while clicking to add a secondary sort.
+            </p>
+          )}
           {hasFilters && (
             <button
               type="button"
@@ -200,8 +230,7 @@ export default function SearchClient() {
               {view === "table" ? (
                 <JobTable
                   jobs={pageItems}
-                  sortBy={sortBy}
-                  sortDir={sortDir}
+                  sorts={sorts}
                   onSort={handleSort}
                 />
               ) : (
