@@ -209,8 +209,12 @@ export default function SearchClient() {
             {keyword.trim() !== "" ? ` for "${keyword.trim()}"` : ""}
           </p>
           {view === "table" && (
-            <p className="w-full text-xs text-ink-muted">
-              Click a column to sort. Hold Shift while clicking to add a secondary sort.
+            <p className="w-full text-sm leading-6 text-ink-secondary">
+              Click a column to sort. Hold{" "}
+              <span className="rounded-md bg-primary-light px-1.5 py-0.5 font-semibold text-primary">
+                Shift
+              </span>{" "}
+              while clicking to add a secondary sort.
             </p>
           )}
           {hasFilters && (
