@@ -33,6 +33,9 @@ htmlcov/
 *.log
 logs/
 
+# Generated scraper output (BE-1)
+/data/*.json
+
 # IDE / editor
 .idea/
 .vscode/
@@ -57,3 +60,6 @@ pnpm-debug.log*
 
 # Temporary unpacked template folder
 .tmp_jobhunter/
+
+# Reasonix tool workspace data
+.reasonix/

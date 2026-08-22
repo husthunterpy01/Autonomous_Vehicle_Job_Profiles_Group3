@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AV_CATEGORIES, MOCK_JOBS } from "@/lib/mock-data";
 import type { DropdownOption } from "@/components/ui/Dropdown";
 import JobCardRow from "@/components/ui/JobCardRow";
@@ -13,20 +13,14 @@ const CATEGORY_OPTIONS: DropdownOption[] = [
   ...AV_CATEGORIES.map((c) => ({ value: c.name, label: c.name })),
 ];
 
-export default function SearchClient({
-  initialKeyword = "",
-  initialCategory = "All",
-}: {
-  initialKeyword?: string;
-  initialCategory?: string;
-}) {
+export default function SearchClient() {
   const router = useRouter();
-  const [keyword, setKeyword] = useState(initialKeyword);
-  const [category, setCategory] = useState(
-    AV_CATEGORIES.some((c) => c.name === initialCategory)
-      ? initialCategory
-      : "All",
-  );
+  const searchParams = useSearchParams();
+  const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
+  const [category, setCategory] = useState(() => {
+    const value = searchParams.get("category");
+    return value && AV_CATEGORIES.some((c) => c.name === value) ? value : "All";
+  });
 
   const hasFilters = keyword.trim() !== "" || category !== "All";
 
