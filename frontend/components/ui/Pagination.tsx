@@ -2,12 +2,14 @@ export default function Pagination({
   page,
   pageCount,
   onPageChange,
+  alwaysVisible = false,
 }: {
   page: number;
   pageCount: number;
   onPageChange: (page: number) => void;
+  alwaysVisible?: boolean;
 }) {
-  if (pageCount <= 1) return null;
+  if (pageCount <= 1 && !alwaysVisible) return null;
 
   return (
     <div className="flex items-center justify-center gap-4">
