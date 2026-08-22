@@ -64,11 +64,21 @@ export default function JobTable({
             {COLUMNS.map((column) => {
               const isActive = sortBy === column.key;
               return (
-                <th key={column.key} scope="col" className="px-4 py-4 first:pl-5 last:pr-5">
+                <th
+                  key={column.key}
+                  scope="col"
+                  aria-sort={
+                    isActive
+                      ? sortDir === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                  }
+                  className="px-4 py-4 first:pl-5 last:pr-5"
+                >
                   <button
                     type="button"
                     aria-label={`Sort by ${column.label}`}
-                    aria-sort={isActive ? sortDir : "none"}
                     onClick={() => onSort(column.key)}
                     className={`inline-flex items-center gap-1.5 text-sm font-semibold transition-colors hover:text-primary ${
                       isActive ? "text-primary" : "text-ink-secondary"
