@@ -8,12 +8,12 @@ export default function ViewToggle({
   onChange: (view: ViewMode) => void;
 }) {
   return (
-    <div className="inline-flex shrink-0 self-end rounded-xl border border-line bg-surface p-1 shadow-sm lg:self-auto">
+    <div className="inline-flex w-full rounded-xl border border-line bg-surface p-1 shadow-sm lg:w-auto">
       <button
         type="button"
         aria-pressed={view === "table"}
         onClick={() => onChange("table")}
-        className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors lg:flex-none ${
           view === "table"
             ? "bg-primary-light text-primary shadow-sm"
             : "text-ink-secondary hover:bg-section hover:text-ink"
@@ -35,7 +35,7 @@ export default function ViewToggle({
         type="button"
         aria-pressed={view === "cards"}
         onClick={() => onChange("cards")}
-        className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors lg:flex-none ${
           view === "cards"
             ? "bg-primary-light text-primary shadow-sm"
             : "text-ink-secondary hover:bg-section hover:text-ink"
