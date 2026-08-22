@@ -3,15 +3,20 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from typing import Dict
+
 from app.core.database import get_db
-from app.schemas.company import CompanyCreate, CompanyResponse, CompanyWithJobNumberResponse
+from app.schemas.company import (
+    CompanyCreate,
+    CompanyResponse,
+    CompanyWithJobNumberResponse,
+)
 from app.services.company import CompanyService
 from app.utils.pagination import PageResponse
 
 router = APIRouter(prefix="/companies", tags=["company"])
 
 DbSession = Annotated[Session, Depends(get_db)]
+PaginationParams = Annotated[dict[str, int], Depends(PageResponse.pagination_params)]
 
 
 @router.get("", response_model=list[CompanyResponse])
@@ -26,7 +31,7 @@ def get_companies(db: DbSession):
 @router.get("/with-job-counts", response_model=PageResponse[CompanyWithJobNumberResponse])
 def get_companies_with_job_numbers(
     db: DbSession,
-    pagination: Dict = Depends(PageResponse.pagination_params),
+    pagination: PaginationParams,
 ):
     return CompanyService.get_companies_with_num_jobs(db, **pagination)
 

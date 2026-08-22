@@ -1,5 +1,6 @@
 from enum import IntEnum
 
+
 class SeniorityLevel(IntEnum):
     JUNIOR = 1
     MID = 2

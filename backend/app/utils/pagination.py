@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import TypeVar, Generic, List, Sequence
+from collections.abc import Sequence
+from typing import Generic, TypeVar
 
 from fastapi import Query
 from pydantic import BaseModel
 from sqlalchemy.orm import Query as SAQuery
 
-
 T = TypeVar("T")
 
 
 class PageResponse(BaseModel, Generic[T]):
-    items: List[T]
+    items: list[T]
     total: int
     page: int
     page_size: int

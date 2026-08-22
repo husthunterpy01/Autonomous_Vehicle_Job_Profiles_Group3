@@ -1,13 +1,18 @@
 import logging
 from uuid import UUID, uuid4
-from sqlalchemy import func
+
 from fastapi import HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import JobPosting
 from app.models.company import Company
-from app.schemas.company import CompanyCreate, CompanyResponse, CompanyWithJobNumberResponse
+from app.schemas.company import (
+    CompanyCreate,
+    CompanyResponse,
+    CompanyWithJobNumberResponse,
+)
 from app.utils.pagination import PageResponse
 
 logger = logging.getLogger(__name__)

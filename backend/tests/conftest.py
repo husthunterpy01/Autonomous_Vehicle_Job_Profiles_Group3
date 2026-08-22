@@ -1,12 +1,12 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.models import Company, CompanyLocation, JobPosting
 from app.core.database import Base
+from app.models import Company, CompanyLocation, JobPosting
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def make_job(
         salary_average=150000,
         salary_currency="USD",
         raw_description="Build autonomous systems.",
-        posted_date=datetime(2026, 8, 1, 12, 0, 0),
+        posted_date=datetime(2026, 8, 1, 12, 0, 0, tzinfo=timezone.utc),
         source_platform="Greenhouse",
         extraction_confidence=0.9,
         company_id=company.company_id,
