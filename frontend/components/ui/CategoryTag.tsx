@@ -6,7 +6,7 @@ export default function CategoryTag({ category }: { category: CategoryName }) {
 
   return (
     <span
-      className={`inline-flex rounded-md px-2.5 py-1 text-xs font-medium ${colors.background} ${colors.text}`}
+      className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-2.5 py-1 text-xs font-medium ${colors.background} ${colors.text}`}
     >
       {category}
     </span>

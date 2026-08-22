@@ -131,7 +131,7 @@ export default function JobTable({
               <td className="px-4 py-4">
                 <StatusBadge status={job.status} />
               </td>
-              <td className="px-4 py-4 text-sm text-ink-secondary">
+              <td className="whitespace-nowrap px-4 py-4 text-center align-middle text-sm text-ink-secondary">
                 <Tag label={job.type} />
               </td>
               <td className="px-4 py-4 pr-5">
