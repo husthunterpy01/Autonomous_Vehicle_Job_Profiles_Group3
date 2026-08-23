@@ -32,7 +32,7 @@ def db_session() -> Session:
         session.close()
 
 
-def _make_company(
+def make_company(
     name: str,
     *,
     company_id: UUID | None = None,
@@ -49,7 +49,7 @@ def _make_company(
     )
 
 
-def _make_location(
+def make_location(
     company: Company,
     *,
     country: str = "United States",
@@ -65,7 +65,7 @@ def _make_location(
     )
 
 
-def _make_job(
+def make_job(
     company: Company,
     *,
     name: str | None = None,
@@ -90,19 +90,19 @@ def _make_job(
     )
 
 
-def _seed_companies_with_jobs(db: Session) -> dict[str, Company]:
-    alpha = _make_company("Alpha Robotics")
-    beta = _make_company("Beta AV")
-    gamma = _make_company("Gamma Drive")
+def seed_companies_with_jobs(db: Session) -> dict[str, Company]:
+    alpha = make_company("Alpha Robotics")
+    beta = make_company("Beta AV")
+    gamma = make_company("Gamma Drive")
 
     db.add_all([alpha, beta, gamma])
-    db.add(_make_location(alpha, country="United States", city="Austin"))
-    db.add(_make_location(beta, country="Canada", city="Toronto"))
+    db.add(make_location(alpha, country="United States", city="Austin"))
+    db.add(make_location(beta, country="Canada", city="Toronto"))
     db.add_all(
         [
-            _make_job(alpha, name="alpha-job-1"),
-            _make_job(alpha, name="alpha-job-2"),
-            _make_job(beta, name="beta-job-1"),
+            make_job(alpha, name="alpha-job-1"),
+            make_job(alpha, name="alpha-job-2"),
+            make_job(beta, name="beta-job-1"),
         ]
     )
     db.commit()
@@ -112,9 +112,10 @@ def _seed_companies_with_jobs(db: Session) -> dict[str, Company]:
 
 @pytest.fixture
 def company_factory():
-    return _make_company
+    """Callable factory for Company rows (avoids importing helpers from tests.*)."""
+    return make_company
 
 
 @pytest.fixture
 def seeded_companies(db_session: Session) -> dict[str, Company]:
-    return _seed_companies_with_jobs(db_session)
+    return seed_companies_with_jobs(db_session)

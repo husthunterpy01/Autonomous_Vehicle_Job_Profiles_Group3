@@ -58,6 +58,7 @@ class CompanyService:
                 job_count_subquery,
                 Company.company_id == job_count_subquery.c.company_id,
             )
+            .filter()
             .options(selectinload(Company.locations))
             .order_by(Company.name.asc())
         )
@@ -68,14 +69,17 @@ class CompanyService:
             page=page,
             page_size=page_size
         )
-        # We take the first country of that company as representative
+        # Load country from location where is_hq = true
         items = [
             CompanyWithJobNumberResponse(
                 company_id=company.company_id,
                 name=company.name,
                 company_type=company.company_type,
-                location= company.locations[0].country if company.locations else None,
-                number_of_jobs=job_count,
+                location= next(
+                    (com_loc.country for com_loc in company.locations if com_loc.is_hq == True),
+                    None
+                ),
+                number_of_jobs=job_count
             )
             for company, job_count in paginate_response.items
         ]
