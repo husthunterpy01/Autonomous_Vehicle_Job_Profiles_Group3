@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { JOB_TREND_DATA, type JobTrendPoint } from "@/lib/mock-data";
 
 const CHART_WIDTH = 720;
 const CHART_HEIGHT = 260;
+const MIN_RENDERED_WIDTH = 620;
 
 const PADDING_LEFT = 54;
 const PADDING_RIGHT = 24;
@@ -13,8 +17,18 @@ const GRID_RATIOS = [0, 0.25, 0.5, 0.75, 1];
 const TOOLTIP_WIDTH = 110;
 const TOOLTIP_HEIGHT = 44;
 
+const RANGE_OPTIONS = [
+  { label: "3M", months: 3 },
+  { label: "6M", months: 6 },
+] as const;
+
+const MIN_ZOOM = 0.75;
+const MAX_ZOOM = 1.75;
+const ZOOM_STEP = 0.25;
+const DEFAULT_ZOOM = 1;
+
 type JobTrendChartProps = {
-  data?: JobTrendPoint[];
+  data?: readonly JobTrendPoint[];
 };
 
 type ChartPoint = JobTrendPoint & {
@@ -29,6 +43,7 @@ type GridLine = {
 };
 
 type ChartModel = {
+  first: JobTrendPoint;
   latest: JobTrendPoint;
   change: number;
   points: ChartPoint[];
@@ -40,11 +55,11 @@ type ChartModel = {
 /* Chart data preparation                                              */
 /* ------------------------------------------------------------------ */
 
-function buildChartModel(data: JobTrendPoint[]): ChartModel {
+function buildChartModel(data: readonly JobTrendPoint[]): ChartModel {
   const values = data.map((point) => point.jobCount);
 
+  const first = data[0];
   const latest = data[data.length - 1];
-  const previous = data[data.length - 2];
 
   const minValue = Math.min(...values);
   const maxValue = Math.max(...values);
@@ -83,11 +98,12 @@ function buildChartModel(data: JobTrendPoint[]): ChartModel {
   const polylinePoints = points.map(({ x, y }) => `${x},${y}`).join(" ");
 
   const change =
-    previous.jobCount === 0
+    first.jobCount === 0
       ? 0
-      : ((latest.jobCount - previous.jobCount) / previous.jobCount) * 100;
+      : ((latest.jobCount - first.jobCount) / first.jobCount) * 100;
 
   return {
+    first,
     latest,
     change,
     points,
@@ -120,11 +136,15 @@ function EmptyTrendState() {
 }
 
 function TrendHeader({
+  first,
   latest,
   change,
+  periodCount,
 }: {
+  first: JobTrendPoint;
   latest: JobTrendPoint;
   change: number;
+  periodCount: number;
 }) {
   const changeLabel = `${change >= 0 ? "+" : ""}${change.toFixed(1)}%`;
 
@@ -142,7 +162,8 @@ function TrendHeader({
         </div>
 
         <p className="mt-2 text-sm text-ink-secondary">
-          Total AV job volume across the most recent six monthly periods.
+          Total AV job volume across {periodCount} monthly prototype snapshots,{" "}
+          {first.period}–{latest.period}.
         </p>
       </div>
 
@@ -150,9 +171,95 @@ function TrendHeader({
         <p className="text-3xl font-bold text-ink">{latest.jobCount}</p>
 
         <p className="text-sm text-ink-secondary">
-          jobs in {latest.period}
-          <span className="ml-2 font-semibold text-primary">{changeLabel}</span>
+          jobs in {latest.period}{" "}
+          <span className="ml-2 font-semibold text-primary">
+            {changeLabel} over selected range
+          </span>
         </p>
+      </div>
+    </div>
+  );
+}
+
+function ChartControls({
+  selectedMonths,
+  zoom,
+  onRangeChange,
+  onZoomIn,
+  onZoomOut,
+}: {
+  selectedMonths: number;
+  zoom: number;
+  onRangeChange: (months: number) => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+}) {
+  return (
+    <div className="mt-6 flex flex-wrap items-end justify-between gap-4 border-t border-line pt-5">
+      <fieldset>
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          Time range
+        </legend>
+
+        <div className="inline-flex rounded-lg border border-line bg-background p-1">
+          {RANGE_OPTIONS.map((option) => {
+            const selected = selectedMonths === option.months;
+
+            return (
+              <button
+                key={option.months}
+                type="button"
+                aria-label={"Show the latest " + option.months + " months"}
+                aria-pressed={selected}
+                onClick={() => onRangeChange(option.months)}
+                className={[
+                  "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary",
+                  selected
+                    ? "bg-primary text-white"
+                    : "text-ink-secondary hover:bg-surface hover:text-ink",
+                ].join(" ")}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          Chart zoom
+        </p>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-label="Zoom out on job trend chart"
+            onClick={onZoomOut}
+            disabled={zoom <= MIN_ZOOM}
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink-secondary transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            − Zoom Out
+          </button>
+
+          <output
+            aria-live="polite"
+            aria-label="Current chart zoom"
+            className="min-w-12 text-center text-sm font-medium text-ink-muted"
+          >
+            {Math.round(zoom * 100)}%
+          </output>
+
+          <button
+            type="button"
+            aria-label="Zoom in on job trend chart"
+            onClick={onZoomIn}
+            disabled={zoom >= MAX_ZOOM}
+            className="rounded-lg border border-line bg-surface px-3 py-1.5 text-sm font-semibold text-ink-secondary transition-colors hover:border-primary hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            + Zoom In
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -254,29 +361,43 @@ function TrendPlot({
   points,
   polylinePoints,
   gridLines,
+  startPeriod,
+  endPeriod,
+  change,
+  zoom,
 }: {
   points: ChartPoint[];
   polylinePoints: string;
   gridLines: GridLine[];
+  startPeriod: string;
+  endPeriod: string;
+  change: number;
+  zoom: number;
 }) {
   const pointElements = points.map((point) => (
     <TrendPoint key={point.period} point={point} />
   ));
+  const changeLabel = (change >= 0 ? "+" : "") + change.toFixed(1) + "%";
 
   return (
-    <div className="mt-8 overflow-x-auto">
+    <div className="mt-5 max-w-full overflow-x-auto overscroll-x-contain">
       <svg
         viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
         role="img"
         aria-labelledby="job-trend-title job-trend-description"
-        className="h-auto w-full min-w-[620px] text-primary"
+        className="block h-auto max-w-none text-primary"
+        style={{
+          width: zoom * 100 + "%",
+          minWidth: MIN_RENDERED_WIDTH * zoom + "px",
+        }}
       >
         <title id="job-trend-title">Autonomous vehicle job volume trend</title>
 
         <desc id="job-trend-description">
-          Interactive prototype line chart showing total AV job counts from
-          March through August. Hover or focus on a data point to see its job
-          count.
+          Interactive prototype line chart showing {points.length} monthly
+          snapshots from {startPeriod} through {endPeriod}, with a {changeLabel}{" "}
+          change over the selected range. Hover or focus on a data point to see
+          its job count.
         </desc>
 
         <ChartGrid gridLines={gridLines} />
@@ -303,28 +424,59 @@ function TrendPlot({
 export default function JobTrendChart({
   data = JOB_TREND_DATA,
 }: JobTrendChartProps) {
+  const [selectedMonths, setSelectedMonths] = useState<number>(
+    RANGE_OPTIONS[RANGE_OPTIONS.length - 1].months,
+  );
+  const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+
   if (data.length < 2) {
     return <EmptyTrendState />;
   }
 
-  const { latest, change, points, polylinePoints, gridLines } =
-    buildChartModel(data);
+  const visibleData = data.slice(-Math.min(selectedMonths, data.length));
+  const { first, latest, change, points, polylinePoints, gridLines } =
+    buildChartModel(visibleData);
+
+  const zoomIn = () => {
+    setZoom((currentZoom) => Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP));
+  };
+
+  const zoomOut = () => {
+    setZoom((currentZoom) => Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP));
+  };
 
   return (
     <section className="bg-surface py-12">
       <div className="mx-auto max-w-[1200px] px-6">
-        <div className="rounded-2xl border border-line bg-surface p-6 shadow-sm md:p-8">
-          <TrendHeader latest={latest} change={change} />
+        <div className="min-w-0 rounded-2xl border border-line bg-surface p-6 shadow-sm md:p-8">
+          <TrendHeader
+            first={first}
+            latest={latest}
+            change={change}
+            periodCount={visibleData.length}
+          />
+
+          <ChartControls
+            selectedMonths={selectedMonths}
+            zoom={zoom}
+            onRangeChange={setSelectedMonths}
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+          />
 
           <TrendPlot
             points={points}
             polylinePoints={polylinePoints}
             gridLines={gridLines}
+            startPeriod={first.period}
+            endPeriod={latest.period}
+            change={change}
+            zoom={zoom}
           />
 
           <p className="mt-3 text-xs text-ink-muted">
-            This Sprint 2 chart uses prototype data and is ready to be wired to
-            the scraper/aggregation API when that endpoint becomes available.
+            Prototype values are shown until aggregated scraper history is
+            available.
           </p>
         </div>
       </div>
