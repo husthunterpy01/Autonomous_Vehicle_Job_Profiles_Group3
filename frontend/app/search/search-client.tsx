@@ -192,28 +192,16 @@ export default function SearchClient() {
             syncUrl(keyword, category);
           }}
         />
-        <div className="mt-4 flex justify-end">
-          <ViewToggle view={view} onChange={setView} />
-        </div>
       </div>
 
-      <div className="mt-8">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="mt-4 flex flex-col gap-4 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:items-center lg:gap-x-6 lg:pr-3">
+        <div className="order-2 min-w-0 lg:order-1">
           <p className="text-sm text-ink-secondary">
             <span className="font-semibold text-ink">{sorted.length}</span>{" "}
             {sorted.length === 1 ? "job" : "jobs"} found
             {category !== "All" ? ` in ${category}` : ""}
             {keyword.trim() !== "" ? ` for "${keyword.trim()}"` : ""}
           </p>
-          {view === "table" && (
-            <p className="w-full text-sm leading-6 text-ink-secondary">
-              Click a column to sort. Hold{" "}
-              <span className="rounded-md bg-primary-light px-1.5 py-0.5 font-semibold text-primary">
-                Shift
-              </span>{" "}
-              while clicking to add a secondary sort.
-            </p>
-          )}
           {hasFilters && (
             <button
               type="button"
@@ -224,7 +212,12 @@ export default function SearchClient() {
             </button>
           )}
         </div>
+        <div className="order-1 lg:order-2">
+          <ViewToggle view={view} onChange={setView} />
+        </div>
+      </div>
 
+      <div>
         {sorted.length > 0 && (
           <>
             <div className="mt-4">
