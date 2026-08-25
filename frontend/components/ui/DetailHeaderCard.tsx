@@ -44,9 +44,7 @@ export default function DetailHeaderCard({
         )}
       </div>
 
-      {footer && (
-        <div className="mt-6 border-t border-line pt-6">{footer}</div>
-      )}
+      {footer && <div className="mt-6 border-t border-line pt-6">{footer}</div>}
     </div>
   );
 }

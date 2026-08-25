@@ -29,7 +29,11 @@ function CheckIcon() {
       strokeWidth={2}
       stroke="currentColor"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m4.5 12.75 6 6 9-13.5"
+      />
     </svg>
   );
 }
@@ -65,7 +69,10 @@ function RequirementsSection({ requirements }: { requirements: string[] }) {
       <h2 className="text-lg font-bold text-ink">Requirements</h2>
       <ul className="mt-3 space-y-2.5">
         {requirements.map((req) => (
-          <li key={req} className="flex items-start gap-2.5 text-sm text-ink-secondary">
+          <li
+            key={req}
+            className="flex items-start gap-2.5 text-sm text-ink-secondary"
+          >
             <CheckIcon />
             {req}
           </li>
@@ -88,7 +95,13 @@ function SkillsSection({ skills }: { skills: string[] }) {
   );
 }
 
-function RoleSidebar({ job, company }: { job: Job; company: Company | undefined }) {
+function RoleSidebar({
+  job,
+  company,
+}: {
+  job: Job;
+  company: Company | undefined;
+}) {
   return (
     <div className="space-y-6">
       <div className="rounded-xl border border-line bg-surface p-5 shadow-sm">
@@ -96,7 +109,9 @@ function RoleSidebar({ job, company }: { job: Job; company: Company | undefined 
         <dl className="mt-4 space-y-3 text-sm">
           <div className="flex justify-between">
             <dt className="text-ink-muted">Job Posted On</dt>
-            <dd className="font-medium text-ink">{formatDate(job.postedDate)}</dd>
+            <dd className="font-medium text-ink">
+              {formatDate(job.postedDate)}
+            </dd>
           </div>
           <div className="flex justify-between">
             <dt className="text-ink-muted">Job Type</dt>
