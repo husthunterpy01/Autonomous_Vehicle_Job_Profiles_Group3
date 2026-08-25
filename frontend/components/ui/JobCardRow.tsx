@@ -4,6 +4,7 @@ import CompanyLogo from "./CompanyLogo";
 import StatusBadge from "./StatusBadge";
 import Salary from "./Salary";
 import Tag from "./Tag";
+import CategoryTag from "./CategoryTag";
 
 /* Row layout — used for Latest Jobs (Home) and Search results. */
 export default function JobCardRow({ job }: { job: Job }) {
@@ -22,7 +23,7 @@ export default function JobCardRow({ job }: { job: Job }) {
         <div className="mt-3 flex flex-wrap gap-2">
           <StatusBadge status={job.status} />
           <Tag label={job.type} />
-          <Tag label={job.category} />
+          <CategoryTag category={job.category} />
         </div>
       </div>
     </Link>
