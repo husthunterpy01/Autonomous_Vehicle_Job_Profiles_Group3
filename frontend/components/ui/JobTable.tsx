@@ -6,13 +6,7 @@ import Tag from "./Tag";
 import { formatSalary } from "./Salary";
 
 export type JobSortKey =
-  | "role"
-  | "company"
-  | "location"
-  | "salary"
-  | "status"
-  | "type"
-  | "category";
+  "role" | "company" | "location" | "salary" | "status" | "type" | "category";
 
 export type JobSortDirection = "asc" | "desc";
 
@@ -53,8 +47,16 @@ function SortIndicator({ direction }: { direction?: JobSortDirection }) {
         <path strokeLinecap="round" strokeLinejoin="round" d="m19 9-7 7-7-7" />
       ) : (
         <>
-          <path strokeLinecap="round" strokeLinejoin="round" d="m5 10 7-6 7 6" />
-          <path strokeLinecap="round" strokeLinejoin="round" d="m5 14 7 6 7-6" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m5 10 7-6 7 6"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="m5 14 7 6 7-6"
+          />
         </>
       )}
     </svg>
@@ -63,9 +65,7 @@ function SortIndicator({ direction }: { direction?: JobSortDirection }) {
 
 function JobTableRow({ job }: { job: Job }) {
   return (
-    <tr
-      className="border-b border-line last:border-b-0 hover:bg-section/40"
-    >
+    <tr className="border-b border-line last:border-b-0 hover:bg-section/40">
       <td className="px-4 py-4 pl-5 align-middle">
         <Link
           href={`/jobs/${job.id}`}
@@ -74,9 +74,7 @@ function JobTableRow({ job }: { job: Job }) {
           {job.title}
         </Link>
       </td>
-      <td className="px-4 py-4 text-sm text-ink-secondary">
-        {job.company}
-      </td>
+      <td className="px-4 py-4 text-sm text-ink-secondary">{job.company}</td>
       <td className="px-4 py-4 text-sm text-ink">{job.country}</td>
       <td className="whitespace-nowrap px-4 py-4 text-sm font-semibold text-primary">
         {formatSalary(job)}
@@ -94,18 +92,16 @@ function JobTableRow({ job }: { job: Job }) {
   );
 }
 
-export default function JobTable({
-  jobs,
-  sorts,
-  onSort,
-}: JobTableProps) {
+export default function JobTable({ jobs, sorts, onSort }: JobTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-line bg-surface">
       <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-section/60">
             {COLUMNS.map((column) => {
-              const sortIndex = sorts.findIndex((sort) => sort.key === column.key);
+              const sortIndex = sorts.findIndex(
+                (sort) => sort.key === column.key,
+              );
               const activeSort = sorts[sortIndex];
               const isActive = activeSort !== undefined;
               return (

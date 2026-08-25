@@ -104,10 +104,7 @@ export default function SearchClient() {
 
   const pageCount = Math.max(1, Math.ceil(sorted.length / perPage));
   const safePage = Math.min(page, pageCount);
-  const pageItems = sorted.slice(
-    (safePage - 1) * perPage,
-    safePage * perPage,
-  );
+  const pageItems = sorted.slice((safePage - 1) * perPage, safePage * perPage);
 
   const handleKeyword = (value: string) => {
     setKeyword(value);
@@ -232,11 +229,7 @@ export default function SearchClient() {
           <>
             <div className="mt-4">
               {view === "table" ? (
-                <JobTable
-                  jobs={pageItems}
-                  sorts={sorts}
-                  onSort={handleSort}
-                />
+                <JobTable jobs={pageItems} sorts={sorts} onSort={handleSort} />
               ) : (
                 <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                   {pageItems.map((job) => (

@@ -6,8 +6,6 @@ export function formatSalary(job: Job): string {
 
 export default function Salary({ job }: { job: Job }) {
   return (
-    <p className="text-sm font-semibold text-primary">
-      {formatSalary(job)}
-    </p>
+    <p className="text-sm font-semibold text-primary">{formatSalary(job)}</p>
   );
 }
