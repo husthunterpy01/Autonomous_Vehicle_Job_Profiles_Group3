@@ -41,10 +41,7 @@ export default function Dropdown({
       {open && (
         <>
           {/* click-away backdrop */}
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setOpen(false)}
-          />
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
           <div className="absolute left-0 right-0 z-20 mt-2 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-lg">
             {options.map((o) => (
               <button

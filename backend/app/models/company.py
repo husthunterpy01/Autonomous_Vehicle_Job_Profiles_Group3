@@ -12,9 +12,9 @@ class Company(Base):
 
     company_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), unique=True, nullable=False)
+    company_type = Column(String(255), nullable=False)
     website_url = Column(String(255), unique=True, nullable=False)
     career_page_url = Column(String(255), unique=True, nullable=False)
-    company_type = Column(String(255), nullable=False)
     datasource_status = Column(String(255), nullable=False)
 
     locations = relationship(

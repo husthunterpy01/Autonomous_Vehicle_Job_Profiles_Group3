@@ -41,3 +41,11 @@ jobs:
       run: |
         pip install ruff
         ruff check .
+    - name: Run unit tests
+      working-directory: backend
+      run: |
+        python -m pytest tests/unit_test -v
+    - name: Run integration tests
+      working-directory: backend
+      run: |
+        python -m pytest tests/integration_test -v
