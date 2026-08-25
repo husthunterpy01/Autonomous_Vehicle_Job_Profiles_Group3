@@ -505,3 +505,27 @@ export function getSimilarJobs(job: Job, limit = 3): Job[] {
     (j) => j.id !== job.id && j.category === job.category,
   ).slice(0, limit);
 }
+
+/* ------------------------------------------------------------------ */
+/* Top skills — demand derived from job postings' skill lists          */
+/* ------------------------------------------------------------------ */
+
+export type SkillDemand = {
+  name: string;
+  jobs: number;
+};
+
+/** Counts each skill string as-is (e.g. "C" and "C++" stay separate,
+ *  matching FE-7's requirement to preserve technical skill names rather
+ *  than generalizing them), ranked by how many job postings mention it. */
+export function getTopSkills(limit = 8): SkillDemand[] {
+  const counts = new Map<string, number>();
+  for (const job of ALL_JOBS) {
+    for (const skill of job.skills) {
+      counts.set(skill, (counts.get(skill) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts, ([name, jobs]) => ({ name, jobs }))
+    .sort((a, b) => b.jobs - a.jobs)
+    .slice(0, limit);
+}
