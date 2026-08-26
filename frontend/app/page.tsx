@@ -3,13 +3,13 @@ import {
   AV_CATEGORIES,
   AV_COMPANIES,
   FEATURED_JOBS,
-  getTopSkills,
   MOCK_JOBS,
 } from "@/lib/mock-data";
 import CompanyLogo from "@/components/ui/CompanyLogo";
 import JobCardColumn from "@/components/ui/JobCardColumn";
 import JobCardRow from "@/components/ui/JobCardRow";
 import Salary from "@/components/ui/Salary";
+import TopSkillsPanel from "@/components/TopSkillsPanel";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -175,9 +175,6 @@ function JobCategories() {
 }
 
 function TopSkills() {
-  const skills = getTopSkills(8);
-  const max = skills[0]?.jobs ?? 1;
-
   return (
     <section className="bg-surface py-20">
       <div className="mx-auto max-w-[1200px] px-6">
@@ -189,26 +186,7 @@ function TopSkills() {
           linkLabel="View all jobs"
         />
 
-        <div className="rounded-2xl border border-line bg-section p-6 shadow-sm sm:p-8">
-          <div className="grid grid-cols-1 gap-x-10 gap-y-5 sm:grid-cols-2">
-            {skills.map((skill) => (
-              <div key={skill.name}>
-                <div className="mb-1.5 flex items-baseline justify-between">
-                  <span className="font-semibold text-ink">{skill.name}</span>
-                  <span className="text-sm text-ink-muted">
-                    {skill.jobs} {skill.jobs === 1 ? "job" : "jobs"}
-                  </span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-line">
-                  <div
-                    className="h-2 rounded-full bg-primary"
-                    style={{ width: `${(skill.jobs / max) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <TopSkillsPanel />
       </div>
     </section>
   );

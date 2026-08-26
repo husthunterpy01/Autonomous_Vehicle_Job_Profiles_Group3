@@ -218,3 +218,14 @@ export function getTopSkills(limit = 8): SkillDemand[] {
     .sort((a, b) => b.jobs - a.jobs)
     .slice(0, limit);
 }
+
+/** Companies with at least one posting requiring the given skill (exact
+ *  string match, same as getTopSkills). */
+export function getCompaniesForSkill(skillName: string): Company[] {
+  const companyIds = new Set(
+    ALL_JOBS.filter((j) => j.skills.includes(skillName)).map(
+      (j) => j.companyId,
+    ),
+  );
+  return AV_COMPANIES.filter((c) => companyIds.has(c.id));
+}
