@@ -73,7 +73,10 @@ export default function TopSkillsPanel() {
                       href={`/companies/${company.id}`}
                       className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm transition-colors hover:border-primary hover:text-primary"
                     >
-                      <CompanyLogo text={company.name.charAt(0)} size="h-5 w-5" />
+                      <CompanyLogo
+                        text={company.name.charAt(0)}
+                        size="h-5 w-5"
+                      />
                       {company.name}
                     </Link>
                   ))}
