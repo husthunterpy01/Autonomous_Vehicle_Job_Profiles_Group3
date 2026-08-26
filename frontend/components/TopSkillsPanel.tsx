@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { getTopSkills, getCompaniesForSkill } from "@/lib/mock-data";
 import CompanyLogo from "./ui/CompanyLogo";
+import Dropdown from "./ui/Dropdown";
 
 const TOP_N_OPTIONS = [5, 10, 20] as const;
 type TopN = (typeof TOP_N_OPTIONS)[number];
@@ -17,26 +18,18 @@ export default function TopSkillsPanel() {
 
   return (
     <div className="rounded-2xl border border-line bg-section p-6 shadow-sm sm:p-8">
-      <div className="mb-6 inline-flex rounded-xl border border-line bg-surface p-1 shadow-sm">
-        {TOP_N_OPTIONS.map((n) => (
-          <button
-            key={n}
-            type="button"
-            aria-pressed={topN === n}
-            onClick={() => {
-              setTopN(n);
-              setExpandedSkill(null);
-            }}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-              topN === n
-                ? "bg-primary-light text-primary shadow-sm"
-                : "text-ink-secondary hover:bg-section hover:text-ink"
-            }`}
-          >
-            Top {n}
-          </button>
-        ))}
-      </div>
+      <Dropdown
+        className="mb-6 w-36"
+        value={String(topN)}
+        onChange={(value) => {
+          setTopN(Number(value) as TopN);
+          setExpandedSkill(null);
+        }}
+        options={TOP_N_OPTIONS.map((n) => ({
+          value: String(n),
+          label: `Top ${n}`,
+        }))}
+      />
 
       <div className="grid grid-cols-1 gap-x-10 gap-y-2 sm:grid-cols-2">
         {skills.map((skill) => {
