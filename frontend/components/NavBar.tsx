@@ -16,7 +16,7 @@ export default function NavBar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-line bg-surface">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6">
+      <div className="flex h-16 w-full items-center justify-between px-6 md:px-8 xl:px-10 2xl:px-12">
         {/* Logo — acts as the home link */}
         <Link
           href="/"
