@@ -2,7 +2,7 @@
 
 **Status:** implementation reference
 
-**Last verified:** 2026-08-26
+**Last verified:** 2026-08-27
 
 **Scope:** 41 companies from the client-supplied list (the ticket's “~42” is approximate)
 
@@ -54,6 +54,396 @@ The table below refers to these reusable recipes.
 - List XML: `GET https://{account}.jobs.personio.de/xml`
 - Public detail page: `https://{account}.jobs.personio.de/job/{job_id}`
 - The XML feed is the preferred machine-readable source; fetch the detail page only for fields absent from the feed.
+
+## API response contracts and database mappings
+
+The examples below are deliberately abridged: they show the response envelope and fields required by the ingestion pipeline, not every applicant-facing field. Store the original response in a raw/bronze layer before normalization so that newly exposed fields can be backfilled without refetching old postings.
+
+### Shared extraction rules
+
+- Convert every source identifier to a string before storage, even when an API currently returns a number.
+- Preserve `canonical_job_url` and `apply_url` separately. Never use the application URL as the canonical job URL.
+- Retain source HTML in `description_html`; derive `description_text` with an HTML parser rather than regular expressions.
+- Treat missing, empty, and `null` optional fields equivalently during normalization, but preserve the raw payload.
+- Convert ISO timestamps to UTC. Preserve date-only values as dates; do not invent a time or timezone.
+- Do not use a human-relative value such as `Posted Today` as a durable timestamp.
+- A successful response with zero records must be validated against the public careers page before marking all existing jobs closed.
+
+### Greenhouse response (`GH`)
+
+Official reference: [Greenhouse Job Board API](https://docs.greenhouse.io/job-board.html)
+
+Content type is JSON. The list response is an object containing `jobs` and `meta`; the detail response is one job object.
+
+#### List response
+
+```json
+{
+  "jobs": [
+    {
+      "id": 123456,
+      "internal_job_id": 98765,
+      "title": "Software Engineer",
+      "updated_at": "2026-08-20T14:30:00-04:00",
+      "first_published": "2026-08-01T12:00:00Z",
+      "requisition_id": "ENG-101",
+      "location": { "name": "Pittsburgh, PA" },
+      "absolute_url": "https://job-boards.greenhouse.io/example/jobs/123456",
+      "content": "<p>Job description...</p>",
+      "departments": [{ "id": 1, "name": "Engineering" }],
+      "offices": [{ "id": 2, "name": "Pittsburgh" }],
+      "metadata": null
+    }
+  ],
+  "meta": { "total": 1 }
+}
+```
+
+`content`, `departments`, and `offices` are returned by the list endpoint only when `content=true` is supplied.
+
+#### Detail response
+
+```json
+{
+  "id": 123456,
+  "title": "Software Engineer",
+  "company_name": "Example Company",
+  "location": { "name": "Pittsburgh, PA" },
+  "content": "<p>Job description...</p>",
+  "absolute_url": "https://job-boards.greenhouse.io/example/jobs/123456",
+  "first_published": "2026-08-01T12:00:00Z",
+  "updated_at": "2026-08-20T14:30:00-04:00",
+  "requisition_id": "ENG-101",
+  "metadata": []
+}
+```
+
+Do not request `questions=true`; applicant questions and compliance data are outside the ingestion scope. Compensation is optional and requires `pay_transparency=true` on the detail request.
+
+| Normalized field | Greenhouse source | Notes |
+|---|---|---|
+| `source_job_id` | `jobs[].id` / detail `id` | Job-post ID; stringify it. Do not substitute `internal_job_id`. |
+| `requisition_id` | `requisition_id` | Optional; may be `null`. |
+| `title` | `title` | Required for a usable record. |
+| `locations` | `location.name`; optionally `offices[].location` | `location.name` can contain multiple locations in one string. |
+| `department` | `departments[].name` | Zero, one, or multiple departments; store all values if the database supports an array. |
+| `description_html` | `content` | HTML may contain entities; decode once, parse, and sanitize. |
+| `canonical_job_url` | `absolute_url` | Prefer the API value over a constructed URL. |
+| `published_at` | `first_published` | May be absent from some list entries; the detail response is more complete. |
+| `updated_at` | `updated_at` | ISO timestamp with offset. |
+
+Pagination: the public job-board list returns the complete published set and exposes `meta.total`; there are no documented `offset`/`limit` parameters. Validate `jobs.length === meta.total`.
+
+### Lever response (`LEVER`)
+
+Official reference: [Lever Postings API](https://github.com/lever/postings-api)
+
+Content type is JSON when `mode=json` is supplied. Unlike Greenhouse, the list response is a top-level array. The detail endpoint returns one object with the same field family.
+
+#### List and detail item
+
+```json
+[
+  {
+    "id": "0f4d2f32-0000-4000-8000-123456789abc",
+    "text": "Software Engineer",
+    "categories": {
+      "location": "Toronto, Ontario, Canada",
+      "allLocations": ["Toronto, Ontario, Canada"],
+      "commitment": "Full-time",
+      "department": "Engineering",
+      "team": "Autonomy"
+    },
+    "country": "CA",
+    "workplaceType": "hybrid",
+    "createdAt": 1787203200000,
+    "description": "<div>Combined description...</div>",
+    "descriptionPlain": "Combined description...",
+    "lists": [
+      { "text": "Responsibilities", "content": "<li>Build systems</li>" }
+    ],
+    "hostedUrl": "https://jobs.lever.co/example/0f4d2f32-0000-4000-8000-123456789abc",
+    "applyUrl": "https://jobs.lever.co/example/0f4d2f32-0000-4000-8000-123456789abc/apply"
+  }
+]
+```
+
+The detail endpoint returns the object inside the example array, not an array.
+
+| Normalized field | Lever source | Notes |
+|---|---|---|
+| `source_job_id` | `id` | UUID string. |
+| `title` | `text` | Lever uses `text`, not `title`. |
+| `locations` | `categories.allLocations`; fallback `categories.location` | `allLocations` may be absent on older postings. |
+| `country_code` | `country` | Optional ISO 3166-1 alpha-2 value. |
+| `department` | `categories.department` | Optional or empty. |
+| `team` | `categories.team` | Optional or empty. |
+| `employment_type` | `categories.commitment` | Free-text company value; normalize through a lookup table. |
+| `workplace_type` | `workplaceType` | `unspecified`, `on-site`, `remote`, or `hybrid`. |
+| `description_html` | `description` | Already combines opening and body. Do not concatenate `lists` again unless the company payload omits them from `description`. |
+| `description_text` | `descriptionPlain` | Prefer this over stripping HTML when present. |
+| `canonical_job_url` | `hostedUrl` | Required for deduplication. |
+| `apply_url` | `applyUrl` | Store but do not request during ingestion. |
+| `published_at` | `createdAt` | Epoch milliseconds; convert using milliseconds, not seconds. |
+| `updated_at` | Not exposed | Leave `null`; do not copy `retrieved_at`. |
+
+Optional compensation fields are `salaryRange` (`currency`, `interval`, `min`, `max`) and `salaryDescription`; many companies omit them.
+
+Pagination: use `skip` and `limit`. Continue until the returned array contains fewer than `limit` items. Do not use Lever's `group` parameter because it changes the response shape.
+
+### Ashby response (`ASHBY`)
+
+Official reference: [Ashby Job Postings API](https://developers.ashbyhq.com/docs/public-job-posting-api)
+
+Ashby returns all published jobs in one JSON response. There is no separate public detail JSON endpoint: each item already contains the description and job URLs.
+
+#### List/detail response
+
+```json
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "9534b49a-9feb-4063-ac33-a9c4d94a1352",
+      "title": "Software Engineer",
+      "location": "Sunnyvale, CA",
+      "secondaryLocations": [
+        { "location": "Washington, DC", "address": { "addressCountry": "USA" } }
+      ],
+      "department": "Engineering",
+      "team": "Autonomy",
+      "isListed": true,
+      "isRemote": false,
+      "workplaceType": "OnSite",
+      "employmentType": "FullTime",
+      "publishedAt": "2026-08-20T16:21:55.393+00:00",
+      "descriptionHtml": "<p>Job description...</p>",
+      "descriptionPlain": "Job description...",
+      "jobUrl": "https://jobs.ashbyhq.com/example/9534b49a-9feb-4063-ac33-a9c4d94a1352",
+      "applyUrl": "https://jobs.ashbyhq.com/example/9534b49a-9feb-4063-ac33-a9c4d94a1352/application"
+    }
+  ]
+}
+```
+
+| Normalized field | Ashby source | Notes |
+|---|---|---|
+| `source_job_id` | `jobs[].id` | Present in the current Aurora and Applied responses. If absent in a future version, extract the final UUID from `jobUrl` and record the fallback. |
+| `title` | `title` | Required. |
+| `locations` | `location` plus `secondaryLocations[].location` | Deduplicate while retaining source order. |
+| `country_code` | `address.postalAddress.addressCountry` | Often a country name rather than a two-letter code; normalize separately. |
+| `department` | `department` | Optional. |
+| `team` | `team` | Optional. |
+| `employment_type` | `employmentType` | Enum such as `FullTime`, `PartTime`, `Intern`, `Contract`, or `Temporary`. |
+| `workplace_type` | `workplaceType` | `OnSite`, `Remote`, or `Hybrid`; `isRemote` is a useful consistency check. |
+| `description_html` | `descriptionHtml` | Full detail is already present in the list response. |
+| `description_text` | `descriptionPlain` | May be missing if the source field is missing in Ashby. |
+| `canonical_job_url` | `jobUrl` | Store the returned URL. |
+| `apply_url` | `applyUrl` | Store only. |
+| `published_at` | `publishedAt` | ISO timestamp for the most recent publication. |
+| `updated_at` | Not exposed | Leave `null`. |
+
+Compensation is included only with `includeCompensation=true`; map salary components using `compensation.summaryComponents[]` and retain the full compensation object because a job may contain multiple geographic tiers.
+
+Pagination: none documented. Filter out `isListed=false` unless the product explicitly wants unlisted direct-link roles.
+
+### Workday CXS response (`WORKDAY`)
+
+Workday CXS is a public endpoint used by the tenant's careers site, but it is not a stable, generally documented public API. Treat the following as an observed contract and retain fixtures for both GM and NVIDIA.
+
+#### List response
+
+```json
+{
+  "total": 125,
+  "jobPostings": [
+    {
+      "title": "Software Engineer",
+      "externalPath": "/job/City-Country/Software-Engineer_JR-12345",
+      "locationsText": "City, Country",
+      "postedOn": "Posted Today",
+      "remoteType": "Hybrid",
+      "bulletFields": ["JR-12345", "Full time"]
+    }
+  ],
+  "facets": [],
+  "userAuthenticated": false
+}
+```
+
+#### Detail response
+
+```json
+{
+  "jobPostingInfo": {
+    "id": "opaque-id",
+    "title": "Software Engineer",
+    "jobDescription": "<p>Job description...</p>",
+    "location": "City, Country",
+    "postedOn": "Posted Today",
+    "startDate": "2026-08-27",
+    "timeType": "Full time",
+    "jobReqId": "JR-12345",
+    "jobPostingId": "opaque-posting-id",
+    "country": { "descriptor": "Country", "id": "opaque-country-id" },
+    "remoteType": "Hybrid",
+    "externalUrl": "https://tenant.myworkdayjobs.com/Site/job/..."
+  },
+  "hiringOrganization": { "name": "Example Company", "url": "https://example.com" },
+  "similarJobs": [],
+  "userAuthenticated": false
+}
+```
+
+| Normalized field | Workday source | Notes |
+|---|---|---|
+| `source_job_id` | Detail `jobPostingInfo.jobReqId`; fallback list `bulletFields` only after validation | Retain `jobPostingId` and `externalPath` as additional source identifiers. |
+| `title` | Detail `jobPostingInfo.title`; list `title` | Prefer detail. |
+| `locations` | Detail `jobPostingInfo.location`; list `locationsText` | Strings may contain multiple locations. |
+| `country_code` | `jobPostingInfo.country.descriptor` | Descriptor is normally a name, not a code. |
+| `employment_type` | `jobPostingInfo.timeType` | Optional; do not depend on a fixed `bulletFields` position. |
+| `workplace_type` | `jobPostingInfo.remoteType`; list `remoteType` | Values and capitalization vary by tenant. |
+| `description_html` | `jobPostingInfo.jobDescription` | Detail request required. |
+| `canonical_job_url` | `jobPostingInfo.externalUrl` | Prefer this URL over constructing one. |
+| `published_at` | `jobPostingInfo.startDate` | Date only. `postedOn` is localized/human-relative and should be stored only as raw display text. |
+| `updated_at` | Not exposed | Leave `null`. |
+
+Pagination: increment request-body `offset` by the number of returned `jobPostings`, keep `limit` at a conservative value, and stop when `offset + returned_count >= total`.
+
+Tenant differences:
+
+- GM and NVIDIA use the same envelope, but facet names, `bulletFields`, localized text, optional fields, and `remoteType` values can differ.
+- Always build the detail API request by appending the returned `externalPath` to the tenant CXS base. Do not reconstruct it from the title or requisition ID.
+
+### SmartRecruiters response (`SR`)
+
+Official references: [list postings](https://developers.smartrecruiters.com/reference/v1listpostings) and [retrieve a posting](https://developers.smartrecruiters.com/reference/v1getposting)
+
+The list response is a paginated JSON object. Full descriptions are available only from the detail endpoint.
+
+#### List response
+
+```json
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 1,
+  "content": [
+    {
+      "id": "743000123456789",
+      "uuid": "opaque-uuid",
+      "name": "Software Engineer",
+      "refNumber": "REF12345",
+      "releasedDate": "2026-08-20T12:00:00.000Z",
+      "location": {
+        "city": "Stuttgart",
+        "region": "BW",
+        "country": "de",
+        "remote": false,
+        "hybrid": true,
+        "fullLocation": "Stuttgart, Germany"
+      },
+      "department": { "id": "eng", "label": "Engineering" },
+      "typeOfEmployment": { "id": "full-time", "label": "Full-time" }
+    }
+  ]
+}
+```
+
+#### Detail response
+
+```json
+{
+  "id": "743000123456789",
+  "uuid": "opaque-uuid",
+  "name": "Software Engineer",
+  "refNumber": "REF12345",
+  "releasedDate": "2026-08-20T12:00:00.000Z",
+  "postingUrl": "https://jobs.smartrecruiters.com/Example/...",
+  "applyUrl": "https://jobs.smartrecruiters.com/Example/.../apply",
+  "location": { "fullLocation": "Stuttgart, Germany", "hybrid": true },
+  "jobAd": {
+    "sections": {
+      "companyDescription": { "title": "Company", "text": "<p>...</p>" },
+      "jobDescription": { "title": "Role", "text": "<p>...</p>" },
+      "qualifications": { "title": "Qualifications", "text": "<ul>...</ul>" },
+      "additionalInformation": { "title": "Additional information", "text": "<p>...</p>" }
+    }
+  }
+}
+```
+
+| Normalized field | SmartRecruiters source | Notes |
+|---|---|---|
+| `source_job_id` | `id` | Stringify; also retain `uuid`. |
+| `requisition_id` | `refNumber` | Optional. |
+| `title` | `name` | SmartRecruiters uses `name`. |
+| `locations` | `location.fullLocation`; fallback join city/region/country | Do not include empty separators. |
+| `country_code` | `location.country` | Usually a two-letter lowercase code; normalize case. |
+| `department` | `department.label` | May be absent from detail; retain the list value. |
+| `employment_type` | `typeOfEmployment.label` | May be absent from detail; retain the list value. |
+| `workplace_type` | derive from `location.remote` and `location.hybrid` | If both are false, treat as onsite only when the source confirms it. |
+| `description_html` | concatenate labelled `jobAd.sections.*.text` blocks in source order | Sections are independently optional. Keep headings to prevent meaning loss. |
+| `canonical_job_url` | `postingUrl` | Detail response. |
+| `apply_url` | `applyUrl` | Store only. |
+| `published_at` | `releasedDate` | ISO timestamp. |
+| `updated_at` | Not exposed publicly | Leave `null`. |
+
+Pagination: request up to `limit=100`, increase `offset` by the number of records received, and stop when `offset + returned_count >= totalFound`.
+
+### Personio response (`PERSONIO`)
+
+Official reference: [Personio open-position XML feed](https://developer.personio.de/docs/retrieving-open-job-positions)
+
+The response is XML, not JSON. The feed contains full description blocks, so a separate detail request is normally unnecessary.
+
+```xml
+<workzag-jobs>
+  <position>
+    <id>4103</id>
+    <subcompany>Momenta Europe GmbH</subcompany>
+    <office>Böblingen</office>
+    <department>R&amp;D</department>
+    <name>Software Engineer</name>
+    <jobDescriptions>
+      <jobDescription>
+        <name>Responsibilities</name>
+        <value><![CDATA[<ul><li>Build software</li></ul>]]></value>
+      </jobDescription>
+    </jobDescriptions>
+    <employmentType>permanent</employmentType>
+    <seniority>experienced</seniority>
+    <schedule>full-time</schedule>
+    <createdAt>2026-08-20T12:14:07+0200</createdAt>
+  </position>
+</workzag-jobs>
+```
+
+| Normalized field | Personio source | Notes |
+|---|---|---|
+| `source_job_id` | `position.id` | Integer in XML; stringify it. |
+| `title` | `position.name` | Required. |
+| `locations` | `position.office` | Office name may not be a full geographic location. |
+| `department` | `position.department` | Optional. |
+| `employment_type` | combine/normalize `employmentType` and `schedule` | Example: `permanent` plus `full-time`. Keep both raw values. |
+| `description_html` | ordered `jobDescriptions.jobDescription[]` values | Preserve each block's `name` as a heading and concatenate in source order. Content is CDATA containing HTML. |
+| `canonical_job_url` | construct `https://{account}.jobs.personio.de/job/{id}` | The feed does not provide the public URL directly. |
+| `published_at` | `createdAt` | Optional ISO-like timestamp with numeric timezone. |
+| `updated_at` | Not exposed | Leave `null`. |
+
+Pagination: none; each request returns the full set of open positions.
+
+### Per-company response differences
+
+| Response profile | Companies | Company-specific handling |
+|---|---|---|
+| `GH` | Avride, Bot Auto, Gatik, Kodiak, Latitude AI, May Mobility, Motional, Nuro, Stack AV, Torc Robotics, Vay, Wayve, XPENG | Use one parser. Treat `metadata`, `requisition_id`, `application_deadline`, departments, offices, and compensation as optional. May Mobility's separate `maymobilityjobs` board is excluded unless explicitly added to scope. |
+| `LEVER` | Horizon Robotics, Plus AI, Waabi, WeRide, Zoox | Use one parser. `country`, department, team, `allLocations`, workplace type, and salary fields vary by posting. The response has no public update timestamp. |
+| `ASHBY` | Applied Intuition, Aurora | Use one parser with different board names. Both current responses expose `id`; compensation remains optional and can contain multiple geographic tiers. |
+| `WORKDAY` | General Motors, NVIDIA | Use one structural parser with tenant configuration. Do not assign meaning by `bulletFields` array position; prefer named fields from the detail response. |
+| `SR` | Bosch | Combine the independently optional `jobAd.sections` blocks. Retain the list record while fetching detail because list-only classification fields may be absent from detail. |
+| `PERSONIO` | Momenta Europe | Coverage is Europe only. Other Momenta regions must remain separately labelled HTML/board sources rather than being assumed absent. |
+| HTML / hosted board | Remaining 17 companies | There is no response contract. Each adapter must emit the normalized schema below and keep an HTML fixture plus selector/version notes. |
 
 ## Company register
 
@@ -125,18 +515,46 @@ Every source adapter should emit the same minimum fields:
   "source_company": "Waabi",
   "source_system": "lever",
   "source_job_id": "opaque-source-id",
+  "requisition_id": null,
   "canonical_job_url": "https://jobs.lever.co/waabi/opaque-source-id",
+  "apply_url": "https://jobs.lever.co/waabi/opaque-source-id/apply",
   "title": "Software Engineer",
   "locations": ["Toronto, Ontario, Canada"],
+  "country_code": "CA",
+  "workplace_type": "hybrid",
   "description_html": "<p>...</p>",
+  "description_text": "...",
   "employment_type": "Full-time",
   "department": "Engineering",
+  "team": "Autonomy",
+  "compensation": {
+    "currency": null,
+    "interval": null,
+    "minimum": null,
+    "maximum": null,
+    "raw_text": null
+  },
   "published_at": "2026-08-20T00:00:00Z",
-  "retrieved_at": "2026-08-26T00:00:00Z"
+  "updated_at": null,
+  "retrieved_at": "2026-08-27T00:00:00Z",
+  "raw_payload": {}
 }
 ```
 
-Use `(source_company, source_system, source_job_id)` as the primary natural key. When an HTML-only source exposes no durable ID, hash the canonical detail URL and retain the original URL so changes can be audited.
+Use `(source_company, source_system, source_job_id)` as the primary natural key. When an HTML-only source exposes no durable ID, hash the canonical detail URL and retain the original URL so changes can be audited. `raw_payload` represents storage in the bronze/raw layer; it may be stored outside the normalized table as long as the normalized row keeps a reference to it.
+
+### Required validation before database upsert
+
+Reject or quarantine a record when any of these conditions apply:
+
+- `source_job_id`, `title`, or `canonical_job_url` is empty;
+- the canonical URL is an application-form URL rather than a job-detail URL;
+- a date or epoch value cannot be parsed without guessing its unit or timezone;
+- the source company does not match the configured adapter;
+- the detail response returns a different job identifier from the list response; or
+- HTML sanitization removes all meaningful description text from a posting that previously had content.
+
+Optional fields should remain `null` or empty arrays; their absence must not fail the whole company run.
 
 ## Maintenance checklist
 
@@ -149,7 +567,8 @@ Use `(source_company, source_system, source_job_id)` as the primary natural key.
 
 ## Verification notes
 
-- Greenhouse tokens in the table returned a successful public jobs endpoint during this review.
+- All 13 Greenhouse, 5 Lever, 2 Ashby, 2 Workday, 1 SmartRecruiters, and 1 Personio configurations returned their documented response envelope during the 2026-08-27 contract check.
+- Response examples are abridged schemas, not frozen payloads. Optional fields and live job counts will change without a documentation update.
 - The Horizon, Plus AI, Waabi, WeRide, and Zoox identifiers refer to current Lever boards; older aliases should not be merged without verification.
 - Aurora and Applied Intuition have migrated away from their older Greenhouse targets to Ashby; the current Ashby posting endpoints are the configured sources.
 - The supplied client list contains 41 rows. No company was invented to force the count to 42.
