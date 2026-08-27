@@ -4,6 +4,7 @@ import CompanyLogo from "./CompanyLogo";
 import StatusBadge from "./StatusBadge";
 import Salary from "./Salary";
 import Tag from "./Tag";
+import CategoryTag from "./CategoryTag";
 
 /* Column layout — used for Featured Jobs (Home). */
 export default function JobCardColumn({ job }: { job: Job }) {
@@ -21,7 +22,7 @@ export default function JobCardColumn({ job }: { job: Job }) {
       <div className="mt-4 flex flex-wrap gap-2">
         <StatusBadge status={job.status} />
         <Tag label={job.type} />
-        <Tag label={job.category} />
+        <CategoryTag category={job.category} />
       </div>
     </Link>
   );

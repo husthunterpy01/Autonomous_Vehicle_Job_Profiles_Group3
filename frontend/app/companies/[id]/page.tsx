@@ -1,8 +1,17 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getCompanyById, getJobsByCompanyId } from "@/lib/mock-data";
+import {
+  AV_COMPANIES,
+  getCompanyById,
+  getJobsByCompanyId,
+} from "@/lib/mock-data";
 import DetailHeaderCard from "@/components/ui/DetailHeaderCard";
 import JobCardRow from "@/components/ui/JobCardRow";
+
+/* Pre-render every mock company for static export (GitHub Pages). */
+export function generateStaticParams() {
+  return AV_COMPANIES.map((company) => ({ id: company.id }));
+}
 
 export default async function CompanyDetailPage({
   params,
@@ -83,8 +92,8 @@ export default async function CompanyDetailPage({
           <div className="mt-4 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
             <p className="font-semibold text-ink">No jobs found</p>
             <p className="mt-2 text-sm text-ink-secondary">
-              {company.name} doesn&apos;t have any open positions listed
-              right now.
+              {company.name} doesn&apos;t have any open positions listed right
+              now.
             </p>
           </div>
         )}

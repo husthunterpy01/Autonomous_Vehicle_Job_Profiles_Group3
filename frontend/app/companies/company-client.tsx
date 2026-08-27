@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AV_COMPANIES, type CompanyType } from "@/lib/mock-data";
 import type { DropdownOption } from "@/components/ui/Dropdown";
 import CompanyCard from "@/components/ui/CompanyCard";
@@ -17,20 +17,16 @@ const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
   { value: "Tech Giant", label: "Tech Giant" },
 ];
 
-export default function CompanyClient({
-  initialKeyword = "",
-  initialType = "All",
-}: {
-  initialKeyword?: string;
-  initialType?: string;
-}) {
+export default function CompanyClient() {
   const router = useRouter();
-  const [keyword, setKeyword] = useState(initialKeyword);
-  const [type, setType] = useState<"All" | CompanyType>(
-    COMPANY_TYPE_OPTIONS.some((o) => o.value === initialType)
-      ? (initialType as "All" | CompanyType)
-      : "All",
-  );
+  const searchParams = useSearchParams();
+  const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
+  const [type, setType] = useState<"All" | CompanyType>(() => {
+    const value = searchParams.get("type");
+    return COMPANY_TYPE_OPTIONS.some((o) => o.value === value)
+      ? (value as "All" | CompanyType)
+      : "All";
+  });
   const [pageSize, setPageSize] = useState(12);
   const [pageSizeInput, setPageSizeInput] = useState("12");
   const [page, setPage] = useState(1);
