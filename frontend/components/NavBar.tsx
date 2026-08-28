@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import ProfileDropdown, {
+  type ProfileDropdownUser,
+} from "@/components/ui/ProfileDropdown";
 
 const NAV_LINKS = [
   { href: "/search", label: "Find Jobs" },
@@ -10,9 +13,24 @@ const NAV_LINKS = [
   { href: "/trends", label: "Market Trends" },
 ];
 
-export default function NavBar() {
+type NavBarProps =
+  | {
+      user: ProfileDropdownUser;
+      changeInformationHref: string;
+      favoriteListHref: string;
+      onLogout: () => void | Promise<void>;
+    }
+  | {
+      user?: null;
+      changeInformationHref?: never;
+      favoriteListHref?: never;
+      onLogout?: never;
+    };
+
+export default function NavBar(props: NavBarProps = {}) {
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const authenticated = props.user != null;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-line bg-surface">
@@ -49,51 +67,64 @@ export default function NavBar() {
           })}
         </div>
 
-        {/* Desktop actions */}
-        <div className="hidden items-center gap-3 md:flex">
-          <Link
-            href="/login"
-            className="text-sm font-medium text-ink-secondary hover:text-ink"
-          >
-            Login
-          </Link>
-          <Link
-            href="/signup"
-            className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-          >
-            Sign Up
-          </Link>
-        </div>
+        <div className="flex items-center gap-1 md:gap-3">
+          {authenticated ? (
+            <ProfileDropdown
+              user={props.user}
+              changeInformationHref={props.changeInformationHref}
+              favoriteListHref={props.favoriteListHref}
+              onLogout={props.onLogout}
+              onOpen={() => setMenuOpen(false)}
+            />
+          ) : (
+            <div className="hidden items-center gap-3 md:flex">
+              <Link
+                href="/login"
+                className="text-sm font-medium text-ink-secondary hover:text-ink"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
 
-        {/* Mobile hamburger */}
-        <button
-          type="button"
-          aria-label="Toggle menu"
-          onClick={() => setMenuOpen((open) => !open)}
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-secondary hover:bg-section md:hidden"
-        >
-          <svg
-            className="h-6 w-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.8}
-            stroke="currentColor"
+          {/* Mobile hamburger */}
+          <button
+            type="button"
+            aria-label="Toggle menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((open) => !open)}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-ink-secondary hover:bg-section focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary md:hidden"
           >
-            {menuOpen ? (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            ) : (
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
-              />
-            )}
-          </svg>
-        </button>
+            <svg
+              aria-hidden="true"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.8}
+              stroke="currentColor"
+            >
+              {menuOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                />
+              )}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
@@ -109,20 +140,22 @@ export default function NavBar() {
               {link.label}
             </Link>
           ))}
-          <div className="mt-3 flex flex-col gap-2 border-t border-line pt-4">
-            <Link
-              href="/login"
-              className="rounded-lg border border-line px-4 py-2 text-center text-sm font-medium text-ink-secondary hover:border-primary hover:text-primary"
-            >
-              Login
-            </Link>
-            <Link
-              href="/signup"
-              className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-hover"
-            >
-              Sign Up
-            </Link>
-          </div>
+          {!authenticated && (
+            <div className="mt-3 flex flex-col gap-2 border-t border-line pt-4">
+              <Link
+                href="/login"
+                className="rounded-lg border border-line px-4 py-2 text-center text-sm font-medium text-ink-secondary hover:border-primary hover:text-primary"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                className="rounded-lg bg-primary px-4 py-2 text-center text-sm font-medium text-white hover:bg-primary-hover"
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </nav>
