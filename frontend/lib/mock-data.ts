@@ -42,6 +42,25 @@ export const AV_CATEGORIES: Category[] = [
 export type CategoryName = (typeof AV_CATEGORIES)[number]["name"];
 
 /* ------------------------------------------------------------------ */
+/* Job trend — prototype data                                         */
+/* ------------------------------------------------------------------ */
+
+export type JobTrendPoint = {
+  period: string;
+  jobCount: number;
+};
+
+// Prototype data until the aggregation API is available.
+export const JOB_TREND_DATA: JobTrendPoint[] = [
+  { period: "Mar", jobCount: 412 },
+  { period: "Apr", jobCount: 405 },
+  { period: "May", jobCount: 418 },
+  { period: "Jun", jobCount: 426 },
+  { period: "Jul", jobCount: 419 },
+  { period: "Aug", jobCount: 441 },
+];
+
+/* ------------------------------------------------------------------ */
 /* Companies — client-provided AV company list (~42)                   */
 /* ------------------------------------------------------------------ */
 
