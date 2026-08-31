@@ -83,8 +83,8 @@ def test_enabled_api_sources_uses_enabled_flag_from_real_yaml():
     assert not any(key in selected_keys for key in disabled)
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -146,8 +146,8 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
     assert "./scrapers/dbt" in dbt_cmd
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -177,8 +177,8 @@ def test_ashby_http_403_still_runs_dbt_bronze(
     assert "job_postings" in mock_dbt.call_args.args[0]
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -201,8 +201,8 @@ def test_pipeline_fails_when_dbt_bronze_run_fails(
     mock_dbt.assert_called_once()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -239,8 +239,8 @@ def test_waabi_lever_scrape_lands_array_payload(
     assert inserted[5] == "CA"
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -280,8 +280,8 @@ def test_ashby_scrape_lands_multi_location_payload(
     assert inserted[5] == "KR"
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -350,8 +350,8 @@ def test_unknown_company_does_not_scrape_or_ingest(mock_urlopen, mock_minio):
     mock_minio.assert_not_called()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -377,8 +377,8 @@ def test_postgres_connect_failure_after_scrape_returns_error(
     mock_dbt.assert_not_called()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")
@@ -430,8 +430,8 @@ def test_ingest_lands_latest_parquet_per_company(
     mock_dbt.assert_called_once()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.response_archive.Minio")

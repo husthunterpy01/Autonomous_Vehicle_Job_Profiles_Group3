@@ -1,20 +1,15 @@
 import json
 import logging
-import os
-import shutil
-import subprocess
-from urllib.parse import unquote, urlparse
 
 import psycopg2
 from psycopg2.extras import Json, execute_values
 
+from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 from scrapers.response_archive import ResponseArchive
 from scrapers.utils.company_scraper import CompanyScraper
 
 logger = logging.getLogger(__name__)
-
-DBT_PROJECT_DIR = "./scrapers/dbt"
 
 RAW_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS bronze.raw_responses (
@@ -32,9 +27,10 @@ CREATE TABLE IF NOT EXISTS bronze.raw_responses (
 
 class BronzeIngest():
 
-    def __init__(self, bucket_name, postgres_config=None):
+    def __init__(self, bucket_name, postgres_config=None, dbt_config=None):
         self.bucket_name = bucket_name
         self.postgres_config = postgres_config or PostgresConfig()
+        self.dbt_config = dbt_config or DbtConfig()
         self._companies = None
 
     def extract_raw_data_to_db(self) -> int:
@@ -70,29 +66,7 @@ class BronzeIngest():
             connection.close()
 
     def run_dbt_bronze(self) -> int:
-        dbt_bin = shutil.which("dbt")
-        if not dbt_bin:
-            logger.error("dbt is not on PATH. Install with: pip install dbt-postgres==1.11.0")
-            return 1
-        env = self._dbt_env()
-        completed = subprocess.run(
-            [
-                dbt_bin,
-                "run",
-                "--project-dir",
-                DBT_PROJECT_DIR,
-                "--profiles-dir",
-                DBT_PROJECT_DIR,
-                "--select",
-                "job_postings",
-            ],
-            env=env,
-        )
-        if completed.returncode != 0:
-            logger.error("dbt bronze run failed with exit code %s.", completed.returncode)
-            return 1
-        logger.info("dbt built bronze.job_postings.")
-        return 0
+        return self.dbt_config.run("job_postings", self.postgres_config)
 
     def _ensure_raw_table(self, connection):
         with connection.cursor() as cursor:
@@ -165,27 +139,3 @@ class BronzeIngest():
             if company_name.lower() == name:
                 return company.get("country")
         return None
-
-    def _dbt_env(self) -> dict[str, str]:
-        env = os.environ.copy()
-        config = self.postgres_config
-        if config.dsn_override:
-            parsed = urlparse(config.dsn_override)
-            if parsed.hostname:
-                env["POSTGRES_HOST"] = parsed.hostname
-            if parsed.port:
-                env["POSTGRES_PORT"] = str(parsed.port)
-            if parsed.username:
-                env["POSTGRES_USER"] = unquote(parsed.username)
-            if parsed.password is not None:
-                env["POSTGRES_PASSWORD"] = unquote(parsed.password)
-            dbname = parsed.path.lstrip("/")
-            if dbname:
-                env["POSTGRES_DB"] = dbname
-        else:
-            env.setdefault("POSTGRES_HOST", config.host)
-            env.setdefault("POSTGRES_PORT", str(config.port))
-            env.setdefault("POSTGRES_USER", config.user)
-            env.setdefault("POSTGRES_PASSWORD", config.password)
-            env.setdefault("POSTGRES_DB", config.database)
-        return env

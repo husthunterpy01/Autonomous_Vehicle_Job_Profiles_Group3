@@ -27,8 +27,8 @@ def _archive_frame(body, source_system="greenhouse", company="Stack AV"):
     )
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.service.bronze_storage.bronze_ingest.ResponseArchive")
 @patch("scrapers.service.bronze_storage.bronze_ingest.CompanyScraper")
@@ -63,8 +63,8 @@ def test_extract_lands_raw_payload_then_runs_dbt(
     connection.close.assert_called_once()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.service.bronze_storage.bronze_ingest.ResponseArchive")
 @patch("scrapers.service.bronze_storage.bronze_ingest.CompanyScraper")
@@ -86,8 +86,8 @@ def test_extract_skips_html_source(
     mock_dbt.assert_called_once()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.service.bronze_storage.bronze_ingest.ResponseArchive")
 @patch("scrapers.service.bronze_storage.bronze_ingest.CompanyScraper")
@@ -117,8 +117,8 @@ def test_extract_continues_after_company_failure(
     mock_dbt.assert_called_once()
 
 
-@patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
-@patch("scrapers.service.bronze_storage.bronze_ingest.subprocess.run")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
 @patch("scrapers.service.bronze_storage.bronze_ingest.ResponseArchive")
 @patch("scrapers.service.bronze_storage.bronze_ingest.CompanyScraper")
@@ -138,3 +138,24 @@ def test_dbt_job_postings_model_covers_supported_ats():
     sql = DBT_JOB_POSTINGS.read_text(encoding="utf-8")
     for ats in ("greenhouse", "lever", "ashby", "smartrecruiters"):
         assert ats in sql
+
+
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
+def test_dbt_config_run_uses_shared_project_dir(mock_dbt, _mock_which):
+    from scrapers.config.dbt import DbtConfig
+    from scrapers.config.postgres import PostgresConfig
+
+    mock_dbt.return_value = MagicMock(returncode=0)
+    postgres = PostgresConfig(host="db.local", port=5432, database="jobs", user="team3", password="secret")
+
+    status = DbtConfig().run("job_postings", postgres)
+
+    assert status == 0
+    command = mock_dbt.call_args.args[0]
+    assert command[:3] == ["/usr/bin/dbt", "run", "--project-dir"]
+    assert command[3] == "./scrapers/dbt"
+    assert command[5] == "./scrapers/dbt"
+    assert "job_postings" in command
+    assert mock_dbt.call_args.kwargs["env"]["POSTGRES_HOST"] == "db.local"
+    assert mock_dbt.call_args.kwargs["env"]["POSTGRES_DB"] == "jobs"
