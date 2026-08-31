@@ -4,49 +4,114 @@ from scrapers.strategy.ats.ashbystrategy import AshbyStrategy
 from scrapers.strategy.ats.greenhousestrategy import GreenhouseStrategy
 from scrapers.strategy.ats.leverstrategy import LeverStrategy
 from scrapers.strategy.ats.smartrecruiter import SmartRecruiterStrategy
-from scrapers.strategy.registry import extract_jobs_from_payload, get_ats_adapter
+from scrapers.strategy.registry import get_ats_adapter
 
 
-def test_extract_jobs_from_greenhouse_payload():
-    jobs = GreenhouseStrategy().extract_job_information(
-        {"jobs": [{"id": "1", "title": "Engineer"}], "meta": {"total": 1}}
+def test_greenhouse_maps_jobs_to_bronze_payload():
+    jobs = GreenhouseStrategy("greenhouse").map_response_to_bronze_payload(
+        "Stack AV",
+        "US",
+        {
+            "jobs": [
+                {
+                    "title": "Engineer",
+                    "content": "<p>Build autonomy software</p>",
+                    "location": {"name": "Pittsburgh, PA"},
+                    "first_published": "2026-01-01T00:00:00Z",
+                    "absolute_url": "https://boards.greenhouse.io/stackav/jobs/1",
+                }
+            ]
+        },
     )
 
-    assert jobs == [{"id": "1", "title": "Engineer"}]
+    assert len(jobs) == 1
+    assert jobs[0].ats_name == "greenhouse"
+    assert jobs[0].company_name == "Stack AV"
+    assert jobs[0].job_name == "Engineer"
+    assert jobs[0].job_description == "<p>Build autonomy software</p>"
+    assert jobs[0].location == "Pittsburgh, PA"
+    assert jobs[0].job_url.endswith("/jobs/1")
+    assert jobs[0].employment_type == "Full Time"
 
 
-def test_extract_jobs_from_ashby_payload():
-    jobs = AshbyStrategy().extract_job_information({"jobs": [{"id": "a1"}]})
-
-    assert jobs == [{"id": "a1"}]
-
-
-def test_extract_jobs_from_lever_list():
-    jobs = LeverStrategy().extract_job_information([{"id": "abc", "text": "Engineer"}])
-
-    assert jobs[0]["id"] == "abc"
-
-
-def test_extract_jobs_from_smartrecruiters_content():
-    jobs = SmartRecruiterStrategy().extract_job_information({"content": [{"id": "sr-1"}]})
-
-    assert jobs == [{"id": "sr-1"}]
-
-
-def test_extract_jobs_rejects_greenhouse_count_mismatch():
-    with pytest.raises(ValueError, match="reported 2 jobs"):
-        GreenhouseStrategy().extract_job_information(
-            {"jobs": [{"id": "1"}], "meta": {"total": 2}}
-        )
-
-
-def test_extract_jobs_from_payload_uses_source_system():
-    jobs = extract_jobs_from_payload(
-        "greenhouse",
-        {"jobs": [{"id": "1"}], "meta": {"total": 1}},
+def test_ashby_maps_jobs_and_secondary_locations():
+    jobs = AshbyStrategy("ashby").map_response_to_bronze_payload(
+        "42dot",
+        "KR",
+        {
+            "jobs": [
+                {
+                    "title": "Software Engineer",
+                    "descriptionPlain": "Work on autonomy.",
+                    "location": "Seoul",
+                    "secondaryLocations": [{"location": "Palo Alto"}],
+                    "publishedAt": "2026-02-01T00:00:00Z",
+                    "jobUrl": "https://jobs.ashbyhq.com/42dot/abc",
+                    "employmentType": "Full-time",
+                }
+            ]
+        },
     )
 
-    assert jobs == [{"id": "1"}]
+    assert jobs[0].job_name == "Software Engineer"
+    assert jobs[0].location == "Seoul | Palo Alto"
+    assert jobs[0].employment_type == "Full-time"
+
+
+def test_lever_maps_list_payload():
+    jobs = LeverStrategy("lever").map_response_to_bronze_payload(
+        "Waabi",
+        "CA",
+        [
+            {
+                "text": "Research Engineer",
+                "descriptionPlain": "Research autonomy.",
+                "categories": {"location": "Toronto"},
+                "createdAt": 1700000000000,
+                "hostedUrl": "https://jobs.lever.co/waabi/abc",
+                "workplaceType": "hybrid",
+            }
+        ],
+    )
+
+    assert jobs[0].job_name == "Research Engineer"
+    assert jobs[0].location == "Toronto"
+    assert jobs[0].employment_type == "hybrid"
+
+
+def test_smartrecruiters_maps_job_ad_sections():
+    jobs = SmartRecruiterStrategy("smartrecruiters").map_response_to_bronze_payload(
+        "Bosch",
+        "DE",
+        {
+            "content": [
+                {
+                    "name": "Product Data Operator - Temporary",
+                    "postingUrl": "https://jobs.smartrecruiters.com/BoschGroup/744000146470121-product-data-operator-temporary",
+                    "location": {"fullLocation": "Beograd, , Serbia"},
+                    "releasedDate": "2026-08-31T13:38:57.052Z",
+                    "typeOfEmployment": {"label": "Full-time"},
+                    "jobAd": {
+                        "sections": {
+                            "jobDescription": {"text": "<p>Release product documents</p>"},
+                            "qualifications": {"text": "<p>SAP knowledge</p>"},
+                        }
+                    },
+                }
+            ]
+        },
+    )
+
+    assert jobs[0].job_name == "Product Data Operator - Temporary"
+    assert jobs[0].job_description == "<p>Release product documents</p>\n<p>SAP knowledge</p>"
+    assert jobs[0].job_url.endswith("product-data-operator-temporary")
+
+
+def test_get_ats_adapter_returns_registered_strategy():
+    adapter = get_ats_adapter("greenhouse")
+
+    assert isinstance(adapter, GreenhouseStrategy)
+    assert adapter.source_system == "greenhouse"
 
 
 def test_unknown_source_system_raises():

@@ -14,7 +14,8 @@ class GreenhouseStrategy(ATSBaseStrategy):
                     job_description = job["content"],
                     location = job["location"]["name"],
                     job_uploaded_at = job["first_published"],
-                    job_url = job["absolute_url"]
+                    job_url = job["absolute_url"],
+                    employment_type = "Full Time",
                 )
             )
 

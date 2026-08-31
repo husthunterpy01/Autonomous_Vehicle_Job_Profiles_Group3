@@ -58,7 +58,7 @@ def test_extract_lands_raw_payload_then_runs_dbt(
     assert isinstance(inserted[4], Json)
     assert inserted[4].adapted == {"jobs": [{"title": "Engineer"}]}
     assert inserted[5] == "US"
-    assert mock_dbt.call_args.kwargs["cwd"].endswith("scrapers/dbt")
+    assert "./scrapers/dbt" in mock_dbt.call_args.args[0]
     assert "job_postings" in mock_dbt.call_args.args[0]
     connection.close.assert_called_once()
 

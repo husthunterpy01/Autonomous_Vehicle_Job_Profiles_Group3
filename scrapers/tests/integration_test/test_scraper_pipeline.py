@@ -143,7 +143,7 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
     assert dbt_cmd[0] == "/usr/bin/dbt"
     assert "run" in dbt_cmd
     assert "job_postings" in dbt_cmd
-    assert mock_dbt.call_args.kwargs["cwd"].endswith("scrapers/dbt")
+    assert "./scrapers/dbt" in dbt_cmd
 
 
 @patch("scrapers.service.bronze_storage.bronze_ingest.shutil.which", return_value="/usr/bin/dbt")
