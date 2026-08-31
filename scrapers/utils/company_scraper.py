@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 import yaml
 
+from scrapers.service.fetch.rawfetch import RawFetch
 
-class CompanyRegistry:
+logger = logging.getLogger(__name__)
+
+
+class CompanyScraper:
     COMPANY_LIST_PATH = "./scrapers/data/list_companies.yaml"
-    API_ATS = frozenset(
-        {"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio"}
-    )
+    API_ATS = frozenset({"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio"})
 
     @classmethod
     def load_company_list(cls) -> list[dict[str, Any]]:
@@ -34,3 +37,17 @@ class CompanyRegistry:
                 continue
             selected.append(company)
         return selected
+
+    @classmethod
+    def scrape_company(cls, company: dict[str, Any], timeout: float) -> int:
+        name = company["name"]
+        ats = company.get("ats")
+        if ats != "html" and not company.get("slug"):
+            logger.warning("Skipping %s: API company is missing a slug.", name)
+            return 0
+
+        logger.info("Fetching %s from %s.", name, ats)
+        fetcher, url = RawFetch.from_company(company)
+        object_key = fetcher.fetch_and_archive(url, timeout=timeout)
+        logger.info("Archived %s to %s.", name, object_key)
+        return 1

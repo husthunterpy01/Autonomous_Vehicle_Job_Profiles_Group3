@@ -3,28 +3,26 @@ from __future__ import annotations
 import logging
 import sys
 
-from scrapers.utils.company_registry import CompanyRegistry
+from scrapers.config.minio import MinioConfig
+from scrapers.service.bronze_storage.bronze_ingest import BronzeIngest
+from scrapers.utils.company_scraper import CompanyScraper
 from scrapers.utils.parser import ScraperParser
-from scrapers.utils.run_company import run_company
+
+import psycopg2
 
 logger = logging.getLogger(__name__)
 
-
-def run_scrapers(argv: list[str] | None = None) -> int:
-    return ScraperRunner.run(argv)
-
-
 class ScraperRunner:
     @classmethod
-    def run(cls, argv: list[str] | None = None) -> int:
+    def scrape_data_from_sources(cls, argv: list[str] | None = None) -> int:
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)s %(name)s: %(message)s",
             stream=sys.stderr,
         )
         args = ScraperParser.parse_args(argv)
-        companies = CompanyRegistry.enabled_api_sources(
-            CompanyRegistry.load_company_list(), company_key=args.company
+        companies = CompanyScraper.enabled_api_sources(
+            CompanyScraper.load_company_list(), company_key=args.company
         )
         if args.company and not companies:
             logger.error("No enabled API company matched key %r.", args.company)
@@ -38,15 +36,20 @@ class ScraperRunner:
         for company in companies:
             name = company.get("name", company.get("key"))
             try:
-                archived += run_company(company, args.max_jobs, args.timeout)
+                archived += CompanyScraper.scrape_company(company, args.timeout)
             except (RuntimeError, ValueError, KeyError, OSError) as exc:
                 logger.error("%s failed: %s", name, exc)
                 failures += 1
 
-        logger.info(
-            "Finished %s/%s companies (%s jobs).",
-            len(companies) - failures,
-            len(companies),
-            archived,
-        )
-        return 1 if failures else 0
+        logger.info( "Finished %s/%s companies (%s jobs).",  len(companies) - failures,  len(companies),  archived )
+        ingest_status = cls.upload_to_bronze_table()
+        return 1 if failures or ingest_status else 0
+
+    @classmethod
+    def upload_to_bronze_table(cls) -> int:
+        try:
+            ingest_status = BronzeIngest(MinioConfig().bucket).extract_raw_data_to_db()
+        except (RuntimeError, OSError, ValueError, psycopg2.Error) as exc:
+            logger.error("Bronze ingest failed: %s", exc)
+            return 1
+        return ingest_status

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pyarrow.parquet as pq
 
@@ -71,3 +71,58 @@ def test_save_raw_response_rejects_missing_body(mock_minio):
         assert "raw_response is required" in str(exc)
     else:
         raise AssertionError("expected ValueError")
+
+
+@patch("scrapers.response_archive.Minio")
+def test_extract_reads_latest_parquet_per_company(mock_minio):
+    bodies = {
+        "api/stack_av/stack_av_2026-08-30_01-00-00.parquet": "older",
+        "api/stack_av/stack_av_2026-08-31_12-00-00.parquet": "newer",
+        "api/waabi/waabi_2026-08-30_02-00-00.parquet": "waabi",
+    }
+
+    def get_object(_bucket, object_name):
+        response = MagicMock()
+        response.read.return_value = ResponseArchive._to_parquet_bytes(
+            [
+                {
+                    "source": "api",
+                    "company": object_name.split("/")[1],
+                    "source_system": "greenhouse",
+                    "url": "",
+                    "status": 200,
+                    "content_type": "application/json",
+                    "body": bodies[object_name],
+                    "fetched_at": datetime(2026, 8, 31, tzinfo=timezone.utc),
+                }
+            ]
+        )
+        return response
+
+    client = mock_minio.return_value
+    client.get_object.side_effect = get_object
+    archive = ResponseArchive(
+        MinioConfig(
+            endpoint="localhost:9000",
+            access_key="test",
+            secret_key="test",
+            secure=False,
+            bucket="test-bucket",
+        )
+    )
+    archive._list_objects = lambda _bucket: list(bodies)
+
+    extracted = {
+        (source, company): frame["body"].tolist()
+        for source, company, frame in archive._extract_data_from_storage("test-bucket")
+    }
+
+    assert extracted == {
+        ("api", "stack_av"): ["newer"],
+        ("api", "waabi"): ["waabi"],
+    }
+    read_keys = [call.args[1] for call in client.get_object.call_args_list]
+    assert read_keys == [
+        "api/stack_av/stack_av_2026-08-31_12-00-00.parquet",
+        "api/waabi/waabi_2026-08-30_02-00-00.parquet",
+    ]

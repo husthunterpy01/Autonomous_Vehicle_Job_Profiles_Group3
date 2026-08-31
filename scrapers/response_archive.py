@@ -6,13 +6,14 @@ from collections.abc import Sequence
 from datetime import datetime, timezone
 from typing import Any
 
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 from minio import Minio
 from minio.error import S3Error
 
 from scrapers.config import MinioConfig
-from scrapers.models.bronze_model import RawPayload
+from scrapers.models.bronze.bronze_model import RawPayload
 
 API_SOURCE = "api"
 HTML_SOURCE = "html"
@@ -22,7 +23,6 @@ PARQUET_CONTENT_TYPE = "application/vnd.apache.parquet"
 
 class ResponseArchive:
     """Persist raw API JSON and HTML responses as Parquet objects in MinIO."""
-
     def __init__(self, minio_config: MinioConfig | None = None) -> None:
         self.minio_config = minio_config or MinioConfig()
         client_kwargs = {
@@ -53,6 +53,7 @@ class ResponseArchive:
         raw_response: Any,
         *,
         source: str | None = None,
+        source_system: str | None = None,
         url: str = "",
         status: int = 200,
         content_type: str = "",
@@ -70,6 +71,7 @@ class ResponseArchive:
         payload = RawPayload(
             source=resolved_source,
             company=company_name,
+            source_system=source_system,
             url=url,
             status=status,
             content_type=content_type or self._default_content_type(resolved_source),
@@ -112,11 +114,11 @@ class ResponseArchive:
             ) from exc
         return object_name
 
-    def _list_objects(self, prefix: str = "") -> list[str]:
+    def _list_objects(self, bucket_name: str, prefix: str = "") -> list[str]:
         return [
             obj.object_name
             for obj in self.client.list_objects(
-                bucket_name=self.minio_config.bucket,
+                bucket_name=bucket_name,
                 prefix=prefix,
                 recursive=True,
             )
@@ -161,12 +163,43 @@ class ResponseArchive:
         return {
             "source": source,
             "company": payload.company,
+            "source_system": payload.source_system,
             "url": payload.url,
             "status": int(payload.status),
             "content_type": payload.content_type,
             "body": ResponseArchive._decode_body(payload.body),
             "fetched_at": ResponseArchive._as_utc(payload.fetched_at),
         }
+
+    def _extract_data_from_storage(self, bucket_name) :
+        latest_by_company = {}
+        for object_name in self._list_objects(bucket_name):
+            if not object_name.endswith(".parquet"):
+                continue
+            scraped_components = object_name.split("/")
+            if len(scraped_components) != 3:
+                print(f"Unexpectsed number of components found in the archive log, please check the file {object_name}")
+                continue
+
+            source, company_name, filename = scraped_components
+            key = (source, company_name)
+            previous = latest_by_company.get(key)
+            if previous is None or filename > previous[1]:
+                latest_by_company[key] = (object_name, filename)
+
+        for (source, company_name), (object_name, _) in latest_by_company.items():
+            response = None
+            try:
+                response = self.client.get_object(bucket_name, object_name)
+                response_data = response.read()
+                response_df = pd.read_parquet(io.BytesIO(response_data))
+                yield source, company_name, response_df
+            except S3Error as exc:
+                print(f"[skip] failed to read {object_name}: {exc}")
+            finally:
+                if response is not None:
+                    response.close()
+                    response.release_conn()
 
     @staticmethod
     def _object_key(company_name: str, source: str, collected_at: datetime) -> str:

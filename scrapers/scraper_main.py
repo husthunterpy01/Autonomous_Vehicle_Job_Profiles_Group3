@@ -4,7 +4,7 @@ from scrapers.utils.runner import ScraperRunner
 
 
 def main(argv: list[str] | None = None) -> int:
-    return ScraperRunner.run(argv)
+    return ScraperRunner.scrape_data_from_sources(argv)
 
 
 if __name__ == "__main__":
