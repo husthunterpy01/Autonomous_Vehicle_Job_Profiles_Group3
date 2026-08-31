@@ -3,6 +3,7 @@ import logging
 import os
 import shutil
 import subprocess
+from pathlib import Path
 from urllib.parse import unquote, urlparse
 
 import psycopg2
@@ -14,7 +15,7 @@ from scrapers.utils.company_scraper import CompanyScraper
 
 logger = logging.getLogger(__name__)
 
-DBT_PROJECT_DIR = "./scrapers/dbt"
+DBT_PROJECT_DIR = Path(__file__).resolve().parents[2] / "dbt"
 
 RAW_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS bronze.raw_responses (

@@ -13,4 +13,4 @@ class BronzePayload:
     location: Optional[str]
     job_url: Optional[str]
     job_uploaded_at: datetime
-    employment_type: str = "Full Time"
+    employment_type: str 
