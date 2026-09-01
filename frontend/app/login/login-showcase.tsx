@@ -135,6 +135,7 @@ function CategoryChart() {
     b.category.jobs > a.category.jobs ? b : a,
   );
   const pointsAttr = points.map((p) => `${p.x},${p.y}`).join(" ");
+  const areaAttr = `${padding},${height} ${pointsAttr} ${width - padding},${height}`;
 
   return (
     <div className="relative">
@@ -143,6 +144,21 @@ function CategoryChart() {
         className="w-full"
         aria-hidden="true"
       >
+        <defs>
+          <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+            <stop
+              offset="0%"
+              stopColor="var(--color-primary)"
+              stopOpacity="0.25"
+            />
+            <stop
+              offset="100%"
+              stopColor="var(--color-primary)"
+              stopOpacity="0"
+            />
+          </linearGradient>
+        </defs>
+        <polygon points={areaAttr} fill="url(#chartFade)" />
         <polyline
           points={pointsAttr}
           fill="none"
@@ -172,8 +188,8 @@ function CategoryChart() {
           top: `${(peak.y / height) * 100}%`,
         }}
       >
-        <p className="font-semibold text-ink">{peak.category.name}</p>
-        <p className="text-ink-secondary">{peak.category.jobs} jobs</p>
+        <p className="font-medium text-ink">{peak.category.name}</p>
+        <p className="text-primary">{peak.category.jobs} jobs</p>
       </div>
     </div>
   );
@@ -183,7 +199,27 @@ function CategoryChart() {
 /* Dashboard preview card                                              */
 /* ------------------------------------------------------------------ */
 
-const SIDEBAR_ITEMS = ["Home", "Find Jobs", "Companies", "Saved Jobs"];
+const SIDEBAR_ITEMS = [
+  { label: "Home", dot: "bg-primary" },
+  { label: "Find Jobs", dot: "bg-emerald-400" },
+  { label: "Companies", dot: "bg-amber-400" },
+  { label: "Saved Jobs", dot: "bg-sky-400" },
+];
+
+/** A small accent palette, reused across stat tiles / skill bars / the
+ *  recently-posted list so the card reads as colorful rather than the
+ *  single-indigo-plus-gray look it started with. */
+const ACCENTS = [
+  { text: "text-primary", tint: "bg-primary-light", bar: "bg-primary" },
+  { text: "text-emerald-600", tint: "bg-emerald-50", bar: "bg-emerald-500" },
+  { text: "text-amber-600", tint: "bg-amber-50", bar: "bg-amber-400" },
+];
+
+const STATS = [
+  { value: AV_COMPANIES.length, label: "Companies" },
+  { value: ALL_JOBS.length, label: "Open Roles" },
+  { value: AV_CATEGORIES.length, label: "Categories" },
+];
 
 function DashboardPreview() {
   const topSkills = getTopSkills(3);
@@ -194,22 +230,23 @@ function DashboardPreview() {
     <div className="flex -rotate-2 overflow-hidden rounded-[2rem] border border-line bg-surface shadow-2xl transition-transform duration-500 ease-out hover:rotate-0 hover:scale-[1.02]">
       {/* Sidebar */}
       <div className="hidden w-32 shrink-0 flex-col gap-1 border-r border-line bg-section p-3 sm:flex">
-        <div className="mb-2.5 flex items-center gap-2 font-bold text-ink">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-white">
+        <div className="mb-2.5 flex items-center gap-2 font-semibold text-ink">
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-white">
             AV
           </span>
-          <span className="text-sm">Job Finder</span>
+          <span className="text-xs">Job Finder</span>
         </div>
         {SIDEBAR_ITEMS.map((item, i) => (
           <div
-            key={item}
-            className={`cursor-default rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
+            key={item.label}
+            className={`flex cursor-default items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors ${
               i === 0
                 ? "bg-primary-light text-primary"
                 : "text-ink-secondary hover:bg-surface hover:text-ink"
             }`}
           >
-            {item}
+            <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${item.dot}`} />
+            {item.label}
           </div>
         ))}
       </div>
@@ -217,30 +254,29 @@ function DashboardPreview() {
       {/* Main content */}
       <div className="flex-1 p-4">
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-ink">Dashboard</p>
-          <div className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1 text-xs text-ink-muted">
+          <p className="text-sm font-semibold text-ink">Dashboard</p>
+          <div className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1 text-[11px] text-ink-muted">
             Search jobs...
           </div>
         </div>
 
-        {/* Stat tiles — real numbers from mock-data */}
+        {/* Stat tiles — real numbers from mock-data, each tinted with its
+            own accent color instead of a flat neutral border box */}
         <div className="mt-3 grid grid-cols-3 gap-2">
-          <div className="rounded-lg border border-line px-2.5 py-1.5">
-            <p className="text-base font-bold text-ink">
-              {AV_COMPANIES.length}
-            </p>
-            <p className="text-[11px] text-ink-secondary">Companies</p>
-          </div>
-          <div className="rounded-lg border border-line px-2.5 py-1.5">
-            <p className="text-base font-bold text-ink">{ALL_JOBS.length}</p>
-            <p className="text-[11px] text-ink-secondary">Open Roles</p>
-          </div>
-          <div className="rounded-lg border border-line px-2.5 py-1.5">
-            <p className="text-base font-bold text-ink">
-              {AV_CATEGORIES.length}
-            </p>
-            <p className="text-[11px] text-ink-secondary">Categories</p>
-          </div>
+          {STATS.map((stat, i) => {
+            const accent = ACCENTS[i];
+            return (
+              <div
+                key={stat.label}
+                className={`rounded-lg px-2.5 py-2 ${accent.tint}`}
+              >
+                <p className={`text-base font-semibold ${accent.text}`}>
+                  {stat.value}
+                </p>
+                <p className="text-[11px] text-ink-secondary">{stat.label}</p>
+              </div>
+            );
+          })}
         </div>
 
         {/* Chart */}
@@ -257,10 +293,13 @@ function DashboardPreview() {
             <p className="mb-1.5 text-xs font-medium text-ink-secondary">
               Recently Posted
             </p>
-            <ul className="space-y-1">
-              {recentJobs.map((job) => (
-                <li key={job.id} className="truncate text-xs text-ink">
-                  {job.title}
+            <ul className="space-y-1.5">
+              {recentJobs.map((job, i) => (
+                <li key={job.id} className="flex items-center gap-1.5">
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${ACCENTS[i % ACCENTS.length].bar}`}
+                  />
+                  <span className="truncate text-xs text-ink">{job.title}</span>
                 </li>
               ))}
             </ul>
@@ -269,29 +308,32 @@ function DashboardPreview() {
             <p className="mb-1.5 text-xs font-medium text-ink-secondary">
               Top Skills
             </p>
-            <ul className="space-y-1">
-              {topSkills.map((skill) => (
-                <li key={skill.name}>
-                  <div className="mb-0.5 flex justify-between text-xs text-ink">
-                    <span className="truncate">{skill.name}</span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-line">
-                    <div
-                      className="h-1.5 rounded-full bg-primary"
-                      style={{
-                        width: `${(skill.jobs / maxSkillJobs) * 100}%`,
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
+            <ul className="space-y-1.5">
+              {topSkills.map((skill, i) => {
+                const accent = ACCENTS[i % ACCENTS.length];
+                return (
+                  <li key={skill.name}>
+                    <div className="mb-0.5 flex justify-between text-xs text-ink">
+                      <span className="truncate">{skill.name}</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-line">
+                      <div
+                        className={`h-1.5 rounded-full ${accent.bar}`}
+                        style={{
+                          width: `${(skill.jobs / maxSkillJobs) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>
 
         {/* Demo user chip — matches the mock login account, not a real person */}
         <div className="mt-3 flex items-center gap-2 border-t border-line pt-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary">
             D
           </span>
           <div>
