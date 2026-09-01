@@ -97,12 +97,22 @@ smartrecruiters as (
     from src
     cross join lateral jsonb_array_elements(coalesce(src.body->'content', '[]'::jsonb)) as job
     where src.source_system in ('smartrecruiters', 'smartrecruiter')
+),
+
+parsed as (
+    select * from greenhouse
+    union all
+    select * from lever
+    union all
+    select * from ashby
+    union all
+    select * from smartrecruiters
 )
 
-select *, now() as ingested_at from greenhouse
-union all
-select *, now() as ingested_at from lever
-union all
-select *, now() as ingested_at from ashby
-union all
-select *, now() as ingested_at from smartrecruiters
+select
+    row_number() over (
+        order by company_name, coalesce(job_url, ''), job_name
+    ) as id,
+    parsed.*,
+    now() as ingested_at
+from parsed

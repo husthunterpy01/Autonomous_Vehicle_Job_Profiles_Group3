@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import List
 
 
 BUCKET_NAME = "api"
@@ -11,5 +10,3 @@ class ATSBaseStrategy(ABC):
     @abstractmethod
     def map_response_to_bronze_payload(self, company_name, headquarter, json_raw_response):
         pass
-
-

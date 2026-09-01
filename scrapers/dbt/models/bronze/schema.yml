@@ -4,6 +4,9 @@ models:
   - name: job_postings
     description: ATS job rows parsed from bronze.raw_responses JSON bodies.
     columns:
+      - name: id
+        description: Unique row id across all companies in bronze.job_postings.
+        tests: [not_null, unique]
       - name: company_name
         tests: [not_null]
       - name: job_name

@@ -138,6 +138,8 @@ def test_dbt_job_postings_model_covers_supported_ats():
     sql = DBT_JOB_POSTINGS.read_text(encoding="utf-8")
     for ats in ("greenhouse", "lever", "ashby", "smartrecruiters"):
         assert ats in sql
+    assert "as id" in sql
+    assert "row_number()" in sql
 
 
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")

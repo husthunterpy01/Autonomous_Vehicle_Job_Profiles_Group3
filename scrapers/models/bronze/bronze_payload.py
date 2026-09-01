@@ -1,7 +1,6 @@
 from dataclasses import dataclass
-from typing import Optional
-from uuid import UUID
 from datetime import datetime
+from typing import Optional
 
 @dataclass(frozen=True)
 class BronzePayload:
@@ -13,4 +12,5 @@ class BronzePayload:
     location: Optional[str]
     job_url: Optional[str]
     job_uploaded_at: datetime
-    employment_type: str 
+    employment_type: str
+    id: Optional[int] = None
