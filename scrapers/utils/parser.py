@@ -6,9 +6,7 @@ from pathlib import Path
 
 class ScraperParser:
     @classmethod
-    def build_common_parser(
-        cls, description: str, default_output: Path
-    ) -> argparse.ArgumentParser:
+    def build_common_parser( cls, description: str, default_output: Path) -> argparse.ArgumentParser:
         """Create the CLI arguments shared by every company scraper."""
 
         parser = argparse.ArgumentParser(description=description)

@@ -1,4 +1,4 @@
-from scrapers.utils.company_registry import CompanyRegistry
+from scrapers.utils.company_scraper import CompanyScraper
 
 
 def test_enabled_api_sources_skips_disabled_and_non_api_rows():
@@ -14,7 +14,7 @@ def test_enabled_api_sources_skips_disabled_and_non_api_rows():
         },
     ]
 
-    selected = CompanyRegistry.enabled_api_sources(companies)
+    selected = CompanyScraper.enabled_api_sources(companies)
 
     assert [row["key"] for row in selected] == ["stack_av"]
 
@@ -37,7 +37,7 @@ def test_enabled_api_sources_filters_by_company_key():
         },
     ]
 
-    selected = CompanyRegistry.enabled_api_sources(companies, company_key="bosch")
+    selected = CompanyScraper.enabled_api_sources(companies, company_key="bosch")
 
     assert [row["key"] for row in selected] == ["bosch"]
 
@@ -53,9 +53,9 @@ def test_load_company_list_reads_yaml(tmp_path, monkeypatch):
         "    enabled: true\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(CompanyRegistry, "COMPANY_LIST_PATH", str(yaml_path))
+    monkeypatch.setattr(CompanyScraper, "COMPANY_LIST_PATH", str(yaml_path))
 
-    companies = CompanyRegistry.load_company_list()
+    companies = CompanyScraper.load_company_list()
 
     assert companies[0]["key"] == "stack_av"
 
@@ -63,10 +63,10 @@ def test_load_company_list_reads_yaml(tmp_path, monkeypatch):
 def test_load_company_list_rejects_invalid_yaml(tmp_path, monkeypatch):
     yaml_path = tmp_path / "list_companies.yaml"
     yaml_path.write_text("companies: not-a-list\n", encoding="utf-8")
-    monkeypatch.setattr(CompanyRegistry, "COMPANY_LIST_PATH", str(yaml_path))
+    monkeypatch.setattr(CompanyScraper, "COMPANY_LIST_PATH", str(yaml_path))
 
     try:
-        CompanyRegistry.load_company_list()
+        CompanyScraper.load_company_list()
     except ValueError as exc:
         assert "companies list" in str(exc)
     else:
