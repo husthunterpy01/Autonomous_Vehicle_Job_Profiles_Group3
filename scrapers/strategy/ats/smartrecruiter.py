@@ -18,7 +18,7 @@ class SmartRecruiterStrategy(ATSBaseStrategy):
                     location=location.get("fullLocation"),
                     job_uploaded_at=job.get("releasedDate"),
                     job_url=job.get("postingUrl") or job.get("absolute_url"),
-                    employment_type=employment.get("label") or "Full Time",
+                    employment_type=employment.get("label"),
                 )
             )
         return job_list_information

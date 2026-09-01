@@ -15,7 +15,7 @@ class GreenhouseStrategy(ATSBaseStrategy):
                     location = job["location"]["name"],
                     job_uploaded_at = job["first_published"],
                     job_url = job["absolute_url"],
-                    employment_type = "Full Time",
+                    employment_type = job.get("employment_type"),
                 )
             )
 

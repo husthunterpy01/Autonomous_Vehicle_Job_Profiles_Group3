@@ -17,7 +17,7 @@ greenhouse as (
         job->'location'->>'name' as location,
         job->>'absolute_url' as job_url,
         job->>'first_published' as job_uploaded_at,
-        'Full Time' as employment_type
+        job->>'employment_type' as employment_type
     from src
     cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
     where src.source_system = 'greenhouse'
@@ -33,7 +33,7 @@ lever as (
         job->'categories'->>'location' as location,
         job->>'hostedUrl' as job_url,
         job->>'createdAt' as job_uploaded_at,
-        coalesce(job->'categories'->>'commitment', 'Full Time') as employment_type
+        job->'categories'->>'commitment' as employment_type
     from src
     cross join lateral jsonb_array_elements(
         case
@@ -65,7 +65,7 @@ ashby as (
         ) as location,
         job->>'jobUrl' as job_url,
         job->>'publishedAt' as job_uploaded_at,
-        coalesce(job->>'employmentType', 'Full Time') as employment_type
+        job->>'employmentType' as employment_type
     from src
     cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
     where src.source_system = 'ashby'
@@ -93,7 +93,7 @@ smartrecruiters as (
         job->'location'->>'fullLocation' as location,
         coalesce(job->>'postingUrl', job->>'absolute_url') as job_url,
         job->>'releasedDate' as job_uploaded_at,
-        coalesce(job->'typeOfEmployment'->>'label', 'Full Time') as employment_type
+        job->'typeOfEmployment'->>'label' as employment_type
     from src
     cross join lateral jsonb_array_elements(coalesce(src.body->'content', '[]'::jsonb)) as job
     where src.source_system in ('smartrecruiters', 'smartrecruiter')

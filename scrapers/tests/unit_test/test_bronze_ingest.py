@@ -143,6 +143,7 @@ def test_dbt_job_postings_model_covers_supported_ats():
     assert "categories" in sql
     assert "commitment" in sql
     assert "workplaceType" not in sql
+    assert "Full Time" not in sql
 
 
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")

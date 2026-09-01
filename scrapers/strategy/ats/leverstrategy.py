@@ -15,7 +15,7 @@ class LeverStrategy(ATSBaseStrategy):
                     location = job["categories"]["location"],
                     job_uploaded_at = job["createdAt"],
                     job_url = job["hostedUrl"],
-                    employment_type = (job.get("categories") or {}).get("commitment") or "Full Time",
+                    employment_type = (job.get("categories") or {}).get("commitment"),
                 )
             )
 

@@ -31,7 +31,7 @@ def test_greenhouse_maps_jobs_to_bronze_payload():
     assert jobs[0].job_description == "<p>Build autonomy software</p>"
     assert jobs[0].location == "Pittsburgh, PA"
     assert jobs[0].job_url.endswith("/jobs/1")
-    assert jobs[0].employment_type == "Full Time"
+    assert jobs[0].employment_type is None
 
 
 def test_ashby_maps_jobs_and_secondary_locations():
@@ -101,7 +101,7 @@ def test_lever_maps_contract_commitment_not_workplace_type():
     assert jobs[0].employment_type == "Contract"
 
 
-def test_lever_defaults_employment_type_when_commitment_missing():
+def test_lever_employment_type_none_when_commitment_missing():
     jobs = LeverStrategy("lever").map_response_to_bronze_payload(
         "Waabi",
         "CA",
@@ -117,7 +117,7 @@ def test_lever_defaults_employment_type_when_commitment_missing():
         ],
     )
 
-    assert jobs[0].employment_type == "Full Time"
+    assert jobs[0].employment_type is None
 
 
 def test_smartrecruiters_maps_job_ad_sections():
@@ -146,6 +146,27 @@ def test_smartrecruiters_maps_job_ad_sections():
     assert jobs[0].job_name == "Product Data Operator - Temporary"
     assert jobs[0].job_description == "<p>Release product documents</p>\n<p>SAP knowledge</p>"
     assert jobs[0].job_url.endswith("product-data-operator-temporary")
+    assert jobs[0].employment_type == "Full-time"
+
+
+def test_smartrecruiters_employment_type_none_when_label_missing():
+    jobs = SmartRecruiterStrategy("smartrecruiters").map_response_to_bronze_payload(
+        "Bosch",
+        "DE",
+        {
+            "content": [
+                {
+                    "name": "Operator",
+                    "postingUrl": "https://jobs.smartrecruiters.com/BoschGroup/1",
+                    "location": {"fullLocation": "Beograd, , Serbia"},
+                    "releasedDate": "2026-08-31T13:38:57.052Z",
+                    "jobAd": {"sections": {"jobDescription": {"text": "<p>Work</p>"}}},
+                }
+            ]
+        },
+    )
+
+    assert jobs[0].employment_type is None
 
 
 def test_get_ats_adapter_returns_registered_strategy():
