@@ -215,7 +215,7 @@ def test_waabi_lever_scrape_lands_array_payload(
         {
             "text": "Software Engineer",
             "descriptionPlain": "Build the driver.",
-            "categories": {"location": "Toronto, ON"},
+            "categories": {"location": "Toronto, ON", "commitment": "Full-time"},
             "hostedUrl": "https://jobs.lever.co/waabi/abc",
             "createdAt": 1690000000000,
             "workplaceType": "hybrid",

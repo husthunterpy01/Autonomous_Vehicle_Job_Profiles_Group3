@@ -66,7 +66,7 @@ def test_lever_maps_list_payload():
             {
                 "text": "Research Engineer",
                 "descriptionPlain": "Research autonomy.",
-                "categories": {"location": "Toronto"},
+                "categories": {"location": "Toronto", "commitment": "Full-time"},
                 "createdAt": 1700000000000,
                 "hostedUrl": "https://jobs.lever.co/waabi/abc",
                 "workplaceType": "hybrid",
@@ -76,7 +76,48 @@ def test_lever_maps_list_payload():
 
     assert jobs[0].job_name == "Research Engineer"
     assert jobs[0].location == "Toronto"
-    assert jobs[0].employment_type == "hybrid"
+    assert jobs[0].employment_type == "Full-time"
+
+
+def test_lever_maps_contract_commitment_not_workplace_type():
+    jobs = LeverStrategy("lever").map_response_to_bronze_payload(
+        "WeRide",
+        "US",
+        [
+            {
+                "text": "Contract Vehicle Operations Specialist (Bilingual Spanish)",
+                "descriptionPlain": "Operate test vehicles.",
+                "categories": {
+                    "location": "San Jose, CA",
+                    "commitment": "Contract",
+                },
+                "createdAt": 1783379901263,
+                "hostedUrl": "https://jobs.lever.co/weride/67194770-ca27-4291-82ac-a90e58967e29",
+                "workplaceType": "onsite",
+            }
+        ],
+    )
+
+    assert jobs[0].employment_type == "Contract"
+
+
+def test_lever_defaults_employment_type_when_commitment_missing():
+    jobs = LeverStrategy("lever").map_response_to_bronze_payload(
+        "Waabi",
+        "CA",
+        [
+            {
+                "text": "Engineer",
+                "descriptionPlain": "Build the driver.",
+                "categories": {"location": "Toronto"},
+                "createdAt": 1690000000000,
+                "hostedUrl": "https://jobs.lever.co/waabi/abc",
+                "workplaceType": "hybrid",
+            }
+        ],
+    )
+
+    assert jobs[0].employment_type == "Full Time"
 
 
 def test_smartrecruiters_maps_job_ad_sections():

@@ -33,7 +33,7 @@ lever as (
         job->'categories'->>'location' as location,
         job->>'hostedUrl' as job_url,
         job->>'createdAt' as job_uploaded_at,
-        coalesce(job->>'workplaceType', 'Full Time') as employment_type
+        coalesce(job->'categories'->>'commitment', 'Full Time') as employment_type
     from src
     cross join lateral jsonb_array_elements(
         case
