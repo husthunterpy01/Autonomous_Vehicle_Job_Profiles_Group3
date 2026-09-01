@@ -120,8 +120,8 @@ function TrendingUpIcon() {
 
 function CategoryChart() {
   const width = 320;
-  const height = 110;
-  const padding = 10;
+  const height = 78;
+  const padding = 8;
   const maxJobs = Math.max(...AV_CATEGORIES.map((c) => c.jobs));
   const step = (width - padding * 2) / (AV_CATEGORIES.length - 1);
 
@@ -191,10 +191,10 @@ function DashboardPreview() {
   const recentJobs = MOCK_JOBS.slice(0, 3);
 
   return (
-    <div className="flex -rotate-2 overflow-hidden rounded-2xl border border-line bg-surface shadow-2xl transition-transform duration-500 ease-out hover:rotate-0 hover:scale-[1.02]">
+    <div className="flex -rotate-2 overflow-hidden rounded-[2rem] border border-line bg-surface shadow-2xl transition-transform duration-500 ease-out hover:rotate-0 hover:scale-[1.02]">
       {/* Sidebar */}
-      <div className="hidden w-36 shrink-0 flex-col gap-1 border-r border-line bg-section p-4 sm:flex">
-        <div className="mb-3 flex items-center gap-2 font-bold text-ink">
+      <div className="hidden w-32 shrink-0 flex-col gap-1 border-r border-line bg-section p-3 sm:flex">
+        <div className="mb-2.5 flex items-center gap-2 font-bold text-ink">
           <span className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-xs font-bold text-white">
             AV
           </span>
@@ -215,7 +215,7 @@ function DashboardPreview() {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 p-5">
+      <div className="flex-1 p-4">
         <div className="flex items-center justify-between">
           <p className="font-semibold text-ink">Dashboard</p>
           <div className="flex items-center gap-2 rounded-lg border border-line px-2.5 py-1 text-xs text-ink-muted">
@@ -224,36 +224,40 @@ function DashboardPreview() {
         </div>
 
         {/* Stat tiles — real numbers from mock-data */}
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <div className="rounded-lg border border-line px-3 py-2">
-            <p className="text-lg font-bold text-ink">{AV_COMPANIES.length}</p>
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="rounded-lg border border-line px-2.5 py-1.5">
+            <p className="text-base font-bold text-ink">
+              {AV_COMPANIES.length}
+            </p>
             <p className="text-[11px] text-ink-secondary">Companies</p>
           </div>
-          <div className="rounded-lg border border-line px-3 py-2">
-            <p className="text-lg font-bold text-ink">{ALL_JOBS.length}</p>
+          <div className="rounded-lg border border-line px-2.5 py-1.5">
+            <p className="text-base font-bold text-ink">{ALL_JOBS.length}</p>
             <p className="text-[11px] text-ink-secondary">Open Roles</p>
           </div>
-          <div className="rounded-lg border border-line px-3 py-2">
-            <p className="text-lg font-bold text-ink">{AV_CATEGORIES.length}</p>
+          <div className="rounded-lg border border-line px-2.5 py-1.5">
+            <p className="text-base font-bold text-ink">
+              {AV_CATEGORIES.length}
+            </p>
             <p className="text-[11px] text-ink-secondary">Categories</p>
           </div>
         </div>
 
         {/* Chart */}
-        <div className="mt-4">
-          <p className="mb-16 text-xs font-medium text-ink-secondary">
+        <div className="mt-3">
+          <p className="mb-11 text-xs font-medium text-ink-secondary">
             Jobs by Category
           </p>
           <CategoryChart />
         </div>
 
         {/* Recently posted + top skills */}
-        <div className="mt-4 grid grid-cols-2 gap-4">
+        <div className="mt-3 grid grid-cols-2 gap-3">
           <div>
-            <p className="mb-2 text-xs font-medium text-ink-secondary">
+            <p className="mb-1.5 text-xs font-medium text-ink-secondary">
               Recently Posted
             </p>
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {recentJobs.map((job) => (
                 <li key={job.id} className="truncate text-xs text-ink">
                   {job.title}
@@ -262,10 +266,10 @@ function DashboardPreview() {
             </ul>
           </div>
           <div>
-            <p className="mb-2 text-xs font-medium text-ink-secondary">
+            <p className="mb-1.5 text-xs font-medium text-ink-secondary">
               Top Skills
             </p>
-            <ul className="space-y-1.5">
+            <ul className="space-y-1">
               {topSkills.map((skill) => (
                 <li key={skill.name}>
                   <div className="mb-0.5 flex justify-between text-xs text-ink">
@@ -286,7 +290,7 @@ function DashboardPreview() {
         </div>
 
         {/* Demo user chip — matches the mock login account, not a real person */}
-        <div className="mt-4 flex items-center gap-2 border-t border-line pt-3">
+        <div className="mt-3 flex items-center gap-2 border-t border-line pt-2.5">
           <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-light text-xs font-bold text-primary">
             D
           </span>
@@ -306,7 +310,7 @@ function DashboardPreview() {
 
 export default function LoginShowcase() {
   return (
-    <div className="relative hidden overflow-hidden bg-primary p-12 lg:flex lg:flex-col lg:justify-center">
+    <div className="relative hidden overflow-hidden bg-primary p-8 lg:flex lg:flex-col lg:justify-center">
       {/* Scattered hexagon outline texture — sparse, not a tiled honeycomb */}
       <HexOutline size={180} className="-left-10 -top-10" />
       <HexOutline size={120} className="right-16 top-10" />
@@ -334,12 +338,12 @@ export default function LoginShowcase() {
       <div className="relative z-10 mx-auto w-full max-w-md">
         <DashboardPreview />
 
-        <blockquote className="mt-8 text-white/90">
-          <p className="text-lg font-medium">
+        <blockquote className="mt-5 text-white/90">
+          <p className="text-base font-medium">
             &ldquo;Built by AV engineering students to make job hunting in this
             industry easier.&rdquo;
           </p>
-          <p className="mt-2 text-sm text-white/70">
+          <p className="mt-1.5 text-xs text-white/70">
             &mdash; The AV Job Finder Team
           </p>
         </blockquote>
