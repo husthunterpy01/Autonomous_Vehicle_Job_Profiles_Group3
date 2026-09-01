@@ -3,7 +3,6 @@ import {
   AV_CATEGORIES,
   AV_COMPANIES,
   ALL_JOBS,
-  MOCK_JOBS,
   getTopSkills,
 } from "@/lib/mock-data";
 
@@ -114,6 +113,33 @@ function TrendingUpIcon() {
   );
 }
 
+/** Illustrated placeholder avatar (gradient circle + simple silhouette) —
+ *  deliberately not a photo of a real person, consistent with how
+ *  CompanyLogo elsewhere uses an initial rather than a scraped logo. */
+function UserAvatar() {
+  return (
+    <svg
+      viewBox="0 0 32 32"
+      className="h-8 w-8 shrink-0 rounded-full"
+      aria-hidden="true"
+    >
+      <defs>
+        <linearGradient id="avatarGradient" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="var(--color-primary)" />
+          <stop offset="100%" stopColor="#7c3aed" />
+        </linearGradient>
+      </defs>
+      <circle cx="16" cy="16" r="16" fill="url(#avatarGradient)" />
+      <circle cx="16" cy="13" r="5.5" fill="white" fillOpacity="0.9" />
+      <path
+        d="M5 28c1.6-6.3 6.2-9 11-9s9.4 2.7 11 9"
+        fill="white"
+        fillOpacity="0.9"
+      />
+    </svg>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Mini category trend chart, built from real AV_CATEGORIES data       */
 /* ------------------------------------------------------------------ */
@@ -206,13 +232,13 @@ const SIDEBAR_ITEMS = [
   { label: "Saved Jobs", dot: "bg-sky-400" },
 ];
 
-/** A small accent palette, reused across stat tiles / skill bars / the
- *  recently-posted list so the card reads as colorful rather than the
- *  single-indigo-plus-gray look it started with. */
+/** A small accent palette, reused across stat tiles and skill tags so
+ *  the card reads as colorful rather than the single-indigo-plus-gray
+ *  look it started with. */
 const ACCENTS = [
-  { text: "text-primary", tint: "bg-primary-light", bar: "bg-primary" },
-  { text: "text-emerald-600", tint: "bg-emerald-50", bar: "bg-emerald-500" },
-  { text: "text-amber-600", tint: "bg-amber-50", bar: "bg-amber-400" },
+  { text: "text-primary", tint: "bg-primary-light" },
+  { text: "text-emerald-600", tint: "bg-emerald-50" },
+  { text: "text-amber-600", tint: "bg-amber-50" },
 ];
 
 const STATS = [
@@ -223,8 +249,6 @@ const STATS = [
 
 function DashboardPreview() {
   const topSkills = getTopSkills(3);
-  const maxSkillJobs = topSkills[0]?.jobs ?? 1;
-  const recentJobs = MOCK_JOBS.slice(0, 3);
 
   return (
     <div className="flex -rotate-2 overflow-hidden rounded-[2rem] border border-line bg-surface shadow-2xl transition-transform duration-500 ease-out hover:rotate-0 hover:scale-[1.02]">
@@ -287,58 +311,35 @@ function DashboardPreview() {
           <CategoryChart />
         </div>
 
-        {/* Recently posted + top skills */}
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-ink-secondary">
-              Recently Posted
-            </p>
-            <ul className="space-y-1.5">
-              {recentJobs.map((job, i) => (
-                <li key={job.id} className="flex items-center gap-1.5">
-                  <span
-                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${ACCENTS[i % ACCENTS.length].bar}`}
-                  />
-                  <span className="truncate text-xs text-ink">{job.title}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-ink-secondary">
-              Top Skills
-            </p>
-            <ul className="space-y-1.5">
-              {topSkills.map((skill, i) => {
-                const accent = ACCENTS[i % ACCENTS.length];
-                return (
-                  <li key={skill.name}>
-                    <div className="mb-0.5 flex justify-between text-xs text-ink">
-                      <span className="truncate">{skill.name}</span>
-                    </div>
-                    <div className="h-1.5 w-full rounded-full bg-line">
-                      <div
-                        className={`h-1.5 rounded-full ${accent.bar}`}
-                        style={{
-                          width: `${(skill.jobs / maxSkillJobs) * 100}%`,
-                        }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
+        {/* Top skills — spaced-out colorful tag pills instead of a cramped
+            two-column list, easier to breathe at this card width */}
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium text-ink-secondary">
+            Top Skills in Demand
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {topSkills.map((skill, i) => {
+              const accent = ACCENTS[i % ACCENTS.length];
+              return (
+                <span
+                  key={skill.name}
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${accent.tint} ${accent.text}`}
+                >
+                  {skill.name}
+                </span>
+              );
+            })}
           </div>
         </div>
 
-        {/* Demo user chip — matches the mock login account, not a real person */}
-        <div className="mt-3 flex items-center gap-2 border-t border-line pt-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-light text-xs font-semibold text-primary">
-            D
-          </span>
+        {/* User chip — illustrated avatar, not a real person's photo */}
+        <div className="mt-4 flex items-center gap-2.5 border-t border-line pt-3">
+          <UserAvatar />
           <div>
-            <p className="text-xs font-medium text-ink">Demo User</p>
-            <p className="text-[11px] text-ink-muted">demo@avjobfinder.com</p>
+            <p className="text-xs font-medium text-ink">Maya Chen</p>
+            <p className="text-[11px] text-ink-muted">
+              maya.chen@avjobfinder.com
+            </p>
           </div>
         </div>
       </div>
