@@ -7,6 +7,7 @@ import { useState } from "react";
 const NAV_LINKS = [
   { href: "/search", label: "Find Jobs" },
   { href: "/companies", label: "Companies" },
+  { href: "/trends", label: "Market Trends" },
 ];
 
 export default function NavBar() {

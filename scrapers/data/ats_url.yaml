@@ -1,0 +1,41 @@
+
+# List-endpoint registry. The loader interpolates {slug} plus any per-company
+# `params` from companies.yaml; {offset} is filled at call time where present.
+#
+# Derived from docs/endpoint-register.md, contract-checked 2026-08-27.
+#
+#   format    json | xml — selects the parser branch
+#   list_url  request that returns the full job list
+#
+# All requests are GET unless a `method` key says otherwise.
+ 
+ats_sources:
+  greenhouse:
+    format: json
+    list_url: "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
+ 
+  lever:
+    format: json
+    list_url: "https://api.lever.co/v0/postings/{slug}?mode=json"
+ 
+  ashby:
+    format: json
+    list_url: "https://api.ashbyhq.com/posting-api/job-board/{slug}"
+ 
+  workday:
+    format: json
+    method: POST
+    list_url: "https://{host}/wday/cxs/{tenant}/{site}/jobs"
+    list_body:
+      appliedFacets: {}
+      limit: 20
+      offset: "{offset}"
+      searchText: ""
+ 
+  smartrecruiters:
+    format: json
+    list_url: "https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100&offset={offset}"
+ 
+  personio:
+    format: xml
+    list_url: "https://{slug}.jobs.personio.de/xml"
