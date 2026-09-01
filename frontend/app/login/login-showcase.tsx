@@ -10,9 +10,9 @@ import {
 /* Floating decorative badges                                          */
 /* ------------------------------------------------------------------ */
 
-const HEX_CLIP =
-  "[clip-path:polygon(25%_0%,75%_0%,100%_50%,75%_100%,25%_100%,0%_50%)]";
-
+/** Always a circle — no shape change on hover. Hovering just scales it
+ *  up with a deeper shadow, and pauses the floating bob so it doesn't
+ *  keep drifting under the cursor while enlarged. */
 function Badge({
   className,
   bg,
@@ -27,7 +27,7 @@ function Badge({
   return (
     <div
       style={{ animationDelay: delay }}
-      className={`absolute flex h-14 w-14 motion-safe:animate-[float_5s_ease-in-out_infinite] items-center justify-center ${HEX_CLIP} text-white shadow-lg transition-transform duration-300 hover:scale-110 ${bg} ${className}`}
+      className={`absolute flex h-14 w-14 motion-safe:animate-[float_5s_ease-in-out_infinite] items-center justify-center rounded-full text-white shadow-lg transition-[scale,box-shadow] duration-500 ease-in-out hover:scale-125 hover:shadow-2xl hover:[animation-play-state:paused] ${bg} ${className}`}
     >
       {children}
     </div>
