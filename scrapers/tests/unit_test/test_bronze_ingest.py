@@ -142,6 +142,9 @@ def test_dbt_job_postings_model_covers_supported_ats():
     assert "row_number()" in sql
     assert "categories" in sql
     assert "commitment" in sql
+    assert "descriptionBodyPlain" in sql
+    assert "openingPlain" in sql
+    assert "not like '%salary%'" in sql
     assert "workplaceType" not in sql
     assert "Full Time" not in sql
 
