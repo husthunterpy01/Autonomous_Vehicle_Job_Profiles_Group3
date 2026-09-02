@@ -9,6 +9,7 @@ import CompanyLogo from "@/components/ui/CompanyLogo";
 import JobCardColumn from "@/components/ui/JobCardColumn";
 import JobCardRow from "@/components/ui/JobCardRow";
 import Salary from "@/components/ui/Salary";
+import TopSkillsPanel from "@/components/TopSkillsPanel";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -173,6 +174,24 @@ function JobCategories() {
   );
 }
 
+function TopSkills() {
+  return (
+    <section className="bg-surface py-20">
+      <div className="mx-auto max-w-[1200px] px-6">
+        <SectionHeader
+          title="Top Skills in"
+          highlight="Demand"
+          subtitle="Most requested skills across current AV job postings."
+          linkHref="/search"
+          linkLabel="View all jobs"
+        />
+
+        <TopSkillsPanel />
+      </div>
+    </section>
+  );
+}
+
 function LatestJobs() {
   return (
     <section className="bg-section py-20">
@@ -288,6 +307,7 @@ export default function HomePage() {
     <>
       <Hero />
       <JobCategories />
+      <TopSkills />
       <LatestJobs />
       <FeaturedJobs />
       <TopCompanies />

@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: bronze
+    schema: bronze
+    tables:
+      - name: raw_responses
+        description: Latest MinIO parquet payload per company, landed by BronzeIngest.
