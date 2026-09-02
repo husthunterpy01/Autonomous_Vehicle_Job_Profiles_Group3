@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS silver.cleaned_job_postings (
     ats_name TEXT,
     company_name TEXT NOT NULL,
     job_name TEXT NOT NULL,
-    job_description TEXT,
+    job_description TEXT NOT NULL,
     headquarter TEXT,
     locations TEXT[] NOT NULL DEFAULT '{}',
     department TEXT,

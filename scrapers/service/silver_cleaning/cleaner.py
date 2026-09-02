@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import html
 import re
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from html.parser import HTMLParser
 from typing import Any, Iterable, Mapping
+
+UTC = timezone.utc
 
 
 class _TextExtractor(HTMLParser):

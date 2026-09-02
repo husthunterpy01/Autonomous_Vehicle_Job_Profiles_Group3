@@ -1,6 +1,8 @@
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
 from scrapers.service.silver_cleaning import SilverCleaner
+
+UTC = timezone.utc
 
 
 def _record(**overrides):
@@ -74,7 +76,7 @@ def test_fallback_key_treats_ordered_multi_locations_as_one_posting():
 
 def test_deduplication_keeps_more_complete_then_latest_record():
     records = [
-        _record(id=1, ingested_at="2026-09-01T12:00:00Z", job_description=None),
+        _record(id=1, ingested_at="2026-09-01T12:00:00Z"),
         _record(id=2, ingested_at="2026-09-01T10:00:00Z", headquarter="Canada"),
     ]
 
