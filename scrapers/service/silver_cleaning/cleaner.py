@@ -85,7 +85,12 @@ class SilverCleaner:
     @classmethod
     def clean_record(cls, raw: Mapping[str, Any]) -> dict[str, Any] | None:
         title = cls.clean_text(raw.get("job_name") or raw.get("job_title") or raw.get("title"))
-        if not title:
+        description = cls.html_to_text(
+            raw.get("job_description")
+            or raw.get("description_text")
+            or raw.get("description_html")
+        )
+        if not title or not description:
             return None
 
         source = cls.clean_text(
@@ -100,11 +105,7 @@ class SilverCleaner:
             "ats_name": source,
             "company_name": company,
             "job_name": title,
-            "job_description": cls.html_to_text(
-                raw.get("job_description")
-                or raw.get("description_text")
-                or raw.get("description_html")
-            ),
+            "job_description": description,
             "headquarter": cls.clean_text(raw.get("headquarter")),
             "locations": locations,
             "department": cls.clean_text(raw.get("department")),

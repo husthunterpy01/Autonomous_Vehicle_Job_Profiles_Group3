@@ -13,7 +13,7 @@ python -m scrapers.service.silver_cleaning.silver_ingest
 ```
 
 The step keeps the Bronze `id`, ignores query-only columns such as `rn`, removes
-records without a title, strips HTML from descriptions, normalizes timestamps,
+records without a title or description, strips HTML from descriptions, normalizes timestamps,
 employment types and multi-location values, and deduplicates by source job ID,
 job URL, then normalized fallback fields. It replaces
 `silver.cleaned_job_postings` transactionally on each successful run.

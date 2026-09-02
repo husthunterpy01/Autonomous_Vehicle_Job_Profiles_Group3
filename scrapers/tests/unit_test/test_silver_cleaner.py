@@ -37,6 +37,10 @@ def test_clean_records_removes_missing_titles():
     assert SilverCleaner.clean_records([_record(job_name="  ")]) == []
 
 
+def test_clean_records_removes_missing_descriptions():
+    assert SilverCleaner.clean_records([_record(job_description="  ")]) == []
+
+
 def test_clean_record_accepts_future_job_id_column_as_source_id():
     cleaned = SilverCleaner.clean_record(_record(job_id="lever-123"))
 
