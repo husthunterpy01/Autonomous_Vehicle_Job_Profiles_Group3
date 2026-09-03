@@ -33,12 +33,20 @@ def _as_tuple(value: object, name: str) -> tuple[str, ...]:
 
 
 @dataclass(frozen=True)
+class AuditCategoryRule:
+    name: str
+    keywords: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class JobFilterConfig:
     minimum_score: int
     exclude_below_threshold: bool
     field_weights: Mapping[str, int]
     positive_keywords: tuple[str, ...]
     excluded_title_keywords: tuple[str, ...]
+    excluded_category_rules: tuple[AuditCategoryRule, ...]
+    default_excluded_category: str
     field_aliases: Mapping[str, tuple[str, ...]]
 
     @classmethod
@@ -86,6 +94,33 @@ class JobFilterConfig:
             if not field_aliases.get(required_field):
                 raise ValueError(f"field_aliases.{required_field} is required")
 
+        raw_category_rules = raw.get("excluded_category_rules", [])
+        if not isinstance(raw_category_rules, list):
+            raise ValueError("excluded_category_rules must be a YAML list")
+        category_rules: list[AuditCategoryRule] = []
+        for index, rule in enumerate(raw_category_rules):
+            if not isinstance(rule, dict) or not isinstance(rule.get("name"), str):
+                raise ValueError(
+                    f"excluded_category_rules[{index}] must contain a name"
+                )
+            category_rules.append(
+                AuditCategoryRule(
+                    name=rule["name"].strip(),
+                    keywords=_as_tuple(
+                        rule.get("keywords"),
+                        f"excluded_category_rules[{index}].keywords",
+                    ),
+                )
+            )
+
+        default_excluded_category = raw.get(
+            "default_excluded_category", "Corporate / Support"
+        )
+        if not isinstance(default_excluded_category, str) or not (
+            default_excluded_category := default_excluded_category.strip()
+        ):
+            raise ValueError("default_excluded_category must be a non-empty string")
+
         return cls(
             minimum_score=minimum_score,
             exclude_below_threshold=exclude_below_threshold,
@@ -96,6 +131,8 @@ class JobFilterConfig:
             excluded_title_keywords=_as_tuple(
                 raw.get("excluded_title_keywords"), "excluded_title_keywords"
             ),
+            excluded_category_rules=tuple(category_rules),
+            default_excluded_category=default_excluded_category,
             field_aliases=field_aliases,
         )
 
@@ -109,6 +146,8 @@ class FilterDecision:
     reason: str
     matched_keywords: tuple[str, ...]
     excluded_title_keywords: tuple[str, ...]
+    audit_category: str | None
+    category_evidence: tuple[str, ...]
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -119,6 +158,8 @@ class FilterDecision:
             "reason": self.reason,
             "matched_keywords": list(self.matched_keywords),
             "excluded_title_keywords": list(self.excluded_title_keywords),
+            "audit_category": self.audit_category,
+            "category_evidence": list(self.category_evidence),
         }
 
 
@@ -165,6 +206,10 @@ class JobPrefilter:
         self._excluded_patterns = self._compile_patterns(
             config.excluded_title_keywords
         )
+        self._category_patterns = tuple(
+            (rule.name, self._compile_patterns(rule.keywords))
+            for rule in config.excluded_category_rules
+        )
 
     @classmethod
     def from_config(cls, path: str | Path | None = None) -> "JobPrefilter":
@@ -204,6 +249,22 @@ class JobPrefilter:
     ) -> tuple[str, ...]:
         return tuple(keyword for keyword, pattern in patterns if pattern.search(text))
 
+    def _categorize_excluded(
+        self, posting: Mapping[str, Any], title: str
+    ) -> tuple[str, tuple[str, ...]]:
+        description = self._normalise_text(self._resolve(posting, "description"))
+        department = self._normalise_text(self._resolve(posting, "department"))
+        team = self._normalise_text(self._resolve(posting, "team"))
+
+        # Prefer the title because company boilerplate can mention unrelated teams.
+        # Use the full description next so generic titles can still be categorized.
+        for text in (title, " ".join((description, department, team))):
+            for category, patterns in self._category_patterns:
+                evidence = self._matches(text, patterns)
+                if evidence:
+                    return category, evidence
+        return self.config.default_excluded_category, ()
+
     def evaluate(self, posting: Mapping[str, Any]) -> FilterDecision:
         title = self._normalise_text(self._resolve(posting, "title"))
         job_id = self._normalise_text(self._resolve(posting, "id")) or "unknown"
@@ -229,6 +290,9 @@ class JobPrefilter:
         )
 
         if excluded_matches:
+            audit_category, category_evidence = self._categorize_excluded(
+                posting, title
+            )
             return FilterDecision(
                 job_id=job_id,
                 company=company,
@@ -237,6 +301,8 @@ class JobPrefilter:
                 reason="excluded_title_keyword",
                 matched_keywords=matched_keywords,
                 excluded_title_keywords=excluded_matches,
+                audit_category=audit_category,
+                category_evidence=category_evidence,
             )
 
         score_passed = score >= self.config.minimum_score
@@ -255,6 +321,8 @@ class JobPrefilter:
             reason=reason,
             matched_keywords=matched_keywords,
             excluded_title_keywords=(),
+            audit_category=None,
+            category_evidence=(),
         )
 
     def filter(self, postings: Iterable[Mapping[str, Any]]) -> FilterResult:

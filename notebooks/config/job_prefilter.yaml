@@ -100,3 +100,71 @@ excluded_title_keywords:
   - administrative assistant
   - office manager
   - facilities
+
+# Excluded jobs are still categorized for the audit trail. Rules are evaluated
+# against the title first and then the description/department/team, in order.
+excluded_category_rules:
+  - name: Corporate Technology / Enterprise Systems
+    keywords:
+      - finance and SCM technology
+      - ERP technology
+      - ERP platform
+      - financial applications
+      - system orchestration
+      - API-driven middleware
+
+  - name: People / HR Systems and Analytics
+    keywords:
+      - people systems
+      - Workday operations
+      - Workday reports
+      - HRIS
+      - workforce analytics
+
+  - name: People / Talent Acquisition
+    keywords:
+      - talent acquisition
+      - recruiting and sourcing
+      - executive recruiting
+
+  - name: People / HR Business Partner
+    keywords:
+      - people business partner
+      - HRBP
+      - employee relations
+      - workforce planning
+
+  - name: People / Operations
+    keywords:
+      - people operations
+      - employee lifecycle
+      - people program management
+
+  - name: Finance / Cost Accounting
+    keywords:
+      - cost accountant
+      - cost center controlling
+      - product costing
+
+  - name: Finance / Accounting
+    keywords:
+      - accounting specialist
+      - accountant
+      - financial accounting
+      - financial statements
+
+  - name: Communications / Public Relations
+    keywords:
+      - public relations
+      - PR manager
+      - media relations
+      - brand reputation
+
+  - name: Business / Commercial Operations
+    keywords:
+      - commercial operations
+      - commercial P&L
+      - pricing
+      - demand signals
+
+default_excluded_category: Corporate / Support

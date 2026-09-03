@@ -373,7 +373,7 @@ python3 -m scrapers.job_prefilter \
 The command creates three outputs:
 
 - `llm_candidates.jsonl`: rows allowed to proceed to classification
-- `excluded_jobs.jsonl`: complete excluded rows plus the filtering decision
+- `excluded_jobs.jsonl`: complete excluded rows, filtering decision, and audit category
 - `filter_metrics.json`: before, after, excluded, and reduction counts per company
 
 Rules live in `notebooks/config/job_prefilter.yaml`. Set
