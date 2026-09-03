@@ -1,6 +1,11 @@
 import json
+from pathlib import Path
 
-from scrapers.service.silver_cleaning.skills_extractor import ExtractedSkill, SkillsExtractor
+from scrapers.service.silver_cleaning.skills_extractor import (
+    PROMPT_PATH,
+    ExtractedSkill,
+    SkillsExtractor,
+)
 
 
 def test_extractor_requests_skills_without_av_classification():
@@ -24,6 +29,14 @@ def test_extractor_requests_skills_without_av_classification():
         ExtractedSkill("ROS", "framework"),
     )
     assert "do not assign an AV category" in prompts[0]
+
+
+def test_prompt_is_loaded_from_dedicated_file():
+    assert PROMPT_PATH == Path(__file__).resolve().parents[2] / "prompts" / "skills_extraction.txt"
+    assert "{{job_title}}" in PROMPT_PATH.read_text(encoding="utf-8")
+    prompt = SkillsExtractor.build_prompt("Engineer", "Use Python.")
+    assert "<job_title>Engineer</job_title>" in prompt
+    assert "<job_description>Use Python.</job_description>" in prompt
 
 
 def test_parser_deduplicates_names_and_discards_invalid_types():
