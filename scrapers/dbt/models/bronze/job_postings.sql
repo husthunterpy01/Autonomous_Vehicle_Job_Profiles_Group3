@@ -1,4 +1,4 @@
-{{ config(materialized="table") }}
+{{ config(materialized="table", schema="bronze") }}
 
 with src as (
     select *
@@ -10,6 +10,7 @@ with src as (
 greenhouse as (
     select
         src.source_system as ats_name,
+        job->>'id' as source_job_id,
         src.company_name,
         job->>'title' as job_name,
         job->>'content' as job_description,
@@ -26,6 +27,7 @@ greenhouse as (
 lever as (
     select
         src.source_system as ats_name,
+        job->>'id' as source_job_id,
         src.company_name,
         job->>'text' as job_name,
         concat_ws(
@@ -83,6 +85,7 @@ lever as (
 ashby as (
     select
         src.source_system as ats_name,
+        job->>'id' as source_job_id,
         src.company_name,
         job->>'title' as job_name,
         coalesce(job->>'descriptionPlain', '') as job_description,
@@ -110,6 +113,7 @@ ashby as (
 smartrecruiters as (
     select
         src.source_system as ats_name,
+        job->>'id' as source_job_id,
         src.company_name,
         job->>'name' as job_name,
         coalesce(

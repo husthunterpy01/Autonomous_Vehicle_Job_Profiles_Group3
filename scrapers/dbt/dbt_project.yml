@@ -12,4 +12,3 @@ clean-targets: ["target", "dbt_packages"]
 models:
   av_jobs:
     +materialized: table
-    +schema: bronze
