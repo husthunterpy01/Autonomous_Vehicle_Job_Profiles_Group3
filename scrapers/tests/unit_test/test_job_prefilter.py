@@ -1,6 +1,10 @@
 import json
 
-from scrapers.service.job_prefilter import JobFilterConfig, JobPrefilter
+from scrapers.service.job_prefilter import (
+    AuditCategoryRule,
+    JobFilterConfig,
+    JobPrefilter,
+)
 
 
 def make_filter() -> JobPrefilter:
@@ -11,6 +15,17 @@ def make_filter() -> JobPrefilter:
             field_weights={"title": 3, "department": 2, "description": 1},
             positive_keywords=("autonomous", "perception", "software"),
             excluded_title_keywords=("accountant", "marketing"),
+            excluded_category_rules=(
+                AuditCategoryRule(
+                    name="Finance / Accounting",
+                    keywords=("accountant", "financial statements"),
+                ),
+                AuditCategoryRule(
+                    name="Communications / Marketing",
+                    keywords=("marketing", "media relations"),
+                ),
+            ),
+            default_excluded_category="Corporate / Support",
             field_aliases={
                 "id": ("id",),
                 "company": ("company_name",),
@@ -35,6 +50,8 @@ def test_filter_excludes_non_av_title_despite_company_boilerplate():
     assert decision.included is False
     assert decision.reason == "excluded_title_keyword"
     assert decision.excluded_title_keywords == ("accountant",)
+    assert decision.audit_category == "Finance / Accounting"
+    assert decision.category_evidence == ("accountant",)
 
 
 def test_filter_includes_relevant_job_from_title_score():
@@ -143,6 +160,10 @@ field_aliases:
   description: [description]
 positive_keywords: [autonomous, robotics]
 excluded_title_keywords: [accountant]
+excluded_category_rules:
+  - name: Finance / Accounting
+    keywords: [accountant]
+default_excluded_category: Corporate / Support
 """.strip(),
         encoding="utf-8",
     )
@@ -190,3 +211,40 @@ def test_audit_output_converts_nan_to_json_null(tmp_path):
     audit_row = json.loads(path.read_text(encoding="utf-8"))
 
     assert audit_row["job_description"] is None
+
+
+def test_excluded_category_can_use_description_when_title_is_generic():
+    description_filter = JobPrefilter(
+        JobFilterConfig(
+            minimum_score=3,
+            exclude_below_threshold=False,
+            field_weights={"title": 3, "description": 1},
+            positive_keywords=("autonomous",),
+            excluded_title_keywords=("office manager",),
+            excluded_category_rules=(
+                AuditCategoryRule(
+                    name="Communications / Public Relations",
+                    keywords=("media relations",),
+                ),
+            ),
+            default_excluded_category="Corporate / Support",
+            field_aliases={
+                "id": ("id",),
+                "company": ("company_name",),
+                "title": ("job_name",),
+                "description": ("job_description",),
+            },
+        )
+    )
+    posting = {
+        "id": "description-1",
+        "company_name": "A",
+        "job_name": "Office Manager",
+        "job_description": "Own executive media relations and press strategy.",
+    }
+
+    decision = description_filter.evaluate(posting)
+
+    assert decision.included is False
+    assert decision.audit_category == "Communications / Public Relations"
+    assert decision.category_evidence == ("media relations",)
