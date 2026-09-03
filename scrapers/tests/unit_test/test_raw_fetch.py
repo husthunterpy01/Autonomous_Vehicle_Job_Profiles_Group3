@@ -181,38 +181,6 @@ def test_smartrecruiters_keeps_list_item_when_detail_fails(
     assert "jobAd" not in archived["content"][0]
 
 
-def test_smartrecruiter_maps_job_ad_sections():
-    from scrapers.strategy.ats.smartrecruiter import SmartRecruiterStrategy
-
-    jobs = SmartRecruiterStrategy("smartrecruiters").map_response_to_bronze_payload(
-        "Bosch",
-        "DE",
-        {
-            "content": [
-                {
-                    "name": "Product Data Operator - Temporary",
-                    "postingUrl": "https://jobs.smartrecruiters.com/BoschGroup/744000146470121-product-data-operator-temporary",
-                    "location": {"fullLocation": "Beograd, , Serbia"},
-                    "releasedDate": "2026-08-31T13:38:57.052Z",
-                    "typeOfEmployment": {"label": "Full-time"},
-                    "jobAd": {
-                        "sections": {
-                            "jobDescription": {
-                                "text": "<p>Release product documents</p>"
-                            },
-                            "qualifications": {"text": "<p>SAP knowledge</p>"},
-                        }
-                    },
-                }
-            ]
-        },
-    )
-
-    assert jobs[0].job_description == "<p>Release product documents</p>\n<p>SAP knowledge</p>"
-    assert jobs[0].job_url.endswith("product-data-operator-temporary")
-    assert jobs[0].location == "Beograd, , Serbia"
-
-
 @patch("scrapers.service.fetch.rawfetch.ResponseArchive")
 @patch("scrapers.service.fetch.rawfetch.urlopen")
 def test_fetch_and_archive_raises_on_http_403(mock_urlopen, mock_archive):

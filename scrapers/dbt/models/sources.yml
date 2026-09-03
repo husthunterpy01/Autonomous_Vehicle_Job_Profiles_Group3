@@ -6,3 +6,14 @@ sources:
     tables:
       - name: raw_responses
         description: Latest MinIO parquet payload per company, landed by BronzeIngest.
+        columns:
+          - name: source
+            data_type: text
+          - name: source_system
+            data_type: text
+          - name: company_name
+            data_type: text
+          - name: headquarter
+            data_type: text
+          - name: body
+            data_type: jsonb
