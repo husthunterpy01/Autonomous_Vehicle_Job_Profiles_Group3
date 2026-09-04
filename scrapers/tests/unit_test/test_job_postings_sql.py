@@ -9,26 +9,33 @@ import pytest
 from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 
-JOB_POSTINGS_SQL = (
-    Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze" / "job_postings.sql"
-)
+BRONZE_MODELS = Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze"
 DBT_PROJECT = Path(__file__).resolve().parents[2] / "dbt"
+ATS_MODELS = ("greenhouse", "lever", "ashby", "smartrecruiters")
 
 
-def render_job_postings_sql(source_relation: str = "job_postings_test_src") -> str:
-    sql = JOB_POSTINGS_SQL.read_text(encoding="utf-8")
+def render_ats_sql(ats_name: str, source_relation: str = "job_postings_test_src") -> str:
+    sql = (BRONZE_MODELS / ats_name / f"{ats_name}.sql").read_text(encoding="utf-8")
     sql = re.sub(r"\{\{\s*config\([^}]*\)\s*\}\}", "", sql, count=1)
     sql = sql.replace('{{ source("bronze", "raw_responses") }}', source_relation)
     leftover = re.findall(r"\{\{.*?\}\}", sql, flags=re.DOTALL)
     if leftover:
-        raise AssertionError(f"Unrendered jinja in job_postings.sql: {leftover}")
+        raise AssertionError(f"Unrendered jinja in {ats_name}.sql: {leftover}")
     return sql.strip()
 
 
-def test_render_job_postings_sql_substitutes_source():
-    sql = render_job_postings_sql("raw_responses")
-    assert "raw_responses" in sql
-    assert "{{" not in sql
+def test_ats_sql_substitutes_source():
+    for ats_name in ATS_MODELS:
+        sql = render_ats_sql(ats_name, "raw_responses")
+        assert "raw_responses" in sql
+        assert "{{" not in sql
+
+
+def test_job_postings_unions_ats_models():
+    sql = (BRONZE_MODELS / "job_postings.sql").read_text(encoding="utf-8")
+    for ats_name in ATS_MODELS:
+        assert f'ref("{ats_name}")' in sql
+    assert "source(" not in sql
 
 
 def test_dbt_job_postings_unit_tests():

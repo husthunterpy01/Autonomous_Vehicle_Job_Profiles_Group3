@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: smartrecruiters
+    description: SmartRecruiters jobs parsed from bronze.raw_responses.
+
+unit_tests:
+  - name: smartrecruiters_maps_job_ad_sections
+    model: smartrecruiters
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'smartrecruiters'::text as source_system,
+            'Bosch'::text as company_name,
+            'DE'::text as headquarter,
+            $json${"content":[{"name":"Product Data Operator - Temporary","postingUrl":"https://jobs.smartrecruiters.com/BoschGroup/744000146470121-product-data-operator-temporary","location":{"fullLocation":"Beograd, , Serbia"},"releasedDate":"2026-08-31T13:38:57.052Z","typeOfEmployment":{"label":"Full-time"},"jobAd":{"sections":{"jobDescription":{"text":"<p>Release product documents</p>"},"qualifications":{"text":"<p>SAP knowledge</p>"}}}}]}$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Product Data Operator - Temporary
+          job_description: |-
+            <p>Release product documents</p>
+            <p>SAP knowledge</p>
+          job_url: https://jobs.smartrecruiters.com/BoschGroup/744000146470121-product-data-operator-temporary
+          employment_type: Full-time
+
+  - name: smartrecruiters_employment_type_none_when_label_missing
+    model: smartrecruiters
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'smartrecruiters'::text as source_system,
+            'Bosch'::text as company_name,
+            'DE'::text as headquarter,
+            $json${"content":[{"name":"Operator","postingUrl":"https://jobs.smartrecruiters.com/BoschGroup/1","location":{"fullLocation":"Beograd, , Serbia"},"releasedDate":"2026-08-31T13:38:57.052Z","jobAd":{"sections":{"jobDescription":{"text":"<p>Work</p>"}}}}]}$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Operator
+          employment_type: null

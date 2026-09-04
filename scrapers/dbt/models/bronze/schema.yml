@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: job_postings
-    description: ATS job rows parsed from bronze.raw_responses JSON bodies.
+    description: Union of ATS-specific bronze views with a stable row id.
     columns:
       - name: id
         description: Unique row id across all companies in bronze.job_postings.

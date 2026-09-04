@@ -7,9 +7,7 @@ from psycopg2.extras import Json
 
 from scrapers.service.bronze_storage.bronze_ingest import BronzeIngest
 
-DBT_JOB_POSTINGS = (
-    Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze" / "job_postings.sql"
-)
+BRONZE_MODELS = Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze"
 
 
 def _archive_frame(body, source_system="greenhouse", company="Stack AV"):
@@ -59,7 +57,7 @@ def test_extract_lands_raw_payload_then_runs_dbt(
     assert inserted[4].adapted == {"jobs": [{"title": "Engineer"}]}
     assert inserted[5] == "US"
     assert "./scrapers/dbt" in mock_dbt.call_args.args[0]
-    assert "job_postings" in mock_dbt.call_args.args[0]
+    assert "+job_postings" in mock_dbt.call_args.args[0]
     connection.close.assert_called_once()
 
 
@@ -135,18 +133,20 @@ def test_extract_returns_error_when_dbt_fails(
 
 
 def test_dbt_job_postings_model_covers_supported_ats():
-    sql = DBT_JOB_POSTINGS.read_text(encoding="utf-8")
+    union_sql = (BRONZE_MODELS / "job_postings.sql").read_text(encoding="utf-8")
+    lever_sql = (BRONZE_MODELS / "lever.sql").read_text(encoding="utf-8")
     for ats in ("greenhouse", "lever", "ashby", "smartrecruiters"):
-        assert ats in sql
-    assert "as id" in sql
-    assert "row_number()" in sql
-    assert "categories" in sql
-    assert "commitment" in sql
-    assert "descriptionBodyPlain" in sql
-    assert "openingPlain" in sql
-    assert "not like '%salary%'" in sql
-    assert "workplaceType" not in sql
-    assert "Full Time" not in sql
+        assert (BRONZE_MODELS / f"{ats}.sql").is_file()
+        assert f'ref("{ats}")' in union_sql
+    assert "as id" in union_sql
+    assert "row_number()" in union_sql
+    assert "categories" in lever_sql
+    assert "commitment" in lever_sql
+    assert "descriptionBodyPlain" in lever_sql
+    assert "openingPlain" in lever_sql
+    assert "not like '%salary%'" in lever_sql
+    assert "workplaceType" not in lever_sql
+    assert "Full Time" not in lever_sql
 
 
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")

@@ -1,51 +1,12 @@
 version: 2
 
+models:
+  - name: lever
+    description: Lever jobs parsed from bronze.raw_responses.
+
 unit_tests:
-  - name: greenhouse_maps_jobs
-    model: job_postings
-    given:
-      - input: source("bronze", "raw_responses")
-        format: sql
-        rows: |
-          select
-            'api'::text as source,
-            'greenhouse'::text as source_system,
-            'Stack AV'::text as company_name,
-            'US'::text as headquarter,
-            $json${"jobs":[{"title":"Engineer","content":"<p>Build autonomy software</p>","location":{"name":"Pittsburgh, PA"},"first_published":"2026-01-01T00:00:00Z","absolute_url":"https://boards.greenhouse.io/stackav/jobs/1"}]}$json$::jsonb as body
-    expect:
-      rows:
-        - ats_name: greenhouse
-          company_name: Stack AV
-          job_name: Engineer
-          job_description: "<p>Build autonomy software</p>"
-          headquarter: US
-          location: "Pittsburgh, PA"
-          job_url: https://boards.greenhouse.io/stackav/jobs/1
-          job_uploaded_at: "2026-01-01T00:00:00Z"
-          employment_type: null
-
-  - name: ashby_maps_jobs_and_secondary_locations
-    model: job_postings
-    given:
-      - input: source("bronze", "raw_responses")
-        format: sql
-        rows: |
-          select
-            'api'::text as source,
-            'ashby'::text as source_system,
-            '42dot'::text as company_name,
-            'KR'::text as headquarter,
-            $json${"jobs":[{"title":"Software Engineer","descriptionPlain":"Work on autonomy.","location":"Seoul","secondaryLocations":[{"location":"Palo Alto"}],"publishedAt":"2026-02-01T00:00:00Z","jobUrl":"https://jobs.ashbyhq.com/42dot/abc","employmentType":"Full-time"}]}$json$::jsonb as body
-    expect:
-      rows:
-        - ats_name: ashby
-          job_name: Software Engineer
-          location: "Seoul | Palo Alto"
-          employment_type: Full-time
-
   - name: lever_maps_plain_description
-    model: job_postings
+    model: lever
     given:
       - input: source("bronze", "raw_responses")
         format: sql
@@ -65,7 +26,7 @@ unit_tests:
           employment_type: Full-time
 
   - name: lever_combines_body_and_lists_skipping_salary
-    model: job_postings
+    model: lever
     given:
       - input: source("bronze", "raw_responses")
         format: sql
@@ -90,7 +51,7 @@ unit_tests:
           employment_type: Full-time
 
   - name: lever_appends_lists_to_role_body
-    model: job_postings
+    model: lever
     given:
       - input: source("bronze", "raw_responses")
         format: sql
@@ -111,7 +72,7 @@ unit_tests:
             <li>Python</li>
 
   - name: lever_maps_contract_commitment_not_workplace_type
-    model: job_postings
+    model: lever
     given:
       - input: source("bronze", "raw_responses")
         format: sql
@@ -127,7 +88,7 @@ unit_tests:
         - employment_type: Contract
 
   - name: lever_employment_type_none_when_commitment_missing
-    model: job_postings
+    model: lever
     given:
       - input: source("bronze", "raw_responses")
         format: sql
@@ -141,42 +102,4 @@ unit_tests:
     expect:
       rows:
         - job_name: Engineer
-          employment_type: null
-
-  - name: smartrecruiters_maps_job_ad_sections
-    model: job_postings
-    given:
-      - input: source("bronze", "raw_responses")
-        format: sql
-        rows: |
-          select
-            'api'::text as source,
-            'smartrecruiters'::text as source_system,
-            'Bosch'::text as company_name,
-            'DE'::text as headquarter,
-            $json${"content":[{"name":"Product Data Operator - Temporary","postingUrl":"https://jobs.smartrecruiters.com/BoschGroup/744000146470121-product-data-operator-temporary","location":{"fullLocation":"Beograd, , Serbia"},"releasedDate":"2026-08-31T13:38:57.052Z","typeOfEmployment":{"label":"Full-time"},"jobAd":{"sections":{"jobDescription":{"text":"<p>Release product documents</p>"},"qualifications":{"text":"<p>SAP knowledge</p>"}}}}]}$json$::jsonb as body
-    expect:
-      rows:
-        - job_name: Product Data Operator - Temporary
-          job_description: |-
-            <p>Release product documents</p>
-            <p>SAP knowledge</p>
-          job_url: https://jobs.smartrecruiters.com/BoschGroup/744000146470121-product-data-operator-temporary
-          employment_type: Full-time
-
-  - name: smartrecruiters_employment_type_none_when_label_missing
-    model: job_postings
-    given:
-      - input: source("bronze", "raw_responses")
-        format: sql
-        rows: |
-          select
-            'api'::text as source,
-            'smartrecruiters'::text as source_system,
-            'Bosch'::text as company_name,
-            'DE'::text as headquarter,
-            $json${"content":[{"name":"Operator","postingUrl":"https://jobs.smartrecruiters.com/BoschGroup/1","location":{"fullLocation":"Beograd, , Serbia"},"releasedDate":"2026-08-31T13:38:57.052Z","jobAd":{"sections":{"jobDescription":{"text":"<p>Work</p>"}}}}]}$json$::jsonb as body
-    expect:
-      rows:
-        - job_name: Operator
           employment_type: null

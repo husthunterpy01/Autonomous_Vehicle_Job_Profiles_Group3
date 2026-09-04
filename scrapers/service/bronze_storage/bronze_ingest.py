@@ -66,7 +66,7 @@ class BronzeIngest():
             connection.close()
 
     def run_dbt_bronze(self) -> int:
-        return self.dbt_config.run("job_postings", self.postgres_config)
+        return self.dbt_config.run("+job_postings", self.postgres_config)
 
     def _ensure_raw_table(self, connection):
         with connection.cursor() as cursor:
