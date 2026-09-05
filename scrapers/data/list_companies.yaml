@@ -1,0 +1,360 @@
+# scrapers/companies.yaml
+#
+# Single source of truth for which companies get scraped and how.
+# Loaded by scrapers/companies.py -> CompanyConfig objects.
+# ATS assignments from docs/endpoint-register.md (verified 2026-08-27).
+#
+# Fields
+#   key      required  stable lowercase identifier; used in MinIO paths and the
+#                      Postgres (company, job_id) unique constraint. NEVER rename
+#                      after first scrape — it will orphan existing rows.
+#   name     required  display name for the frontend
+#   url      required  careers page where one exists, otherwise the company site
+#   country  required  ISO 3166-1 alpha-2 of HQ; fallback when a posting has no
+#                      structured location
+#   ats      required  key into ats_sources.yaml:
+#                      greenhouse | lever | ashby | workday | smartrecruiters |
+#                      personio | html (no API, scrape) | none (no source found)
+#   slug     optional  board token / site ID / company ID as it appears in the
+#                      ATS URL. Required for every ats except html and none.
+#   params   optional  extra template values; Workday needs host/tenant/site
+#   enabled  required  false = skipped by run_all.py
+#
+# Order follows the client-supplied company list.
+
+companies:
+  - key: fortytwo_dot
+    name: 42dot
+    url: https://42dot.ai/en/careers/open-roles
+    country: KR
+    ats: ashby
+    slug: 42dot
+    enabled: true
+
+  - key: adastec
+    name: ADASTEC
+    url: https://www.adastec.com/
+    country: TR
+    ats: none
+    slug: null
+    enabled: false
+
+  - key: aurora
+    name: Aurora
+    url: https://aurora.tech/careers/
+    country: US
+    ats: ashby
+    slug: aurora-operations-inc
+    enabled: true
+
+  - key: autobrains
+    name: AutoBrains
+    url: https://www.comeet.com/jobs/autobrains/57.004
+    country: IL
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: apollo_baidu
+    name: Apollo / Baidu
+    url: https://talent.baidu.com/jobs/list
+    country: CN
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: applied_intuition
+    name: Applied Intuition
+    url: https://www.appliedintuition.com/careers
+    country: US
+    ats: ashby
+    slug: applied
+    enabled: true
+
+  - key: aimotive
+    name: aiMotive
+    url: https://aimotive.com/career
+    country: HU
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: av_ride
+    name: Avride
+    url: https://job-boards.greenhouse.io/avride
+    country: RU
+    ats: greenhouse
+    slug: avride
+    enabled: true
+
+  - key: bot_auto
+    name: Bot.Auto
+    url: https://bot.auto/career
+    country: US
+    ats: greenhouse
+    slug: botauto
+    enabled: true
+
+  - key: bosch
+    name: Bosch
+    url: https://jobs.smartrecruiters.com/BoschGroup
+    country: DE
+    ats: smartrecruiters
+    slug: BoschGroup
+    enabled: true
+
+  - key: deeproute
+    name: DeepRoute.ai
+    url: https://www.deeproute.ai/
+    country: CN
+    ats: none
+    slug: null
+    enabled: false
+
+  - key: didi
+    name: DiDi
+    url: https://careers.didiglobal.com/job
+    country: CN
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: may_mobility
+    name: May Mobility
+    url: https://maymobility.com/careers/
+    country: US
+    ats: greenhouse
+    slug: maymobility
+    enabled: true
+
+  - key: gatik
+    name: Gatik
+    url: https://www.gatik.ai/careers
+    country: US
+    ats: greenhouse
+    slug: gatikaiinc
+    enabled: true
+
+  - key: inceptio
+    name: Inceptio
+    url: https://en.inceptio.ai/
+    country: CN
+    ats: none
+    slug: null
+    enabled: false
+
+  - key: horizon
+    name: Horizon Robotics
+    url: https://jobs.lever.co/horizon
+    country: CN
+    ats: lever
+    slug: horizon
+    enabled: true
+
+  - key: huawei
+    name: Huawei
+    url: https://career.huawei.com/
+    country: CN
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: kodiak
+    name: Kodiak
+    url: https://job-boards.greenhouse.io/kodiak
+    country: US
+    ats: greenhouse
+    slug: kodiak
+    enabled: true
+
+  - key: einride
+    name: Einride
+    url: https://careers.einride.tech/
+    country: SE
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: latitude_ford
+    name: Latitude AI (Ford)
+    url: https://job-boards.greenhouse.io/latitude
+    country: US
+    ats: greenhouse
+    slug: latitude
+    enabled: true
+
+  - key: gm
+    name: General Motors
+    url: https://generalmotors.wd5.myworkdayjobs.com/Careers_GM
+    country: US
+    ats: workday
+    slug: null
+    params:
+      host: generalmotors.wd5.myworkdayjobs.com
+      tenant: generalmotors
+      site: Careers_GM
+    enabled: false
+
+  - key: mobileye
+    name: Mobileye
+    url: https://careers.mobileye.com/jobs
+    country: IL
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: motional
+    name: Motional
+    url: https://job-boards.greenhouse.io/motional
+    country: US
+    ats: greenhouse
+    slug: motional
+    enabled: true
+
+  - key: momenta
+    name: Momenta
+    url: https://momenta-europe-gmbh.jobs.personio.de/
+    country: CN
+    ats: personio
+    slug: momenta-europe-gmbh
+    enabled: false
+
+  - key: nuro
+    name: Nuro
+    url: https://www.nuro.ai/careers
+    country: US
+    ats: greenhouse
+    slug: nuro
+    enabled: true
+
+  - key: nvidia
+    name: NVIDIA
+    url: https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite
+    country: US
+    ats: workday
+    slug: null
+    params:
+      host: nvidia.wd5.myworkdayjobs.com
+      tenant: nvidia
+      site: NVIDIAExternalCareerSite
+    enabled: false
+
+  - key: pony_ai
+    name: Pony.ai
+    url: https://apply.workable.com/pony-dot-ai/
+    country: US
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: plus_ai
+    name: Plus AI
+    url: https://jobs.lever.co/plus-2
+    country: US
+    ats: lever
+    slug: plus-2
+    enabled: true
+
+  - key: qcraft
+    name: QCraft
+    url: https://qcraft.jobs.feishu.cn/631429
+    country: CN
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: stack_av
+    name: Stack AV
+    url: https://job-boards.greenhouse.io/stackav
+    country: US
+    ats: greenhouse
+    slug: stackav
+    enabled: true
+
+  - key: tensor
+    name: Tensor (AutoX)
+    url: https://www.tensor.auto/careers
+    country: US
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: torc
+    name: Torc Robotics
+    url: https://torc.ai/careers/
+    country: US
+    ats: greenhouse
+    slug: torcrobotics
+    enabled: true
+
+  - key: tier_iv
+    name: TIER IV
+    url: https://herp.careers/v1/tier4
+    country: JP
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: waabi
+    name: Waabi
+    url: https://jobs.lever.co/waabi
+    country: CA
+    ats: lever
+    slug: waabi
+    enabled: true
+
+  - key: waymo
+    name: Waymo
+    url: https://careers.withwaymo.com/jobs/search/
+    country: US
+    ats: greenhouse
+    slug: waymo
+    enabled: true
+
+  - key: wayve
+    name: Wayve
+    url: https://job-boards.greenhouse.io/wayve
+    country: GB
+    ats: greenhouse
+    slug: wayve
+    enabled: true
+
+  - key: weride
+    name: WeRide
+    url: https://jobs.lever.co/weride
+    country: CN
+    ats: lever
+    slug: weride
+    enabled: true
+
+  - key: woven
+    name: Woven by Toyota
+    url: https://woven.toyota/en/careers
+    country: JP
+    ats: html
+    slug: null
+    enabled: false
+
+  - key: vay
+    name: Vay
+    url: https://job-boards.greenhouse.io/vay
+    country: DE
+    ats: greenhouse
+    slug: vay
+    enabled: true
+
+  - key: xpeng
+    name: XPENG
+    url: https://www.xpeng.com/no/join-us
+    country: CN
+    ats: greenhouse
+    slug: xpengmotors
+    enabled: true
+
+  - key: zoox
+    name: Zoox
+    url: https://jobs.lever.co/zoox
+    country: US
+    ats: lever
+    slug: zoox
+    enabled: true

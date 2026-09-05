@@ -1,75 +1,25 @@
-# BE-1 company job scrapers
+# Job scrapers
 
-This directory implements the BE-1 data-collection task for three approved
-company career sources:
+Setup, MinIO, and run instructions live in the
+[Scrapers section of the root README](../README.md#scrapers).
 
-| Company | ATS | Scraper |
-|---|---|---|
-| Waabi | Lever | `waabi_scraper.py` |
-| Bosch | SmartRecruiters | `bosch_scraper.py` |
-| Stack AV | Greenhouse | `stackav_scraper.py` |
+# Silver cleaning
 
-The scrapers only read public job advertisements. They do not submit job
-applications or collect applicant information.
+The first Silver step creates a cleaned, flat dbt model from
+`bronze.job_postings`. Run it after the Bronze dbt model has completed:
 
-## Shared design
-
-`base_scraper.py` contains the common behavior used by every scraper:
-
-- HTTP headers, retries, rate-limit handling, and errors;
-- nested HTML/entity decoding;
-- required-field and duplicate-ID validation;
-- atomic UTF-8 JSON output;
-- shared command-line arguments and status messages.
-
-Each company module contains only its ATS-specific fetching and normalization.
-All three produce the same required fields: company, job ID, title, location,
-description, posting date, source URL, collection method, ATS, and collection
-timestamp. Optional ATS-specific fields are retained when available.
-
-## Run the scrapers
-
-From the repository root:
-
-```powershell
-python -m scrapers.waabi_scraper
-python -m scrapers.bosch_scraper
-python -m scrapers.stackav_scraper
+```bash
+python -m scrapers.service.silver_cleaning.silver_ingest
 ```
 
-Bosch exposes thousands of postings, so its default Sprint 1 batch is the
-latest 100. Use a smaller smoke-test batch with:
+The Python command is a thin dbt runner, so transformation execution and logging
+are handled by dbt. The model keeps the Bronze `id`, ignores query-only columns such as `rn`, removes
+records without a title or description, strips HTML from descriptions,
+normalizes timestamps, employment types and multi-location values, and
+deduplicates by source job ID, job URL, then normalized fallback fields. It builds
+`silver.cleaned_job_postings` on each successful run.
 
-```powershell
-python -m scrapers.bosch_scraper --max-jobs 10
-```
-
-Generated files are written under `data/` for local analysis. They are ignored
-by Git and must not be included in a PR.
-
-## Run automated tests
-
-```powershell
-python -m unittest discover -s tests -v
-```
-
-The tests cover shared helpers, nested HTML decoding, atomic output, validation,
-duplicate detection, and each company's normalization.
-
-## PR evidence checklist
-
-For the BE-1 PR description, attach dated screenshots showing:
-
-1. each scraper completing successfully;
-2. the automated test command passing;
-3. the local job counts printed by each scraper;
-4. `git status --short` confirming `data/*.json` is not included.
-
-Suggested PR title:
-
-```text
-[BE-1] Refactor and validate company job scrapers
-```
-
-Reference the actual GitHub issue number in the PR body, for example
-`Closes #123`, and replace `#123` with the issue corresponding to BE-1.
+Skills extraction is exposed separately in `skills_extractor.py`, with its prompt
+stored in `scrapers/prompts/skills_extraction.txt`. AV-domain
+classification is intentionally excluded because it is owned by the separate
+classification task.

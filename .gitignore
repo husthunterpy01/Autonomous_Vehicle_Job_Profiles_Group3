@@ -36,6 +36,10 @@ logs/
 # Generated scraper output (BE-1)
 /data/*.json
 
+# Legacy per-company scrapers (superseded by strategy + scraper_main)
+scrapers/base_scraper.py
+scrapers/*_scraper.py
+
 # IDE / editor
 .idea/
 .vscode/

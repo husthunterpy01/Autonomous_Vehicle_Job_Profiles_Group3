@@ -1,0 +1,14 @@
+ats_sources:
+  smartrecruiters:
+    api_base: "https://api.smartrecruiters.com/v1/companies/{slug}/postings"
+  greenhouse:
+    api_base: "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
+  workday:
+    api_base: "https://{host}/wday/cxs/{tenant}/{site}/jobs"  
+  lever:
+    api_base: "https://api.lever.co/v0/postings/{slug}"
+  ashby:
+    api_base: "https://api.ashbyhq.com/posting-api/job-board/{slug}"
+  personio:
+    api_base: "https://api.personio.com/v1/companies/{slug}/postings"
+

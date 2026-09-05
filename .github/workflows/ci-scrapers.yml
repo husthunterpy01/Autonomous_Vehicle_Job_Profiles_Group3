@@ -1,0 +1,60 @@
+name: autonomous-job-scrapers-ci
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - "scrapers/**"
+      - ".github/workflows/ci-scrapers.yml"
+  push:
+    branches: [ main ]
+    paths:
+      - "scrapers/**"
+      - ".github/workflows/ci-scrapers.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: av_jobs
+      POSTGRES_USER: av_jobs
+      POSTGRES_PASSWORD: ""
+      POSTGRES_HOST_AUTH_METHOD: trust
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: av_jobs
+          POSTGRES_DB: av_jobs
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install scraper test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r scrapers/requirements-test.txt
+      - name: Run dbt unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: dbt test --project-dir ./scrapers/dbt --profiles-dir ./scrapers/dbt --select "test_type:unit"
+      - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python -m pytest scrapers/tests/unit_test -v
+      - name: Run integration tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: python -m pytest scrapers/tests/integration_test -v
