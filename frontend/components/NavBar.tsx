@@ -63,7 +63,9 @@ export default function NavBar(props: NavBarProps = {}) {
                   key={link.href}
                   href={link.href}
                   className={`text-sm font-medium transition-colors ${
-                    active ? "text-primary" : "text-ink-secondary hover:text-ink"
+                    active
+                      ? "text-primary"
+                      : "text-ink-secondary hover:text-ink"
                   }`}
                 >
                   {link.label}
