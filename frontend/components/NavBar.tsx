@@ -16,7 +16,7 @@ export default function NavBar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-line bg-surface">
-      <div className="mx-auto flex h-16 max-w-[1200px] items-center justify-between px-6">
+      <div className="flex h-16 w-full items-center justify-between px-6 md:px-8 xl:px-10 2xl:px-12">
         {/* Logo — acts as the home link */}
         <Link
           href="/"
@@ -28,8 +28,8 @@ export default function NavBar() {
           <span>AV Job Finder</span>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="hidden items-center gap-8 md:flex">
+        {/* Desktop nav + actions — one tight cluster: nav links, a divider, then Login/Sign Up */}
+        <div className="hidden items-center gap-6 md:flex">
           {NAV_LINKS.map((link) => {
             const active =
               link.href === "/"
@@ -47,10 +47,9 @@ export default function NavBar() {
               </Link>
             );
           })}
-        </div>
 
-        {/* Desktop actions */}
-        <div className="hidden items-center gap-3 md:flex">
+          <span aria-hidden="true" className="h-5 w-px bg-line" />
+
           <Link
             href="/login"
             className="text-sm font-medium text-ink-secondary hover:text-ink"
