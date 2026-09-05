@@ -35,6 +35,7 @@ logs/
 
 # Generated scraper output (BE-1)
 /data/*.json
+/data/job_prefilter/
 
 # Legacy per-company scrapers (superseded by strategy + scraper_main)
 scrapers/base_scraper.py

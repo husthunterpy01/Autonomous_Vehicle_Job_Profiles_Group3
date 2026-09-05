@@ -1,0 +1,170 @@
+version: 1
+
+# A title hit is sufficient by default; description-only jobs need several
+# independent AV signals. Change this file, or point AV_JOB_PREFILTER_CONFIG to
+# an external copy, without changing Python code.
+minimum_score: 3
+
+# Safe default: only titles matching the explicit exclusion list are removed.
+# Low-scoring/unknown roles still go to the LLM to avoid silent false negatives.
+# Set to true after the keyword set has been validated for your data.
+exclude_below_threshold: false
+
+field_weights:
+  title: 3
+  department: 2
+  team: 2
+  description: 1
+
+field_aliases:
+  id: [id, job_id, source_job_id]
+  company: [company_name, company]
+  title: [job_name, job_title, title]
+  description: [job_description, description, description_text, content]
+  department: [department]
+  team: [team]
+
+# These are relevance signals, not final taxonomy labels. The LLM receives only
+# rows that pass this gate and remains responsible for category assignment.
+positive_keywords:
+  - autonomous
+  - autonomy
+  - autonomous vehicle
+  - automated driving
+  - ADAS
+  - robotics
+  - robot
+  - perception
+  - computer vision
+  - machine learning
+  - artificial intelligence
+  - sensor fusion
+  - lidar
+  - radar
+  - motion planning
+  - path planning
+  - localization
+  - mapping
+  - simulation
+  - embedded
+  - firmware
+  - vehicle
+  - automotive
+  - controls
+  - safety engineering
+  - systems engineer
+  - software
+  - hardware
+  - data engineer
+  - infrastructure
+  - cloud engineer
+  - DevOps
+  - cybersecurity
+  - security engineer
+  - fleet operations
+  - vehicle operator
+  - technician
+  - technical program
+
+# A matching title is excluded even if generic company boilerplate in the
+# description mentions autonomous vehicles. Tune this list as false positives
+# and false negatives are reviewed.
+excluded_title_keywords:
+  - accountant
+  - accounting
+  - accounts payable
+  - accounts receivable
+  - recruiter
+  - recruiting
+  - talent acquisition
+  - HR
+  - human resources
+  - people business partner
+  - people operations
+  - people systems
+  - payroll
+  - finance
+  - financial analyst
+  - marketing
+  - communications
+  - public relations
+  - sales
+  - business development
+  - commercial operations
+  - customer success
+  - customer support
+  - legal counsel
+  - attorney
+  - paralegal
+  - executive assistant
+  - administrative assistant
+  - office manager
+  - facilities
+
+# Excluded jobs are still categorized for the audit trail. Rules are evaluated
+# against the title first and then the description/department/team, in order.
+excluded_category_rules:
+  - name: Corporate Technology / Enterprise Systems
+    keywords:
+      - finance and SCM technology
+      - ERP technology
+      - ERP platform
+      - financial applications
+      - system orchestration
+      - API-driven middleware
+
+  - name: People / HR Systems and Analytics
+    keywords:
+      - people systems
+      - Workday operations
+      - Workday reports
+      - HRIS
+      - workforce analytics
+
+  - name: People / Talent Acquisition
+    keywords:
+      - talent acquisition
+      - recruiting and sourcing
+      - executive recruiting
+
+  - name: People / HR Business Partner
+    keywords:
+      - people business partner
+      - HRBP
+      - employee relations
+      - workforce planning
+
+  - name: People / Operations
+    keywords:
+      - people operations
+      - employee lifecycle
+      - people program management
+
+  - name: Finance / Cost Accounting
+    keywords:
+      - cost accountant
+      - cost center controlling
+      - product costing
+
+  - name: Finance / Accounting
+    keywords:
+      - accounting specialist
+      - accountant
+      - financial accounting
+      - financial statements
+
+  - name: Communications / Public Relations
+    keywords:
+      - public relations
+      - PR manager
+      - media relations
+      - brand reputation
+
+  - name: Business / Commercial Operations
+    keywords:
+      - commercial operations
+      - commercial P&L
+      - pricing
+      - demand signals
+
+default_excluded_category: Corporate / Support
