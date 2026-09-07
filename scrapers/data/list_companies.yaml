@@ -193,15 +193,15 @@ companies:
       host: generalmotors.wd5.myworkdayjobs.com
       tenant: generalmotors
       site: Careers_GM
-    enabled: false
+    enabled: true
 
   - key: mobileye
     name: Mobileye
     url: https://careers.mobileye.com/jobs
     country: IL
-    ats: html
-    slug: null
-    enabled: false
+    ats: lever
+    slug: mobileye
+    enabled: true
 
   - key: motional
     name: Motional
@@ -213,9 +213,9 @@ companies:
 
   - key: momenta
     name: Momenta
-    url: https://momenta-europe-gmbh.jobs.personio.de/
+    url: https://momenta-europe-gmbh.jobs.personio.de/xml?language=en
     country: CN
-    ats: personio
+    ats: xss
     slug: momenta-europe-gmbh
     enabled: false
 
@@ -237,15 +237,15 @@ companies:
       host: nvidia.wd5.myworkdayjobs.com
       tenant: nvidia
       site: NVIDIAExternalCareerSite
-    enabled: false
+    enabled: true
 
   - key: pony_ai
     name: Pony.ai
     url: https://apply.workable.com/pony-dot-ai/
     country: US
-    ats: html
-    slug: null
-    enabled: false
+    ats: workable
+    slug: pony-dot-ai
+    enabled: true
 
   - key: plus_ai
     name: Plus AI

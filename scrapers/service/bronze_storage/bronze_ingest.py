@@ -7,9 +7,14 @@ from psycopg2.extras import Json, execute_values
 from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 from scrapers.response_archive import ResponseArchive
+from scrapers.service.bronze_storage.xml_extractor import XMLExtractor
 from scrapers.utils.company_scraper import CompanyScraper
 
 logger = logging.getLogger(__name__)
+
+# Archive sources landed into bronze.raw_responses. "html" payloads are still
+# skipped; "xml" feeds are parsed to a job list before storage.
+LANDABLE_SOURCES = {"api", "xml"}
 
 RAW_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS bronze.raw_responses (
@@ -26,7 +31,6 @@ CREATE TABLE IF NOT EXISTS bronze.raw_responses (
 
 
 class BronzeIngest():
-
     def __init__(self, bucket_name, postgres_config=None, dbt_config=None):
         self.bucket_name = bucket_name
         self.postgres_config = postgres_config or PostgresConfig()
@@ -50,8 +54,8 @@ class BronzeIngest():
                 bucket_name=self.bucket_name
             ):
                 try:
-                    if source != "api":
-                        logger.info("Skipping %s: source %s is not an API payload.", company_slug, source)
+                    if source not in LANDABLE_SOURCES:
+                        logger.info("Skipping %s: source %s is not landable.", company_slug, source)
                         continue
                     row = self._row_from_archive(source, company_slug, plain_response)
                     if row is None:
@@ -95,6 +99,7 @@ class BronzeIngest():
                 [row],
             )
 
+    # Extract from API source
     def _row_from_archive(self, source, company_slug, plain_response):
         if plain_response is None or getattr(plain_response, "empty", True):
             logger.warning("Skipping %s: archive payload is empty.", company_slug)
@@ -109,7 +114,12 @@ class BronzeIngest():
         body = archive_row.get("body")
         if isinstance(body, bytes):
             body = body.decode("utf-8")
-        if isinstance(body, (dict, list)):
+        if source == "xml":
+            json_body = XMLExtractor(body, feed_url=archive_row.get("url")).extract_jobs()
+            if not json_body:
+                logger.warning("Skipping %s: XML feed produced no jobs.", company_slug)
+                return None
+        elif isinstance(body, (dict, list)):
             json_body = body
         else:
             json_body = json.loads(body)

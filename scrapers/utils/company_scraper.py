@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 class CompanyScraper:
     COMPANY_LIST_PATH = "./scrapers/data/list_companies.yaml"
-    API_ATS = frozenset({"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio"})
+    API_ATS = frozenset({"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio","workable"})
 
     @classmethod
     def load_company_list(cls) -> list[dict[str, Any]]:
@@ -42,7 +42,7 @@ class CompanyScraper:
     def scrape_company(cls, company: dict[str, Any], timeout: float) -> int:
         name = company["name"]
         ats = company.get("ats")
-        if ats != "html" and not company.get("slug"):
+        if ats != "html" and not company.get("slug") and not company.get("params"):
             logger.warning("Skipping %s: API company is missing a slug.", name)
             return 0
 

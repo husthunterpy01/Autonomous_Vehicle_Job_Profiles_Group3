@@ -10,12 +10,13 @@ from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 
 BRONZE_MODELS = Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze"
+API_MODELS = BRONZE_MODELS / "api"
 DBT_PROJECT = Path(__file__).resolve().parents[2] / "dbt"
 ATS_MODELS = ("greenhouse", "lever", "ashby", "smartrecruiters")
 
 
 def render_ats_sql(ats_name: str, source_relation: str = "job_postings_test_src") -> str:
-    sql = (BRONZE_MODELS / ats_name / f"{ats_name}.sql").read_text(encoding="utf-8")
+    sql = (API_MODELS / ats_name / f"{ats_name}.sql").read_text(encoding="utf-8")
     sql = re.sub(r"\{\{\s*config\([^}]*\)\s*\}\}", "", sql, count=1)
     sql = sql.replace('{{ source("bronze", "raw_responses") }}', source_relation)
     leftover = re.findall(r"\{\{.*?\}\}", sql, flags=re.DOTALL)

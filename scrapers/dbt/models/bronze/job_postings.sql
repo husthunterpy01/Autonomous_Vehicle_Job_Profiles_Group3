@@ -8,6 +8,8 @@ with parsed as (
     select * from {{ ref("ashby") }}
     union all
     select * from {{ ref("smartrecruiters") }}
+    union all
+    select * from {{ ref("personio") }}
 )
 
 select

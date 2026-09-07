@@ -181,6 +181,222 @@ def test_smartrecruiters_keeps_list_item_when_detail_fails(
     assert "jobAd" not in archived["content"][0]
 
 
+def test_from_company_collects_lever_fallback_urls(tmp_path, monkeypatch):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources:\n"
+        "  lever:\n"
+        "    api_base: https://api.lever.co/v0/postings/{slug}\n"
+        "    api_base_v2: https://api.eu.lever.co/v0/postings/{slug}?mode=json\n"
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+
+    fetcher, url = RawFetch.from_company(
+        {"name": "Nuro", "ats": "lever", "slug": "nuro"}
+    )
+
+    assert url == "https://api.lever.co/v0/postings/nuro"
+    assert fetcher.fallback_urls == [
+        "https://api.eu.lever.co/v0/postings/nuro?mode=json"
+    ]
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_fetch_and_archive_switches_to_fallback_url(mock_urlopen, mock_archive):
+    payload = {"postings": [{"id": "1"}]}
+    mock_urlopen.side_effect = [
+        HTTPError(
+            url="https://api.lever.co/v0/postings/nuro",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=None,
+        ),
+        _urlopen_body(payload),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/nuro/file.parquet"
+
+    fetcher = RawFetch(
+        "Nuro",
+        "api",
+        "lever",
+        fallback_urls=["https://api.eu.lever.co/v0/postings/nuro?mode=json"],
+    )
+    object_key = fetcher.fetch_and_archive(
+        "https://api.lever.co/v0/postings/nuro", timeout=5
+    )
+
+    assert object_key == "api/nuro/file.parquet"
+    assert mock_urlopen.call_count == 2
+    fetched_url = mock_urlopen.call_args_list[1][0][0].full_url
+    assert fetched_url == "https://api.eu.lever.co/v0/postings/nuro?mode=json"
+    saved = mock_archive.return_value.save_raw_response.call_args.kwargs
+    assert json.loads(saved["raw_response"]) == payload
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_fetch_and_archive_raises_when_all_urls_fail(mock_urlopen, mock_archive):
+    mock_urlopen.side_effect = HTTPError(
+        url="https://api.lever.co/v0/postings/nuro",
+        code=404,
+        msg="Not Found",
+        hdrs=None,
+        fp=None,
+    )
+    fetcher = RawFetch(
+        "Nuro",
+        "api",
+        "lever",
+        fallback_urls=["https://api.eu.lever.co/v0/postings/nuro?mode=json"],
+    )
+
+    with pytest.raises(RuntimeError, match="HTTP 404"):
+        fetcher.fetch_and_archive("https://api.lever.co/v0/postings/nuro")
+    mock_archive.return_value.save_raw_response.assert_not_called()
+
+
+def _workday_sources(tmp_path, monkeypatch):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources:\n"
+        "  workday:\n"
+        "    api_base: https://{host}/wday/cxs/{tenant}/{site}/jobs\n"
+        "    method: POST\n"
+        '    body: \'{"appliedFacets": {}, "limit": 20, "offset": 0, "searchText": ""}\'\n'
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+
+
+def test_from_company_builds_workday_post_request(tmp_path, monkeypatch):
+    _workday_sources(tmp_path, monkeypatch)
+
+    fetcher, url = RawFetch.from_company(
+        {
+            "name": "General Motors",
+            "ats": "workday",
+            "slug": None,
+            "params": {
+                "host": "generalmotors.wd5.myworkdayjobs.com",
+                "tenant": "generalmotors",
+                "site": "Careers_GM",
+            },
+        }
+    )
+
+    assert url == (
+        "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/jobs"
+    )
+    assert fetcher.request_method == "POST"
+    assert json.loads(fetcher.request_body) == {
+        "appliedFacets": {},
+        "limit": 20,
+        "offset": 0,
+        "searchText": "",
+    }
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_fetch_and_archive_posts_pages_and_expands_workday(
+    mock_urlopen, _mock_sleep, mock_archive, tmp_path, monkeypatch
+):
+    _workday_sources(tmp_path, monkeypatch)
+    mock_urlopen.side_effect = [
+        _urlopen_body(
+            {
+                "total": 3,
+                "jobPostings": [
+                    {"id": "1", "externalPath": "/job/a"},
+                    {"id": "2", "externalPath": "/job/b"},
+                ],
+            }
+        ),
+        _urlopen_body({"total": 3, "jobPostings": [{"id": "3", "externalPath": "/job/c"}]}),
+        _urlopen_body({"jobPostingInfo": {"jobDescription": "<p>A</p>"}}),
+        _urlopen_body({"jobPostingInfo": {"jobDescription": "<p>B</p>"}}),
+        _urlopen_body({"jobPostingInfo": {"jobDescription": "<p>C</p>"}}),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/general_motors/f.parquet"
+
+    fetcher, url = RawFetch.from_company(
+        {
+            "name": "General Motors",
+            "ats": "workday",
+            "slug": None,
+            "params": {
+                "host": "generalmotors.wd5.myworkdayjobs.com",
+                "tenant": "generalmotors",
+                "site": "Careers_GM",
+            },
+        }
+    )
+    fetcher.fetch_and_archive(url, timeout=5)
+
+    requests = [call[0][0] for call in mock_urlopen.call_args_list]
+    # First two calls page the list endpoint with POST.
+    assert requests[0].method == "POST"
+    assert requests[0].get_header("Content-type") == "application/json"
+    assert json.loads(requests[0].data)["offset"] == 0
+    assert json.loads(requests[1].data)["offset"] == 2
+    # Remaining calls GET the detail endpoint at the CXS base + externalPath.
+    assert [r.method for r in requests[2:]] == ["GET", "GET", "GET"]
+    assert [r.full_url for r in requests[2:]] == [
+        "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/job/a",
+        "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/job/b",
+        "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/job/c",
+    ]
+
+    saved = mock_archive.return_value.save_raw_response.call_args.kwargs
+    postings = saved["raw_response"]["jobPostings"]
+    assert [p["id"] for p in postings] == ["1", "2", "3"]
+    assert [
+        p["jobPostingDetail"]["jobPostingInfo"]["jobDescription"] for p in postings
+    ] == ["<p>A</p>", "<p>B</p>", "<p>C</p>"]
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_workday_keeps_posting_when_detail_fails(
+    mock_urlopen, _mock_sleep, mock_archive, tmp_path, monkeypatch
+):
+    _workday_sources(tmp_path, monkeypatch)
+    mock_urlopen.side_effect = [
+        _urlopen_body(
+            {"total": 1, "jobPostings": [{"id": "1", "externalPath": "/job/a"}]}
+        ),
+        HTTPError(
+            url="https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/job/a",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=None,
+        ),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/general_motors/f.parquet"
+
+    fetcher = RawFetch(
+        "General Motors",
+        "api",
+        "workday",
+        request_method="POST",
+        request_body=b'{"limit": 20, "offset": 0}',
+    )
+    fetcher.fetch_and_archive(
+        "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/jobs",
+        timeout=5,
+    )
+
+    postings = mock_archive.return_value.save_raw_response.call_args.kwargs[
+        "raw_response"
+    ]["jobPostings"]
+    assert postings[0]["id"] == "1"
+    assert "jobPostingDetail" not in postings[0]
+
+
 @patch("scrapers.service.fetch.rawfetch.ResponseArchive")
 @patch("scrapers.service.fetch.rawfetch.urlopen")
 def test_fetch_and_archive_raises_on_http_403(mock_urlopen, mock_archive):

@@ -134,9 +134,16 @@ def test_extract_returns_error_when_dbt_fails(
 
 def test_dbt_job_postings_model_covers_supported_ats():
     union_sql = (BRONZE_MODELS / "job_postings.sql").read_text(encoding="utf-8")
-    lever_sql = (BRONZE_MODELS / "lever.sql").read_text(encoding="utf-8")
-    for ats in ("greenhouse", "lever", "ashby", "smartrecruiters"):
-        assert (BRONZE_MODELS / f"{ats}.sql").is_file()
+    lever_sql = (BRONZE_MODELS / "api" / "lever" / "lever.sql").read_text(encoding="utf-8")
+    ats_models = {
+        "greenhouse": BRONZE_MODELS / "api" / "greenhouse" / "greenhouse.sql",
+        "lever": BRONZE_MODELS / "api" / "lever" / "lever.sql",
+        "ashby": BRONZE_MODELS / "api" / "ashby" / "ashby.sql",
+        "smartrecruiters": BRONZE_MODELS / "api" / "smartrecruiters" / "smartrecruiters.sql",
+        "personio": BRONZE_MODELS / "xml" / "personio" / "personio.sql",
+    }
+    for ats, model_path in ats_models.items():
+        assert model_path.is_file()
         assert f'ref("{ats}")' in union_sql
     assert "as id" in union_sql
     assert "row_number()" in union_sql
