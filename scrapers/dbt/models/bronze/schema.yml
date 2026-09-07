@@ -7,6 +7,13 @@ models:
       - name: id
         description: Unique row id across all companies in bronze.job_postings.
         tests: [not_null, unique]
+      - name: job_id
+        description: >
+          The ATS-native posting id (Greenhouse/SmartRecruiters numbers,
+          Lever/Ashby UUIDs, ...); falls back to the job URL, then a content
+          hash, only when the ATS supplies no id. Stable across re-runs, unlike
+          the row_number() id.
+        tests: [not_null, unique]
       - name: company_name
         tests: [not_null]
       - name: job_name

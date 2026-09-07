@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 class CompanyScraper:
     COMPANY_LIST_PATH = "./scrapers/data/list_companies.yaml"
-    API_ATS = frozenset({"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio","workable"})
+    API_ATS = frozenset(
+        {"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio", "workable", "comeet"}
+    )
 
     @classmethod
     def load_company_list(cls) -> list[dict[str, Any]]:
@@ -32,6 +34,21 @@ class CompanyScraper:
             if not company.get("enabled"):
                 continue
             if company.get("ats") not in cls.API_ATS:
+                continue
+            if company_key and company.get("key") != company_key:
+                continue
+            selected.append(company)
+        return selected
+
+    @classmethod
+    def enabled_html_sources(
+        cls, companies: list[dict[str, Any]], company_key: str | None = None
+    ) -> list[dict[str, Any]]:
+        selected: list[dict[str, Any]] = []
+        for company in companies:
+            if not company.get("enabled"):
+                continue
+            if company.get("ats") != "html":
                 continue
             if company_key and company.get("key") != company_key:
                 continue

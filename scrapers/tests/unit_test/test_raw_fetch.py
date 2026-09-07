@@ -44,6 +44,84 @@ def test_from_company_uses_career_url_for_html():
 
     assert fetcher.source == "html"
     assert url == "https://careers.withwaymo.com/"
+    assert fetcher.render is False
+
+
+def test_from_company_reads_html_render_config(tmp_path, monkeypatch):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources: {}\n"
+        "html_sources:\n"
+        "  woven:\n"
+        "    strategy: css_list\n"
+        "    render: true\n"
+        "    wait_for: \"a.job\"\n"
+        "    scroll: true\n"
+        "    url: \"https://embed.example/woven\"\n"
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+
+    fetcher, url = RawFetch.from_company(
+        {"key": "woven", "name": "Woven", "ats": "html", "url": "https://woven.example/careers"}
+    )
+
+    assert fetcher.render is True
+    assert fetcher.wait_for == "a.job"
+    assert fetcher.scroll is True
+    assert url == "https://embed.example/woven"
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+def test_fetch_and_archive_walks_param_pages(mock_archive):
+    mock_archive.return_value.save_raw_response.return_value = "html/adastec/file.parquet"
+    pages = [
+        b"<li><div class='base-card' data-entity-urn='urn:li:jobPosting:1'>page 0</div></li>",
+        b"<li><div class='base-card' data-entity-urn='urn:li:jobPosting:2'>page 1</div></li>",
+        b"  ",
+    ]
+
+    fetcher = RawFetch(
+        "ADASTEC", "html", "adastec",
+        paginate={"param": "start", "step": 25, "max_pages": 10},
+    )
+    with patch.object(RawFetch, "_http_get", side_effect=[(p, 200, "text/html") for p in pages]) as http:
+        fetcher.fetch_and_archive("https://li.example/search?f_C=1")
+
+    called = [c.args[0] for c in http.call_args_list]
+    assert called == [
+        "https://li.example/search?f_C=1&start=0",
+        "https://li.example/search?f_C=1&start=25",
+        "https://li.example/search?f_C=1&start=50",
+    ]
+    saved = mock_archive.return_value.save_raw_response.call_args.kwargs
+    assert saved["source"] == "html"
+    assert "page 0" in saved["raw_response"] and "page 1" in saved["raw_response"]
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+def test_fetch_and_archive_renders_with_headless_when_configured(mock_archive):
+    mock_archive.return_value.save_raw_response.return_value = "html/woven/file.parquet"
+    rendered = "<html><body><a class='job' href='/careers/detail/1/'>Role</a></body></html>"
+
+    client = MagicMock()
+    client.__enter__.return_value.render.return_value = rendered
+
+    fetcher = RawFetch("Woven", "html", "woven", render=True, wait_for="a.job", scroll=True)
+    with patch("scrapers.config.selenium_driver.SeleniumClient", return_value=client) as sel:
+        fetcher.fetch_and_archive("https://embed.example/woven", timeout=5)
+
+    sel.assert_called_once()
+    client.__enter__.return_value.render.assert_called_once_with(
+        "https://embed.example/woven",
+        wait_selector="a.job",
+        scroll=True,
+        next_selector=None,
+        max_pages=1,
+    )
+    saved = mock_archive.return_value.save_raw_response.call_args.kwargs
+    assert saved["source"] == "html"
+    assert saved["raw_response"] == rendered
+    assert saved["content_type"] == "text/html"
 
 
 def test_unknown_ats_raises_before_fetch(tmp_path, monkeypatch):
@@ -76,7 +154,8 @@ def test_fetch_and_archive_saves_raw_json(mock_urlopen, mock_archive, tmp_path, 
 
     assert object_key == "api/stack_av/file.parquet"
     request = mock_urlopen.call_args[0][0]
-    assert request.get_header("User-agent") == "Mozilla/5.0"
+    user_agent = request.get_header("User-agent")
+    assert user_agent.startswith("Mozilla/5.0") and "Chrome/" in user_agent
     saved = mock_archive.return_value.save_raw_response.call_args.kwargs
     assert saved["source"] == "api"
     assert saved["source_system"] == "greenhouse"
@@ -348,6 +427,15 @@ def test_fetch_and_archive_posts_pages_and_expands_workday(
         "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/job/b",
         "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/job/c",
     ]
+    # The detail GET carries the Workday CXS anti-bot header set.
+    detail = requests[2]
+    assert detail.get_header("Accept") == "application/json"
+    assert detail.get_header("Content-type") == "application/json"
+    assert (
+        detail.get_header("Referer")
+        == "https://generalmotors.wd5.myworkdayjobs.com/Careers_GM"
+    )
+    assert detail.get_header("User-agent").startswith("Mozilla/5.0")
 
     saved = mock_archive.return_value.save_raw_response.call_args.kwargs
     postings = saved["raw_response"]["jobPostings"]

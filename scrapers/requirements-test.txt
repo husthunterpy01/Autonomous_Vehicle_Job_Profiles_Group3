@@ -1,5 +1,7 @@
 python-dotenv==1.2.2
 PyYAML==6.0.2
+beautifulsoup4==4.13.5
+selenium==4.36.0
 pandas==2.3.3
 pyarrow==21.0.0
 minio==7.2.16

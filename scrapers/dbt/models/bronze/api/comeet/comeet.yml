@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: comeet
+    description: Comeet careers-api positions parsed from bronze.raw_responses.
+
+unit_tests:
+  - name: comeet_maps_positions_and_details
+    model: comeet
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'comeet'::text as source_system,
+            'AutoBrains'::text as company_name,
+            'IL'::text as headquarter,
+            $json$[{"uid":"9E.17B","name":"RoboCar Test Driver","employment_type":"Full time","time_updated":"2026-09-06T14:27:52Z","position_url":"https://www.comeet.com/jobs/autobrains/57.004/robocar-test-driver/9E.17B","location":{"name":"Munich","country":"DE"},"details":[{"name":"Requirements","value":"<p>Driver license</p>","order":2},{"name":"Description","value":"<p>Drive the car</p>","order":1}]}]$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: comeet
+          source_job_id: 9E.17B
+          company_name: AutoBrains
+          job_name: RoboCar Test Driver
+          job_description: "Description\n<p>Drive the car</p>\n\nRequirements\n<p>Driver license</p>"
+          headquarter: IL
+          location: Munich
+          job_url: https://www.comeet.com/jobs/autobrains/57.004/robocar-test-driver/9E.17B
+          job_uploaded_at: "2026-09-06T14:27:52Z"
+          employment_type: Full time

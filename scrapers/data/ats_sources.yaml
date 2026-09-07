@@ -16,4 +16,134 @@ ats_sources:
     api_base: "https://api.personio.com/v1/companies/{slug}/postings"
   workable:
     api_base: "https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true"
+  comeet:
+    # {company_uid} and {token} come from the company's `params` in
+    # list_companies.yaml; the token is published in the Comeet careers page.
+    api_base: "https://www.comeet.co/careers-api/2.0/company/{company_uid}/positions?token={token}&details=true"
+
+# Per-company strategy for `ats: html` companies in list_companies.yaml, keyed by
+# their `key`. RawFetch reads `render`/`wait_for`/`scroll`/`url` here at fetch
+# time; BronzeIngest hands the whole entry to HTMLExtractor. Strategies:
+#   css_list  - job rows are in the (optionally rendered) HTML; parse with CSS.
+#   jobylon   - parse the JS job array from a Jobylon widget embed page.
+#   headless  - JS-only page we cannot parse yet (blocked / obfuscated). Stub:
+#               HTMLExtractor logs and yields nothing until selectors are added.
+# Fetch keys: render (bool, fetch via headless Chrome), wait_for (CSS selector to
+#   wait for), scroll (bool), url (override the company's career URL),
+#   paginate - either {param, step, max_pages} to walk ?param=N pages of a static
+#   endpoint, or {next_selector, max_pages} to click a "next page" control while
+#   rendering.
+# css_list keys: item (required, selector for each job row), job_name,
+#   job_description, location, employment_type, job_uploaded_at (selectors
+#   relative to item; "selector@attr" reads an attribute instead of text), link
+#   (selector for the <a> holding the job URL, default "a"), job_id_pattern
+#   (regex applied to the resolved job URL, group 1 -> source_job_id).
+#   detail: {url, description} - when the list page has no description, RawFetch
+#   fetches each job's detail page (detail.url with {id}=source_job_id, or the
+#   row's job_url) and pulls detail.description into job_description.
+html_sources:
+  tensor:
+    strategy: css_list
+    item: "div.careers-item"
+    job_name: "h3"
+    location: "[fs-cmsfilter-field='Regions']"
+    employment_type: "[fs-cmsfilter-field='Jobtypes']"
+    link: "a[href*='/careers/']"
+    job_id_pattern: "/careers/(jd\\d+)"
+    detail:
+      description: ".w-richtext"
+
+  tier_iv:
+    strategy: css_list
+    item: "div.requisition-list-card"
+    job_name: "h2.requisition-list-card__header"
+    job_description: "div.requisition-list-card__text"
+    link: "a.requisition-list-card__header-anchor"
+    job_id_pattern: "/v1/tier4/([\\w-]+)$"
+
+  woven:
+    strategy: css_list
+    render: true
+    wait_for: "a[href*='/careers/detail/']"
+    scroll: true
+    item: "li:has(a[href*='/en/careers/detail/'])"
+    job_name: "div.min-w-0 > p:first-child"
+    location: "div.min-w-0 > p:nth-of-type(2)"
+    link: "a[href*='/careers/detail/']"
+    job_id_pattern: "/detail/([0-9a-f-]+)/?$"
+    detail:
+      # the detail page is server-rendered even though the list needs a browser
+      description: ".job-detail-main-description"
+
+  didi:
+    strategy: css_list
+    render: true
+    wait_for: "a[href*='/jobDetail:']"
+    scroll: true
+    paginate:
+      next_selector: "ul.pager li.pn.next"
+      max_pages: 30
+    item: "ul.jobList li.item"
+    job_name: "p.jobName"
+    location: "span.jobTips em"
+    link: "a[href*='/jobDetail:']"
+    job_id_pattern: "/jobDetail:(.+)$"
+    detail:
+      # detail pages are server-rendered; ~260 extra fetches, adds minutes/run
+      description: "div.content"
+
+  einride:
+    strategy: jobylon
+    url: "https://cdn.jobylon.com/jobs/companies/3143/embed/v2/?target=jobylon-jobs-widget&page_size=200"
+    detail:
+      # jobylon: fetch each job page and read its JobPosting JSON-LD description
+      json_ld: true
+
+  # ADASTEC has no ATS of its own; scraped from LinkedIn's public (no-auth)
+  # guest job feed, which paginates via ?start=N. f_C is the LinkedIn company id.
+  adastec:
+    strategy: css_list
+    url: "https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?f_C=13011997&geoId=92000000"
+    paginate:
+      param: start
+      step: 25
+      max_pages: 40
+    item: "div.base-card"
+    job_name: "h3.base-search-card__title"
+    location: "span.job-search-card__location"
+    job_uploaded_at: "time.job-search-card__listdate@datetime"
+    link: "a.base-card__full-link"
+    job_id_pattern: "-(\\d+)(?:\\?|/?$)"
+    detail:
+      url: "https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{id}"
+      description: ".show-more-less-html__markup"
+
+  aimotive:
+    strategy: css_list
+    item: "div.position-list-item"
+    job_name: "div.position-details h3"
+    location: "p.auth-paragraph"
+    link: "div.position-details a"
+    job_id_pattern: "/w/([^/?#]+)"
+    detail:
+      # no `url` -> the per-job page is the row's own job_url
+      description: "div.single-post"
+
+  # Cannot scrape (kept disabled in list_companies.yaml):
+  #   apollo_baidu - talent.baidu.com never loads in headless Chrome (returns
+  #                  about:blank); the guest job API needs a logged-in session.
+  #   huawei       - career.huawei.com/ geo-redirects to /cn behind a device
+  #                  "verify" gateway (hwp_ocs_verify); the job API needs a
+  #                  server-signed license token per request.
+  #   qcraft       - Feishu/ByteDance board; /api/v1/search/job/posts requires a
+  #                  per-request _signature from their acrawler.js anti-bot, and
+  #                  the rendered SPA yields no job nodes to headless Chrome.
+  apollo_baidu:
+    strategy: headless
+
+  huawei:
+    strategy: headless
+
+  qcraft:
+    strategy: headless
 

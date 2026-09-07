@@ -123,7 +123,7 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
 
     assert status == 0
     request = mock_urlopen.call_args[0][0]
-    assert request.get_header("User-agent") == "Mozilla/5.0"
+    assert request.get_header("User-agent").startswith("Mozilla/5.0")
     assert request.full_url.endswith("/boards/stackav/jobs?content=true")
     assert stored["object_name"].startswith("api/stack_av/")
     assert stored["object_name"].endswith(".parquet")

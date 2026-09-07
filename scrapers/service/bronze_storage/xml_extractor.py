@@ -7,10 +7,7 @@ from xml.etree import ElementTree as ET
 
 logger = logging.getLogger(__name__)
 
-# Personio serves its job feed as a "workzag-jobs" XML document:
-#   <workzag-jobs><position>...</position>...</workzag-jobs>
 POSITION_TAG = "position"
-
 
 class XMLExtractor:
     """Parse a Personio ``workzag-jobs`` XML feed into bronze-ready job dicts.
