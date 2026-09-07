@@ -78,6 +78,15 @@ class RawFetch:
         ats_name = company["ats"]
         company_name = company["name"]
         config_path = ats_path or ATS_PATH
+        if ats_name == "xml":
+            feed_url = company.get("url")
+            if not isinstance(feed_url, str) or not feed_url:
+                raise ValueError(f"{company_name} is missing an XML feed URL")
+            # source_system drives the bronze parser (personio's workzag-jobs feed
+            # is the only XML format supported today); override via params.format.
+            xml_format = str((company.get("params") or {}).get("format", "personio"))
+            return RawFetch(company_name, "xml", xml_format), feed_url
+
         if ats_name == "html":
             html_cfg = cls._load_html_source(company.get("key"), config_path)
             page_url = html_cfg.get("url") or company.get("url")

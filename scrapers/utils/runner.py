@@ -24,6 +24,7 @@ class ScraperRunner:
         company_list = CompanyScraper.load_company_list()
         companies = CompanyScraper.enabled_api_sources(company_list, company_key=args.company)
         companies += CompanyScraper.enabled_html_sources(company_list, company_key=args.company)
+        companies += CompanyScraper.enabled_xml_sources(company_list, company_key=args.company)
         if args.company and not companies:
             logger.error("No enabled company matched key %r.", args.company)
             return 1

@@ -4,12 +4,17 @@ Imported lazily (only when an ``html_sources`` entry sets ``render: true``) so
 that ``selenium`` stays an optional dependency for the rest of the pipeline.
 """
 
+import os
 import time
 
+from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
+
+load_dotenv()
+load_dotenv("./scrapers/.env")
 
 DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -22,14 +27,14 @@ class SeleniumClient:
 
     def __init__(
         self,
-        chrome_binary="/usr/bin/google-chrome",
+        chrome_binary=None,
         headless=True,
         user_agent=DEFAULT_USER_AGENT,
         page_load_timeout=30,
         settle_delay=3.0,
         window_size="1500,3000",
     ):
-        self.chrome_binary = chrome_binary
+        self.chrome_binary = chrome_binary or os.environ.get("CHROME_BIN") or None
         self.headless = headless
         self.user_agent = user_agent
         self.page_load_timeout = page_load_timeout
@@ -39,7 +44,8 @@ class SeleniumClient:
 
     def connect(self):
         options = webdriver.ChromeOptions()
-        options.binary_location = self.chrome_binary
+        if self.chrome_binary:
+            options.binary_location = self.chrome_binary
         if self.headless:
             options.add_argument("--headless=new")
         for arg in ("--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"):

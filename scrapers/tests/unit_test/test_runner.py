@@ -39,6 +39,7 @@ def test_runner_returns_error_when_company_key_missing(mock_scraper, mock_upload
     mock_scraper.load_company_list.return_value = []
     mock_scraper.enabled_api_sources.return_value = []
     mock_scraper.enabled_html_sources.return_value = []
+    mock_scraper.enabled_xml_sources.return_value = []
 
     status = ScraperRunner.scrape_data_from_sources(["--company", "does_not_exist"])
 
@@ -56,6 +57,7 @@ def test_runner_continues_after_company_failure(mock_scraper, mock_upload):
         {"key": "b", "name": "B", "ats": "greenhouse", "slug": "b"},
     ]
     mock_scraper.enabled_html_sources.return_value = []
+    mock_scraper.enabled_xml_sources.return_value = []
     mock_scraper.scrape_company.side_effect = [RuntimeError("HTTP 403"), 4]
 
     status = ScraperRunner.scrape_data_from_sources(["--max-jobs", "10"])
@@ -73,6 +75,7 @@ def test_runner_uploads_to_bronze_after_scrape(mock_scraper, mock_upload):
         {"key": "stack_av", "name": "Stack AV", "ats": "greenhouse", "slug": "stackav"}
     ]
     mock_scraper.enabled_html_sources.return_value = []
+    mock_scraper.enabled_xml_sources.return_value = []
     mock_scraper.scrape_company.return_value = 1
 
     status = ScraperRunner.scrape_data_from_sources(["--company", "stack_av"])
@@ -90,6 +93,7 @@ def test_runner_returns_error_when_bronze_upload_fails(mock_scraper, mock_upload
         {"key": "stack_av", "name": "Stack AV", "ats": "greenhouse", "slug": "stackav"}
     ]
     mock_scraper.enabled_html_sources.return_value = []
+    mock_scraper.enabled_xml_sources.return_value = []
     mock_scraper.scrape_company.return_value = 1
 
     status = ScraperRunner.scrape_data_from_sources(["--company", "stack_av"])
@@ -106,12 +110,35 @@ def test_runner_also_scrapes_enabled_html_sources(mock_scraper, mock_upload):
     mock_scraper.enabled_html_sources.return_value = [
         {"key": "tensor", "name": "Tensor (AutoX)", "ats": "html", "url": "https://x/careers"}
     ]
+    mock_scraper.enabled_xml_sources.return_value = []
     mock_scraper.scrape_company.return_value = 1
 
     status = ScraperRunner.scrape_data_from_sources([])
 
     assert status == 0
     mock_scraper.scrape_company.assert_called_once()
+    mock_upload.assert_called_once_with()
+
+
+@patch("scrapers.utils.runner.ScraperRunner.upload_to_bronze_table", return_value=0)
+@patch("scrapers.utils.runner.CompanyScraper")
+def test_runner_also_scrapes_enabled_xml_sources(mock_scraper, mock_upload):
+    momenta = {
+        "key": "momenta",
+        "name": "Momenta",
+        "ats": "xml",
+        "url": "https://momenta-europe-gmbh.jobs.personio.de/xml?language=en",
+    }
+    mock_scraper.load_company_list.return_value = [momenta]
+    mock_scraper.enabled_api_sources.return_value = []
+    mock_scraper.enabled_html_sources.return_value = []
+    mock_scraper.enabled_xml_sources.return_value = [momenta]
+    mock_scraper.scrape_company.return_value = 1
+
+    status = ScraperRunner.scrape_data_from_sources([])
+
+    assert status == 0
+    mock_scraper.scrape_company.assert_called_once_with(momenta, 30.0)
     mock_upload.assert_called_once_with()
 
 

@@ -37,6 +37,26 @@ def test_from_company_builds_api_url(tmp_path, monkeypatch):
     assert url.endswith("/boards/stackav/jobs")
 
 
+def test_from_company_uses_feed_url_for_xml():
+    fetcher, url = RawFetch.from_company(
+        {
+            "name": "Momenta",
+            "ats": "xml",
+            "slug": "momenta-europe-gmbh",
+            "url": "https://momenta-europe-gmbh.jobs.personio.de/xml?language=en",
+        }
+    )
+
+    assert fetcher.source == "xml"
+    assert fetcher.source_system == "personio"  # drives the bronze parser
+    assert url == "https://momenta-europe-gmbh.jobs.personio.de/xml?language=en"
+
+
+def test_from_company_xml_requires_feed_url():
+    with pytest.raises(ValueError, match="XML feed URL"):
+        RawFetch.from_company({"name": "Momenta", "ats": "xml", "url": None})
+
+
 def test_from_company_uses_career_url_for_html():
     fetcher, url = RawFetch.from_company(
         {"name": "Waymo", "ats": "html", "url": "https://careers.withwaymo.com/"}
