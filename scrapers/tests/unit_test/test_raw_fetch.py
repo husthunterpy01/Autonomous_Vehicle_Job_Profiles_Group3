@@ -348,6 +348,42 @@ def _workday_sources(tmp_path, monkeypatch):
     monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
 
 
+def test_from_company_expands_env_var_in_params(tmp_path, monkeypatch):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources:\n"
+        "  comeet:\n"
+        "    api_base: https://api.example/company/{company_uid}/positions?token={token}\n"
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+    monkeypatch.setenv("COMEET_TOKEN", "SECRET123")
+
+    _, url = RawFetch.from_company(
+        {
+            "name": "AutoBrains",
+            "ats": "comeet",
+            "slug": "autobrains",
+            "params": {"company_uid": "57.004", "token": "${COMEET_TOKEN}"},
+        }
+    )
+
+    assert url == "https://api.example/company/57.004/positions?token=SECRET123"
+
+
+def test_from_company_errors_on_missing_env_var_in_params(tmp_path, monkeypatch):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources:\n  comeet:\n    api_base: https://api.example/{token}\n"
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+    monkeypatch.delenv("COMEET_TOKEN", raising=False)
+
+    with pytest.raises(ValueError, match="unset environment variable"):
+        RawFetch.from_company(
+            {"name": "AutoBrains", "ats": "comeet", "slug": "x", "params": {"token": "${COMEET_TOKEN}"}}
+        )
+
+
 def test_from_company_builds_workday_post_request(tmp_path, monkeypatch):
     _workday_sources(tmp_path, monkeypatch)
 

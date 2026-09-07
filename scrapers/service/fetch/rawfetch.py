@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import random
 import re
 import time
@@ -12,9 +13,13 @@ from urllib.parse import urljoin, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
 import yaml
+from dotenv import load_dotenv
 
 from scrapers.config.minio import MinioConfig
 from scrapers.response_archive import ResponseArchive
+
+load_dotenv()
+load_dotenv("./scrapers/.env")
 
 ATS_PATH = "./scrapers/data/ats_sources.yaml"
 # A real browser UA: Workday/Akamai bot-defence 403s obvious non-browser traffic
@@ -105,7 +110,7 @@ class RawFetch:
         source_config = sources[ats_name]
 
         slug = company.get("slug")
-        url_context: dict[str, Any] = dict(company.get("params") or {})
+        url_context: dict[str, Any] = cls._resolve_params(company.get("params"), company_name)
         if isinstance(slug, str) and slug:
             url_context["slug"] = slug
         try:
@@ -153,6 +158,27 @@ class RawFetch:
                         candidates[index + 1],
                     )
         raise last_error
+
+    @staticmethod
+    def _resolve_params(params: dict[str, Any] | None, company_name: str) -> dict[str, Any]:
+        """Copy a company's ``params``, expanding ``${VAR}`` from the environment.
+
+        Secrets (e.g. the Comeet API token) live in ``$COMEET_TOKEN`` in the
+        environment / CI secrets, never in ``list_companies.yaml``.
+        """
+        resolved: dict[str, Any] = {}
+        for key, value in (params or {}).items():
+            if isinstance(value, str) and "$" in value:
+                expanded = os.path.expandvars(value)
+                if "$" in expanded:
+                    raise ValueError(
+                        f"{company_name}: unset environment variable for params.{key} "
+                        f"({value!r})"
+                    )
+                resolved[key] = expanded
+            else:
+                resolved[key] = value
+        return resolved
 
     @staticmethod
     def _load_html_source(company_key: Any, config_path: str) -> dict[str, Any]:

@@ -55,7 +55,7 @@ companies:
     slug: autobrains
     params:
       company_uid: "57.004"
-      token: "${COMEET_TOKEN}"
+      token: "${COMEET_TOKEN}"   # set in scrapers/.env or the CI secret store
     enabled: true
 
   - key: apollo_baidu

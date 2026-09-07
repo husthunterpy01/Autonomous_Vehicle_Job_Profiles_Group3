@@ -17,8 +17,9 @@ ats_sources:
   workable:
     api_base: "https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true"
   comeet:
-    # {company_uid} and {token} come from the company's `params` in
-    # list_companies.yaml; the token is published in the Comeet careers page.
+    # {company_uid} comes from the company's `params`; {token} is expanded from
+    # the environment (${COMEET_TOKEN}) so no credential-looking string is
+    # committed. The token itself is Comeet's public read-only careers-API key.
     api_base: "https://www.comeet.co/careers-api/2.0/company/{company_uid}/positions?token={token}&details=true"
 
 # Per-company strategy for `ats: html` companies in list_companies.yaml, keyed by
