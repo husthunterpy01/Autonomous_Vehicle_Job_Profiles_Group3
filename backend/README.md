@@ -85,11 +85,18 @@ DATABASE_URL=postgresql://team3:<password>@localhost:5432/autojobdatabase
 DATABASE_USER=team3
 DATABASE_PASSWORD=<password>
 SEED_ON_STARTUP=true
+JWT_SECRET_KEY=<generate-a-long-random-secret>
+AUTH_COOKIE_SECURE=false
 ```
 
 Use the same password you set when creating the Postgres user. If you used the Docker option above, use port `5433` instead.
 
 `SEED_ON_STARTUP=true` reseeds companies on every API start (local/dev). Leave it unset or `false` outside local development so production data is not truncated.
+
+Generate `JWT_SECRET_KEY` with a cryptographically secure random generator and
+keep it outside source control. Set `AUTH_COOKIE_SECURE=true` when the frontend
+and API are served over HTTPS. Production startup fails when `JWT_SECRET_KEY`
+is missing.
 
 ### CI note
 
@@ -116,6 +123,48 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/redoc | ReDoc |
 | http://127.0.0.1:8000/health | Health check |
 | http://127.0.0.1:8000/api/v1/companies | Companies API |
+| http://127.0.0.1:8000/api/v1/auth/signup | Account registration |
+| http://127.0.0.1:8000/api/v1/auth/login | JWT sign in |
+| http://127.0.0.1:8000/api/v1/auth/me | Current authenticated user |
+
+## Authentication API
+
+Passwords must contain at least 12 characters, including uppercase, lowercase,
+a number, and a special character. Passwords are stored as Argon2 hashes. The
+signed JWT contains only the user ID, token type, issued-at time, and expiry and
+is returned in an HTTP-only `SameSite=Lax` cookie rather than response JSON.
+
+The login identifier accepts either the normalized email address or username.
+Five failed attempts for the same client and identifier within five minutes are
+rate limited by default; both values can be changed with
+`AUTH_LOGIN_MAX_ATTEMPTS` and `AUTH_LOGIN_WINDOW_SECONDS`.
+
+### Sign up
+
+```bash
+curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "driver@example.com",
+    "username": "driver_engineer",
+    "full_name": "Driver Engineer",
+    "password": "SecurePassword!123"
+  }'
+```
+
+### Sign in and access a protected endpoint
+
+```bash
+curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "driver@example.com",
+    "password": "SecurePassword!123",
+    "remember_me": false
+  }'
+
+curl -b cookies.txt http://127.0.0.1:8000/api/v1/auth/me
+```
 
 ## Companies API (testing)
 

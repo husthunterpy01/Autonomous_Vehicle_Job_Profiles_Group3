@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import NavBar from "@/components/NavBar";
+import AuthNavBar from "@/components/AuthNavBar";
 import Footer from "@/components/Footer";
 import "./globals.css";
 
@@ -16,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-background text-ink antialiased">
-        <NavBar />
+        <AuthNavBar />
         {children}
         <Footer />
       </body>
