@@ -1,6 +1,6 @@
 import json
 
-from scrapers.service.job_prefilter import (
+from scrapers.service.llm import (
     AuditCategoryRule,
     JobFilterConfig,
     JobPrefilter,
@@ -138,8 +138,11 @@ def test_write_outputs_creates_llm_audit_and_metrics_files(tmp_path):
     candidates = paths["llm_candidates"].read_text(encoding="utf-8").splitlines()
     excluded = paths["excluded_audit"].read_text(encoding="utf-8").splitlines()
     metrics = json.loads(paths["metrics"].read_text(encoding="utf-8"))
+    decisions = paths["filter_decisions"].read_text(encoding="utf-8-sig").splitlines()
     assert len(candidates) == 1
     assert len(excluded) == 1
+    assert len(decisions) == 3
+    assert "job_title" in decisions[0]
     assert json.loads(excluded[0])["id"] == "2"
     assert metrics[0]["reduction_percent"] == 50.0
 
@@ -248,3 +251,18 @@ def test_excluded_category_can_use_description_when_title_is_generic():
     assert decision.included is False
     assert decision.audit_category == "Communications / Public Relations"
     assert decision.category_evidence == ("media relations",)
+
+
+def test_default_config_accepts_silver_bronze_id():
+    posting = {
+        "bronze_id": "337",
+        "source_job_id": "",
+        "company_name": "Applied Intuition",
+        "job_name": "Software Engineer",
+        "job_description": "Build autonomous vehicle software.",
+    }
+
+    decision = JobPrefilter.from_config().evaluate(posting)
+
+    assert decision.job_id == "337"
+    assert decision.included is True

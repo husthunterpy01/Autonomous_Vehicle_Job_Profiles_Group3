@@ -61,3 +61,30 @@ class ScraperParser:
         if args.max_jobs < 1:
             parser.error("--max-jobs must be at least 1")
         return args
+
+    @classmethod
+    def parse_job_prefilter_args(
+        cls, argv: list[str] | None = None
+    ) -> argparse.Namespace:
+        parser = argparse.ArgumentParser(
+            description="Filter Bronze/Silver jobs before sending them to an LLM."
+        )
+        parser.add_argument(
+            "--input", required=True, type=Path, help="CSV, JSON, or JSONL"
+        )
+        parser.add_argument(
+            "--output-dir",
+            type=Path,
+            default=Path("data") / "job_prefilter",
+            help="Directory for candidates, audit rows, metrics, and decision CSV",
+        )
+        parser.add_argument(
+            "--config",
+            type=Path,
+            default=None,
+            help=(
+                "Optional YAML config; defaults to AV_JOB_PREFILTER_CONFIG "
+                "or scrapers/config/job_prefilter.yaml"
+            ),
+        )
+        return parser.parse_args(argv)
