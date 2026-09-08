@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: cleaned_job_postings
+    description: Cleaned and deduplicated flat Silver staging table.
+    columns:
+      - name: deduplication_key
+        tests: [not_null, unique]
+      - name: job_name
+        tests: [not_null]
+      - name: job_description
+        tests: [not_null]
+      - name: locations
+        tests: [not_null]

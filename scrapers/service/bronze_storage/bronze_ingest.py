@@ -2,14 +2,24 @@ import json
 import logging
 
 import psycopg2
+import yaml
 from psycopg2.extras import Json, execute_values
 
 from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 from scrapers.response_archive import ResponseArchive
+from scrapers.service.bronze_storage.html_extractor import HTMLExtractor
+from scrapers.service.bronze_storage.xml_extractor import XMLExtractor
 from scrapers.utils.company_scraper import CompanyScraper
 
 logger = logging.getLogger(__name__)
+
+ATS_PATH = "./scrapers/data/ats_sources.yaml"
+
+# Archive sources landed into bronze.raw_responses. "xml" and "html" payloads are
+# parsed to a job list before storage; anything else (bare "html" fetches with no
+# html_sources entry, etc.) is skipped.
+LANDABLE_SOURCES = {"api", "xml", "html"}
 
 RAW_TABLE_SQL = """
 CREATE TABLE IF NOT EXISTS bronze.raw_responses (
@@ -26,12 +36,12 @@ CREATE TABLE IF NOT EXISTS bronze.raw_responses (
 
 
 class BronzeIngest():
-
     def __init__(self, bucket_name, postgres_config=None, dbt_config=None):
         self.bucket_name = bucket_name
         self.postgres_config = postgres_config or PostgresConfig()
         self.dbt_config = dbt_config or DbtConfig()
         self._companies = None
+        self._html_sources_cache = None
 
     def extract_raw_data_to_db(self) -> int:
         try:
@@ -50,8 +60,8 @@ class BronzeIngest():
                 bucket_name=self.bucket_name
             ):
                 try:
-                    if source != "api":
-                        logger.info("Skipping %s: source %s is not an API payload.", company_slug, source)
+                    if source not in LANDABLE_SOURCES:
+                        logger.info("Skipping %s: source %s is not landable.", company_slug, source)
                         continue
                     row = self._row_from_archive(source, company_slug, plain_response)
                     if row is None:
@@ -66,7 +76,7 @@ class BronzeIngest():
             connection.close()
 
     def run_dbt_bronze(self) -> int:
-        return self.dbt_config.run("job_postings", self.postgres_config)
+        return self.dbt_config.run("+job_postings", self.postgres_config)
 
     def _ensure_raw_table(self, connection):
         with connection.cursor() as cursor:
@@ -95,26 +105,39 @@ class BronzeIngest():
                 [row],
             )
 
+    # Extract from API, XML feed or scraped HTML page
     def _row_from_archive(self, source, company_slug, plain_response):
         if plain_response is None or getattr(plain_response, "empty", True):
             logger.warning("Skipping %s: archive payload is empty.", company_slug)
             return None
 
         archive_row = plain_response.iloc[0]
-        source_system = archive_row.get("source_system")
-        if source_system is None or str(source_system) in {"", "nan", "None", "html"}:
-            logger.warning("Skipping %s: missing ATS source_system.", company_slug)
-            return None
+        display_name = str(archive_row.get("company") or company_slug)
 
         body = archive_row.get("body")
         if isinstance(body, bytes):
             body = body.decode("utf-8")
-        if isinstance(body, (dict, list)):
-            json_body = body
-        else:
-            json_body = json.loads(body)
 
-        display_name = str(archive_row.get("company") or company_slug)
+        if source == "html":
+            resolved = self._html_jobs(company_slug, display_name, body, archive_row.get("url"))
+            if resolved is None:
+                return None
+            source_system, json_body = resolved
+        else:
+            source_system = archive_row.get("source_system")
+            if source_system is None or str(source_system) in {"", "nan", "None", "html"}:
+                logger.warning("Skipping %s: missing ATS source_system.", company_slug)
+                return None
+            if source == "xml":
+                json_body = XMLExtractor(body, feed_url=archive_row.get("url")).extract_jobs()
+                if not json_body:
+                    logger.warning("Skipping %s: XML feed produced no jobs.", company_slug)
+                    return None
+            elif isinstance(body, (dict, list)):
+                json_body = body
+            else:
+                json_body = json.loads(body)
+
         return (
             display_name,
             company_slug,
@@ -125,7 +148,37 @@ class BronzeIngest():
             archive_row.get("fetched_at"),
         )
 
+    def _html_jobs(self, company_slug, display_name, body, page_url):
+        """Resolve the html_sources strategy for the company and run HTMLExtractor.
+
+        Returns ``(source_system, jobs)`` or ``None`` to skip. ``source_system``
+        is the company key, so each scraped site keeps its own ats_name
+        downstream instead of a shared "html".
+        """
+        company = self._company_for(company_slug, display_name)
+        key = company.get("key") if company else None
+        config = self._html_sources().get(key) if key else None
+        if not config:
+            logger.warning("Skipping %s: no html_sources entry in %s.", company_slug, ATS_PATH)
+            return None
+        jobs = HTMLExtractor(body, config, page_url=page_url).extract_jobs()
+        if not jobs:
+            logger.warning("Skipping %s: HTML page produced no jobs.", company_slug)
+            return None
+        return key, jobs
+
+    def _html_sources(self):
+        if self._html_sources_cache is None:
+            with open(ATS_PATH, encoding="utf-8") as file:
+                config = yaml.safe_load(file) or {}
+            self._html_sources_cache = config.get("html_sources") or {}
+        return self._html_sources_cache
+
     def _headquarter_for(self, company_slug, display_name):
+        company = self._company_for(company_slug, display_name)
+        return company.get("country") if company else None
+
+    def _company_for(self, company_slug, display_name):
         if self._companies is None:
             self._companies = CompanyScraper.load_company_list()
         slug = str(company_slug).lower()
@@ -133,9 +186,9 @@ class BronzeIngest():
         for company in self._companies:
             company_name = str(company.get("name") or "")
             if company.get("key") == company_slug:
-                return company.get("country")
+                return company
             if company_name.lower().replace(" ", "_") == slug:
-                return company.get("country")
+                return company
             if company_name.lower() == name:
-                return company.get("country")
+                return company
         return None

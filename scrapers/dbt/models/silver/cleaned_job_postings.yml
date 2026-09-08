@@ -1,0 +1,58 @@
+version: 2
+
+unit_tests:
+  - name: cleans_and_deduplicates_job_postings
+    model: cleaned_job_postings
+    given:
+      - input: ref("job_postings")
+        format: sql
+        rows: |
+          select
+            1::bigint as id,
+            'greenhouse'::text as ats_name,
+            'job-123'::text as source_job_id,
+            ' Stack   AV '::text as company_name,
+            ' Perception   Engineer '::text as job_name,
+            '<p>Build&nbsp; autonomy.</p>'::text as job_description,
+            'US'::text as headquarter,
+            'Pittsburgh, PA | Remote | remote'::text as location,
+            'https://example.test/jobs/123'::text as job_url,
+            '2026-09-01T00:00:00Z'::text as job_uploaded_at,
+            'Full Time'::text as employment_type,
+            '2026-09-01T01:00:00Z'::timestamptz as ingested_at
+          union all
+          select
+            2::bigint,
+            'greenhouse'::text,
+            'job-123'::text,
+            'Stack AV'::text,
+            'Perception Engineer'::text,
+            '<p>Build autonomy and mapping.</p>'::text,
+            'US'::text,
+            'Remote | Pittsburgh, PA'::text,
+            'https://example.test/jobs/123'::text,
+            '2026-09-01T00:00:00Z'::text,
+            'full-time'::text,
+            '2026-09-02T01:00:00Z'::timestamptz
+          union all
+          select
+            3::bigint,
+            'lever'::text,
+            'job-456'::text,
+            'Example'::text,
+            null::text,
+            'Description without a title'::text,
+            null::text,
+            null::text,
+            null::text,
+            null::text,
+            null::text,
+            '2026-09-02T01:00:00Z'::timestamptz
+    expect:
+      rows:
+        - bronze_id: "2"
+          source_job_id: job-123
+          company_name: Stack AV
+          job_name: Perception Engineer
+          job_description: Build autonomy and mapping.
+          employment_type: full-time

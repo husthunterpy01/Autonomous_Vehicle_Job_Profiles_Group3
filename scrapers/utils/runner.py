@@ -21,14 +21,15 @@ class ScraperRunner:
             stream=sys.stderr,
         )
         args = ScraperParser.parse_args(argv)
-        companies = CompanyScraper.enabled_api_sources(
-            CompanyScraper.load_company_list(), company_key=args.company
-        )
+        company_list = CompanyScraper.load_company_list()
+        companies = CompanyScraper.enabled_api_sources(company_list, company_key=args.company)
+        companies += CompanyScraper.enabled_html_sources(company_list, company_key=args.company)
+        companies += CompanyScraper.enabled_xml_sources(company_list, company_key=args.company)
         if args.company and not companies:
-            logger.error("No enabled API company matched key %r.", args.company)
+            logger.error("No enabled company matched key %r.", args.company)
             return 1
         if not companies:
-            logger.error("No enabled API companies found.")
+            logger.error("No enabled companies found.")
             return 1
 
         failures = 0

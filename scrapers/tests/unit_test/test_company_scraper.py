@@ -1,6 +1,42 @@
 from scrapers.utils.company_scraper import CompanyScraper
 
 
+def test_enabled_html_and_xml_sources_split_by_ats():
+    companies = [
+        {"key": "tensor", "name": "Tensor", "ats": "html", "enabled": True},
+        {"key": "momenta", "name": "Momenta", "ats": "xml", "enabled": True},
+        {"key": "old", "name": "Old", "ats": "xml", "enabled": False},
+        {"key": "stack_av", "name": "Stack AV", "ats": "greenhouse", "slug": "s", "enabled": True},
+    ]
+
+    assert [c["key"] for c in CompanyScraper.enabled_html_sources(companies)] == ["tensor"]
+    assert [c["key"] for c in CompanyScraper.enabled_xml_sources(companies)] == ["momenta"]
+    assert (
+        [c["key"] for c in CompanyScraper.enabled_xml_sources(companies, company_key="momenta")]
+        == ["momenta"]
+    )
+
+
+def test_real_yaml_has_momenta_as_enabled_xml_source():
+    companies = CompanyScraper.load_company_list()
+    xml_keys = [c["key"] for c in CompanyScraper.enabled_xml_sources(companies)]
+    assert "momenta" in xml_keys
+
+
+def test_scrape_company_does_not_skip_xml_without_slug():
+    from unittest.mock import patch
+
+    with patch("scrapers.utils.company_scraper.RawFetch") as mock_fetch:
+        mock_fetch.from_company.return_value = (mock_fetch.return_value, "https://feed/xml")
+        mock_fetch.return_value.fetch_and_archive.return_value = "xml/momenta/f.parquet"
+        count = CompanyScraper.scrape_company(
+            {"name": "Momenta", "ats": "xml", "slug": None, "url": "https://feed/xml"}, timeout=5
+        )
+
+    assert count == 1
+    mock_fetch.from_company.assert_called_once()
+
+
 def test_enabled_api_sources_skips_disabled_and_non_api_rows():
     companies = [
         {"key": "waabi", "name": "Waabi", "ats": "lever", "slug": "waabi", "enabled": False},

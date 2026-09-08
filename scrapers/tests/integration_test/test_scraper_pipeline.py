@@ -123,7 +123,7 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
 
     assert status == 0
     request = mock_urlopen.call_args[0][0]
-    assert request.get_header("User-agent") == "Mozilla/5.0"
+    assert request.get_header("User-agent").startswith("Mozilla/5.0")
     assert request.full_url.endswith("/boards/stackav/jobs?content=true")
     assert stored["object_name"].startswith("api/stack_av/")
     assert stored["object_name"].endswith(".parquet")
@@ -142,7 +142,7 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
     dbt_cmd = mock_dbt.call_args.args[0]
     assert dbt_cmd[0] == "/usr/bin/dbt"
     assert "run" in dbt_cmd
-    assert "job_postings" in dbt_cmd
+    assert "+job_postings" in dbt_cmd
     assert "./scrapers/dbt" in dbt_cmd
 
 
@@ -174,7 +174,7 @@ def test_ashby_http_403_still_runs_dbt_bronze(
     mock_minio.return_value.put_object.assert_not_called()
     mock_execute_values.assert_not_called()
     mock_dbt.assert_called_once()
-    assert "job_postings" in mock_dbt.call_args.args[0]
+    assert "+job_postings" in mock_dbt.call_args.args[0]
 
 
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")

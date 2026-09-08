@@ -12,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 class CompanyScraper:
     COMPANY_LIST_PATH = "./scrapers/data/list_companies.yaml"
-    API_ATS = frozenset({"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio"})
+    API_ATS = frozenset(
+        {"greenhouse", "lever", "ashby", "smartrecruiters", "workday", "personio", "workable", "comeet"}
+    )
 
     @classmethod
     def load_company_list(cls) -> list[dict[str, Any]]:
@@ -39,10 +41,37 @@ class CompanyScraper:
         return selected
 
     @classmethod
+    def _enabled_by_ats(
+        cls, companies: list[dict[str, Any]], ats: str, company_key: str | None
+    ) -> list[dict[str, Any]]:
+        selected: list[dict[str, Any]] = []
+        for company in companies:
+            if not company.get("enabled"):
+                continue
+            if company.get("ats") != ats:
+                continue
+            if company_key and company.get("key") != company_key:
+                continue
+            selected.append(company)
+        return selected
+
+    @classmethod
+    def enabled_html_sources(
+        cls, companies: list[dict[str, Any]], company_key: str | None = None
+    ) -> list[dict[str, Any]]:
+        return cls._enabled_by_ats(companies, "html", company_key)
+
+    @classmethod
+    def enabled_xml_sources(
+        cls, companies: list[dict[str, Any]], company_key: str | None = None
+    ) -> list[dict[str, Any]]:
+        return cls._enabled_by_ats(companies, "xml", company_key)
+
+    @classmethod
     def scrape_company(cls, company: dict[str, Any], timeout: float) -> int:
         name = company["name"]
         ats = company.get("ats")
-        if ats != "html" and not company.get("slug"):
+        if ats not in ("html", "xml") and not company.get("slug") and not company.get("params"):
             logger.warning("Skipping %s: API company is missing a slug.", name)
             return 0
 
