@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import timedelta
 from unittest.mock import MagicMock
 from uuid import uuid4
@@ -136,3 +137,15 @@ def test_non_unique_integrity_error_is_not_reported_as_duplicate_account():
 
     assert raised.value is database_error
     db.rollback.assert_called_once_with()
+
+
+def test_sqlite_unique_violation_is_detected_without_extended_error_attributes():
+    error = IntegrityError(
+        "INSERT INTO user_account ...",
+        {},
+        sqlite3.IntegrityError(
+            "UNIQUE constraint failed: user_account.email"
+        ),
+    )
+
+    assert AuthService._is_unique_violation(error)

@@ -24,10 +24,11 @@ class AuthService:
             return True
 
         sqlite_error_code = getattr(original_error, "sqlite_errorcode", None)
-        return sqlite_error_code in {
-            sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY,
-            sqlite3.SQLITE_CONSTRAINT_UNIQUE,
-        }
+        if sqlite_error_code in {1555, 2067}:
+            return True
+        return isinstance(original_error, sqlite3.IntegrityError) and str(
+            original_error
+        ).startswith("UNIQUE constraint failed:")
 
     @staticmethod
     def create_user(db: Session, data: SignUpRequest) -> User:
