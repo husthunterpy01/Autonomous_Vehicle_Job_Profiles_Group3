@@ -52,4 +52,17 @@ CREATE TABLE IF NOT EXISTS job_skill (
     skill_id uuid REFERENCES skill(skill_id),
     PRIMARY KEY (job_id, skill_id)
 );
+CREATE TABLE IF NOT EXISTS category (
+    category_id uuid PRIMARY KEY,
+    main_type text,
+    sub_type text NOT NULL,
+    normalized_name text NOT NULL,
+    taxonomy_version integer NOT NULL CHECK (taxonomy_version > 0),
+    UNIQUE (taxonomy_version, normalized_name)
+);
+CREATE TABLE IF NOT EXISTS job_category (
+    job_id uuid REFERENCES jobposting(job_id) ON DELETE CASCADE,
+    category_id uuid REFERENCES category(category_id),
+    PRIMARY KEY (job_id, category_id)
+);
 COMMIT;

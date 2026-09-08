@@ -36,3 +36,4 @@ class JobPosting(Base):
     company = relationship("Company")
     locations = relationship("Location", secondary="job_location")
     skills = relationship("Skill", secondary="job_skill")
+    categories = relationship("Category", secondary="job_category")

@@ -44,6 +44,10 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             assert cursor.fetchall() == [("Legacy",)]
             cursor.execute("SELECT count(*) FROM job_location")
             assert cursor.fetchone()[0] == 0
+            cursor.execute("SELECT count(*) FROM category")
+            assert cursor.fetchone()[0] == 0
+            cursor.execute("SELECT count(*) FROM job_category")
+            assert cursor.fetchone()[0] == 0
             cursor.execute("SELECT count(*) FROM job_skill")
             assert cursor.fetchone()[0] == 0
     finally:

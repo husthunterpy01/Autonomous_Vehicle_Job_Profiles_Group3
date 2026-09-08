@@ -6,6 +6,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import Company, JobPosting, Location, Skill
+from app.services.category_sync import sync_categories
 
 EMPLOYMENT_TYPES = {"full-time": 1, "part-time": 2, "contract": 3, "temporary": 4, "internship": 5}
 SKILL_TYPES = {"tool", "programming_language", "framework", "domain_concept", "certification"}
@@ -97,4 +98,5 @@ class SilverSync:
                     skills[skill_key] = skill
                 job.skills = list(skills.values())
             self.db.flush()
+            sync_categories(self.db, job, row)
         return counts

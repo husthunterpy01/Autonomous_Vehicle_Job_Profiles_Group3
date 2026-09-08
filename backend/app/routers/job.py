@@ -5,7 +5,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.database import get_db
-from app.models import Company, JobPosting, Location, Skill
+from app.models import Category, Company, JobPosting, Location, Skill
 from app.schemas.job import JobResponse
 from app.utils.pagination import PageResponse
 
@@ -18,6 +18,8 @@ def to_response(job):
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
+        categories=[dict(category_id=c.category_id, main_type=c.main_type, sub_type=c.sub_type, taxonomy_version=c.taxonomy_version)
+                    for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
     )
@@ -25,7 +27,8 @@ def to_response(job):
 
 def job_query(db):
     return db.query(JobPosting).options(
-        selectinload(JobPosting.company), selectinload(JobPosting.locations), selectinload(JobPosting.skills)
+        selectinload(JobPosting.company), selectinload(JobPosting.locations), selectinload(JobPosting.skills),
+        selectinload(JobPosting.categories)
     )
 
 
@@ -34,6 +37,7 @@ def list_jobs(
     q: str | None = None,
     location: str | None = None,
     skill: str | None = None,
+    category_id: UUID | None = None,
     company_id: UUID | None = None,
     employment_type: int | None = Query(None, ge=1, le=6),
     page: int = Query(1, ge=1),
@@ -49,6 +53,8 @@ def list_jobs(
         query = query.filter(JobPosting.skills.any(Skill.skill_name.icontains(skill, autoescape=True)))
     if company_id:
         query = query.filter(JobPosting.company_id == company_id)
+    if category_id:
+        query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
         query = query.filter(JobPosting.employment_type == employment_type)
     query = query.order_by(JobPosting.posted_date.desc().nullslast(), JobPosting.job_id)

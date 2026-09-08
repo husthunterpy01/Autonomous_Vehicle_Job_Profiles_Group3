@@ -56,15 +56,19 @@ Table silver.JobLocation {
 
 Table silver.Category {
   category_id uuid [pk, default: `gen_random_uuid()`]
-  main_type varchar // Development / V&V / Operations
-  sub_type varchar  // Perception / Controls / Testing etc
-  taxonomy_version int [note: 'tracks which taxonomy revision this category belongs to, supports future refinement']
+  main_type varchar [note: 'nullable; initial functional_area import does not infer a parent']
+  sub_type varchar [not null, note: 'cleaned producer functional_area label']
+  normalized_name text [not null, note: 'NFKC, collapsed whitespace, casefold']
+  taxonomy_version int [not null, note: 'positive integer; import defaults to version 1']
+  indexes {
+    (taxonomy_version, normalized_name) [unique]
+  }
 }
 
 Table silver.JobCategory {
   job_id uuid [ref: > silver.JobPosting.job_id]
   category_id uuid [ref: > silver.Category.category_id]
-  confidence_score float // LLM classification confidence, for spot-checking
+  confidence_score float [note: 'future extension; not currently stored by backend category import']
 
   indexes {
     (job_id, category_id) [pk]

@@ -2,7 +2,7 @@
 
 The API reads backend tables, not the staging schema. The data path is:
 
-`silver.cleaned_job_postings -> manual sync -> company / jobposting / location / job_location / skill / job_skill -> API`
+`silver.cleaned_job_postings -> manual sync -> company / jobposting / location / job_location / skill / job_skill / category / job_category -> API`
 
 ## Schema and migration
 
@@ -38,7 +38,7 @@ python -m app.sync_silver --allow-unclassified
 This flag is intentionally required. The current staging table is not guaranteed
 AV-only. This command is for development, not production publication. Harshil's
 classification output contract is still pending; this PR does not invent category
-labels, classify jobs, or delete non-AV jobs itself.
+labels from descriptions, classify AV relevance, or delete non-AV jobs itself.
 
 The CLI streams source rows and commits the destination as one transaction.
 Concurrent CLI executions serialize via a PostgreSQL advisory lock. A bad row
@@ -57,16 +57,64 @@ them. The current dbt model does not produce skills yet, so an extraction/enrich
 step is still required before this is a complete skills pipeline. No LLM requests
 or credentials are used by this sync command.
 
-## API
+## External classification handoff: identity preflight
+
+Run `python -m app.validate_handoff handoff.json` from `backend/` with the
+backend `DATABASE_URL`. This read-only command validates a JSON array, reports
+backend UUIDs, and exits unsuccessfully on missing, conflicting, ambiguous, or
+duplicate targets. It does not import classifications or apply the AV gate.
+
+Preferred record: `{"deduplication_key": "<exact Silver key>", "functional_area": "Perception"}`.
+Fallback record: `{"source_job_id": "42", "ats_name": "greenhouse"}`.
+Identifiers must be strings, preserving leading zeros and case. A supplied
+deduplication key must match; a failed key lookup never falls back silently.
+Additional source identifiers must agree with the matched job.
+
+Backend `job_id` is an internal UUID. External `job_id` is not automatically
+interpreted: if the producer confirms it is an ATS identifier, rename it to
+`source_job_id` and include `ats_name`. Never join using `bronze_id`; it is
+run-dependent provenance only. Even ATS + ID can collide between company boards;
+ambiguous matches require the Silver key. Jobs without source IDs use that key.
+
+## Category import rule (initial taxonomy version 1)
+
+Apply `app/sql/be9_migration.sql` to an existing backend first. Fresh databases
+create Category and JobCategory through ORM startup. To import a handoff after
+identity preflight, run `python -m app.import_categories handoff.json`.
+The CLI commits the entire batch or rolls it back and uses the same PostgreSQL
+advisory lock as Silver sync. Library callers must supply a transaction and
+serialize writers. SilverSync also accepts the same inline classification fields.
+
+`functional_area` is one label string or an array of strings. Each label becomes
+Category.sub_type; main_type stays null because no parent taxonomy has been
+provided. Labels are NFKC-normalized, whitespace-collapsed and casefolded for
+uniqueness within taxonomy_version (positive integer, default 1). The first
+cleaned spelling is kept for display. Synonyms are not guessed; commas, slashes
+and other punctuation do not split a label. Use an array for multiple categories.
+Labels from the producer are provisional categories, not a curated allowlist.
+
+JobCategory stores the many-to-many foreign-key association. An explicit value
+replaces all current associations for that job, including older taxonomy versions;
+missing functional_area preserves them, [] clears them, and null/blank/invalid
+labels reject the whole batch. Unlinked categories are retained. No confidence
+score is inferred or imported. The logical ERD reserves it for future enrichment.
+The preflight validates these labels and reports ready_to_import without writes.
+
+Example: `{"deduplication_key":"<exact Silver key>","functional_area":["Perception","Controls"],"taxonomy_version":1}`.
+This imports supplied labels only; AV relevance gating and frontend wiring remain
+separate work. A later curated taxonomy needs explicit mapping/version migration.
+
+## Job endpoints
 
 - `GET /api/v1/jobs`: `q`, `company_id`, `location`, `skill`, `employment_type`,
-  `page`, `page_size` (max 100).
+  `category_id`, `page`, `page_size` (max 100).
 - `GET /api/v1/jobs/{job_id}`: returns 404 for an unknown UUID.
 - Existing company job counts now include synced rows.
 
 Response fields: `job_id`, `title`, `company_id`, `company_name`, `locations`,
 `skills`, `employment_type` (existing integer enum), `raw_description`, `source_url`,
-`posted_date`. Pagination is `{items,total,page,page_size,total_pages}`.
+`posted_date`, `categories` (category_id, main_type, sub_type, taxonomy_version).
+Pagination is `{items,total,page,page_size,total_pages}`.
 Location/skill filters use EXISTS semantics so multiple associations do not inflate
 counts. Ordering is posted date descending then UUID for stable page boundaries.
 
