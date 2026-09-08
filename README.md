@@ -365,18 +365,22 @@ Run the deterministic pre-filter on a CSV, JSON array, or JSON Lines export of
 `bronze.job_postings` before sending rows to an LLM:
 
 ```bash
-python3 -m scrapers.job_prefilter \
+python3 -m scrapers.utils.job_prefilter \
   --input scrapers/data/sample_data/job_postings_202609011519.csv \
   --output-dir data/job_prefilter
 ```
 
-The command creates three outputs:
+The command creates four outputs:
 
 - `llm_candidates.jsonl`: rows allowed to proceed to classification
 - `excluded_jobs.jsonl`: complete excluded rows, filtering decision, and audit category
 - `filter_metrics.json`: before, after, excluded, and reduction counts per company
+- `filter_decisions.csv`: compact, review-friendly result for every input job
 
-Rules live in `notebooks/config/job_prefilter.yaml`. Set
+A committed example generated from 100 Silver-layer rows is available at
+`scrapers/data/sample_data/job_prefilter_decisions_sample.csv`.
+
+Rules live in `scrapers/config/job_prefilter.yaml`. Set
 `AV_JOB_PREFILTER_CONFIG` or pass `--config` to use an external YAML file. The
 safe default excludes only explicit corporate/support titles and sends unknown
 roles to the LLM for review. Set `exclude_below_threshold: true` only after the
@@ -385,12 +389,14 @@ positive keyword rules have been validated against representative data.
 Notebook code can use the same gate directly:
 
 ```python
-from scrapers.service.job_prefilter import JobPrefilter
+from scrapers.service.llm import JobPrefilter
 
 prefilter = JobPrefilter.from_config()
 filter_result = prefilter.filter(jobs_df.to_dict(orient="records"))
 filter_result.write_outputs(PROJECT_ROOT / "data" / "job_prefilter")
-llm_jobs_df = pd.DataFrame(filter_result.included)
+llm_jobs_df = pd.DataFrame(filter_result.included).drop(
+    columns=["_prefilter"], errors="ignore"
+)
 ```
 
 The existing notebook Groq model and API-key configuration remain unchanged.

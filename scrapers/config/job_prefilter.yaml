@@ -17,7 +17,9 @@ field_weights:
   description: 1
 
 field_aliases:
-  id: [id, job_id, source_job_id]
+  # Silver exposes source_job_id and bronze_id; legacy notebook extracts use
+  # id/job_id. The first populated value becomes the decision's audit ID.
+  id: [source_job_id, bronze_id, deduplication_key, id, job_id]
   company: [company_name, company]
   title: [job_name, job_title, title]
   description: [job_description, description, description_text, content]
@@ -124,6 +126,9 @@ excluded_category_rules:
   - name: People / Talent Acquisition
     keywords:
       - talent acquisition
+      - recruiter
+      - recruiting
+      - sourcing
       - recruiting and sourcing
       - executive recruiting
 
@@ -152,9 +157,11 @@ excluded_category_rules:
       - accountant
       - financial accounting
       - financial statements
+      - internal controls
 
-  - name: Communications / Public Relations
+  - name: Communications / Marketing and Public Relations
     keywords:
+      - marketing
       - public relations
       - PR manager
       - media relations
@@ -166,5 +173,7 @@ excluded_category_rules:
       - commercial P&L
       - pricing
       - demand signals
+      - sales and operations planning
+      - S&OP
 
 default_excluded_category: Corporate / Support

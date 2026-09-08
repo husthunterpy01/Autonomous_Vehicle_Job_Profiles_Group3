@@ -39,3 +39,16 @@ def test_validate_common_args_rejects_non_positive_timeout():
 
     with pytest.raises(SystemExit):
         ScraperParser.validate_common_args(parser, args)
+
+
+def test_parse_job_prefilter_args(tmp_path):
+    input_path = tmp_path / "silver.csv"
+    output_path = tmp_path / "results"
+
+    args = ScraperParser.parse_job_prefilter_args(
+        ["--input", str(input_path), "--output-dir", str(output_path)]
+    )
+
+    assert args.input == input_path
+    assert args.output_dir == output_path
+    assert args.config is None
