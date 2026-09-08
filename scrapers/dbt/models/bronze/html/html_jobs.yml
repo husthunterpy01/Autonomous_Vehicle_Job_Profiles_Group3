@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: html_jobs
+    description: "Jobs scraped from career pages (ats: html) via bronze.raw_responses."
+
+unit_tests:
+  - name: html_jobs_maps_scraped_jobs
+    model: html_jobs
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'html'::text as source,
+            'tensor'::text as source_system,
+            'Tensor (AutoX)'::text as company_name,
+            'US'::text as headquarter,
+            $json$[{"source_job_id":"jd203","job_name":"FP&A Manager","job_description":null,"location":"San Jose, California, US","job_url":"https://www.tensor.auto/careers/jd203","job_uploaded_at":null,"employment_type":"Full-Time"}]$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: tensor
+          source_job_id: jd203
+          company_name: Tensor (AutoX)
+          job_name: FP&A Manager
+          job_description: null
+          headquarter: US
+          location: "San Jose, California, US"
+          job_url: https://www.tensor.auto/careers/jd203
+          job_uploaded_at: null
+          employment_type: Full-Time

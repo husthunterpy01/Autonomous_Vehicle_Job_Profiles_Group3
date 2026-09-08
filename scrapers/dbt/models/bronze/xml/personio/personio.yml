@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: personio
+    description: Personio jobs parsed from a workzag-jobs XML feed via bronze.raw_responses.
+
+unit_tests:
+  - name: personio_maps_xml_jobs
+    model: personio
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'xml'::text as source,
+            'personio'::text as source_system,
+            'Momenta'::text as company_name,
+            'CN'::text as headquarter,
+            $json$[{"source_job_id":"1784945","job_name":"Business Development Director","job_description":"<h3>In this role, you will:</h3>\n<ul><li>Own BD</li></ul>","location":"Böblingen","job_url":"https://momenta-europe-gmbh.jobs.personio.de/job/1784945","job_uploaded_at":"2024-10-21T10:30:53+00:00","employment_type":"permanent"}]$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: personio
+          source_job_id: "1784945"
+          company_name: Momenta
+          job_name: Business Development Director
+          job_description: "<h3>In this role, you will:</h3>\n<ul><li>Own BD</li></ul>"
+          headquarter: CN
+          location: "Böblingen"
+          job_url: https://momenta-europe-gmbh.jobs.personio.de/job/1784945
+          job_uploaded_at: "2024-10-21T10:30:53+00:00"
+          employment_type: permanent

@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: greenhouse
+    description: Greenhouse jobs parsed from bronze.raw_responses.
+
+unit_tests:
+  - name: greenhouse_maps_jobs
+    model: greenhouse
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'greenhouse'::text as source_system,
+            'Stack AV'::text as company_name,
+            'US'::text as headquarter,
+            $json${"jobs":[{"title":"Engineer","content":"<p>Build autonomy software</p>","location":{"name":"Pittsburgh, PA"},"first_published":"2026-01-01T00:00:00Z","absolute_url":"https://boards.greenhouse.io/stackav/jobs/1"}]}$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: greenhouse
+          company_name: Stack AV
+          job_name: Engineer
+          job_description: "<p>Build autonomy software</p>"
+          headquarter: US
+          location: "Pittsburgh, PA"
+          job_url: https://boards.greenhouse.io/stackav/jobs/1
+          job_uploaded_at: "2026-01-01T00:00:00Z"
+          employment_type: null

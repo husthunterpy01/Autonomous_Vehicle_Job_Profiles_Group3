@@ -17,7 +17,8 @@ from scrapers.models.bronze.bronze_model import RawPayload
 
 API_SOURCE = "api"
 HTML_SOURCE = "html"
-ALLOWED_SOURCES = {API_SOURCE, HTML_SOURCE}
+XML_SOURCE = "xml"
+ALLOWED_SOURCES = {API_SOURCE, HTML_SOURCE, XML_SOURCE}
 PARQUET_CONTENT_TYPE = "application/vnd.apache.parquet"
 
 
@@ -208,9 +209,7 @@ class ResponseArchive:
         return f"{source}/{company_slug}/{company_slug}_{stamp}.parquet"
 
     @staticmethod
-    def _resolve_source(
-        source: str | None, raw_response: Any, content_type: str
-    ) -> str:
+    def _resolve_source(source: str | None, raw_response: Any, content_type: str) -> str:
         if source:
             resolved = source.strip().lower()
             if resolved not in ALLOWED_SOURCES:
@@ -222,11 +221,16 @@ class ResponseArchive:
         lowered_type = content_type.lower()
         if "json" in lowered_type or isinstance(raw_response, (dict, list)):
             return API_SOURCE
+        if "xml" in lowered_type:
+            return XML_SOURCE
         return HTML_SOURCE
 
     @staticmethod
     def _default_content_type(source: str) -> str:
-        return "application/json" if source == API_SOURCE else "text/html"
+        return {
+            API_SOURCE: "application/json",
+            XML_SOURCE: "application/xml",
+        }.get(source, "text/html")
 
     @staticmethod
     def _encode_body(raw_response: Any) -> bytes:
