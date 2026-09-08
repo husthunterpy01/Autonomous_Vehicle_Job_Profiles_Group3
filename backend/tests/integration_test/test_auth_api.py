@@ -116,6 +116,7 @@ def test_protected_route_rejects_missing_invalid_and_expired_tokens(client):
         user_id,
         timedelta(seconds=-1),
     )
+    client.cookies.clear()
     client.cookies.set(settings.auth_cookie_name, expired)
     assert client.get("/api/v1/auth/me").status_code == 401
 
