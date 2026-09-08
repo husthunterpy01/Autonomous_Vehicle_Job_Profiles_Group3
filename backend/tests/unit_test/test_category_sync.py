@@ -6,7 +6,7 @@ from app.services.silver_sync import SilverSync
 
 
 def seed(db):
-    SilverSync(db).run([dict(deduplication_key="one", company_name="AV", job_name="Engineer", job_description="Autonomy")])
+    SilverSync(db).run([{"deduplication_key": "one", "company_name": "AV", "job_name": "Engineer", "job_description": "Autonomy"}])
     db.commit()
 
 
@@ -43,7 +43,7 @@ def test_bad_batch_rolls_back_categories(db_session, changes):
 
 
 def test_silver_inline_categories_and_missing_preserves(db_session):
-    row = dict(deduplication_key="one", company_name="AV", job_name="Engineer", job_description="Autonomy")
+    row = {"deduplication_key": "one", "company_name": "AV", "job_name": "Engineer", "job_description": "Autonomy"}
     SilverSync(db_session).run([{**row, "functional_area": "Planning/Controls"}])
     SilverSync(db_session).run([row])
     assert [c.sub_type for c in db_session.query(JobPosting).one().categories] == ["Planning/Controls"]

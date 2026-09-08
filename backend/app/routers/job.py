@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -10,6 +11,7 @@ from app.schemas.job import JobResponse
 from app.utils.pagination import PageResponse
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def to_response(job):
@@ -18,7 +20,7 @@ def to_response(job):
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
-        categories=[dict(category_id=c.category_id, main_type=c.main_type, sub_type=c.sub_type, taxonomy_version=c.taxonomy_version)
+        categories=[{"category_id": c.category_id, "main_type": c.main_type, "sub_type": c.sub_type, "taxonomy_version": c.taxonomy_version}
                     for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
@@ -34,6 +36,7 @@ def job_query(db):
 
 @router.get("", response_model=PageResponse[JobResponse])
 def list_jobs(
+    db: DbSession,
     q: str | None = None,
     location: str | None = None,
     skill: str | None = None,
@@ -42,7 +45,6 @@ def list_jobs(
     employment_type: int | None = Query(None, ge=1, le=6),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
-    db: Session = Depends(get_db),
 ):
     query = job_query(db)
     if q:
@@ -64,7 +66,7 @@ def list_jobs(
 
 
 @router.get("/{job_id}", response_model=JobResponse)
-def get_job(job_id: UUID, db: Session = Depends(get_db)):
+def get_job(job_id: UUID, db: DbSession):
     job = job_query(db).filter(JobPosting.job_id == job_id).one_or_none()
     if job is None:
         raise HTTPException(status_code=404, detail="Job not found")

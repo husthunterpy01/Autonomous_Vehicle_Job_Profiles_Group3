@@ -13,11 +13,11 @@ def category_labels(row):
     if isinstance(labels, str):
         labels = [labels]
     if not isinstance(labels, list):
-        raise ValueError("functional_area must be a string or an array; use [] to clear")
+        raise TypeError("functional_area must be a string or an array; use [] to clear")
     canonical = {}
     for label in labels:
         if not isinstance(label, str):
-            raise ValueError("Category labels must be non-empty strings")
+            raise TypeError("Category labels must be non-empty strings")
         display = " ".join(unicodedata.normalize("NFKC", label).split())
         if not display:
             raise ValueError("Category labels must be non-empty strings")
@@ -44,19 +44,19 @@ def sync_categories(db, job, row):
 def import_categories(db, records):
     """Caller owns transaction and writer serialization, as for SilverSync."""
     if not isinstance(records, list):
-        raise ValueError("Handoff must be a JSON array")
+        raise TypeError("Handoff must be a JSON array")
     seen = set()
     updated = 0
     for index, row in enumerate(records):
         try:
             if not isinstance(row, dict):
-                raise ValueError("Each record must be an object")
+                raise TypeError("Each record must be an object")
             job = resolve_job(db, row)
             if job.job_id in seen:
                 raise ValueError("Multiple handoff records target the same backend job")
             seen.add(job.job_id)
             sync_categories(db, job, row)
             updated += int("functional_area" in row)
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise ValueError(f"Row {index + 1}: {exc}") from exc
     return {"read": len(records), "updated": updated}

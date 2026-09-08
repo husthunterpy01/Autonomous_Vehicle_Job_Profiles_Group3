@@ -6,19 +6,19 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.core.database import engine
-from app.services.job_identity import resolve_job
 from app.services.category_sync import category_labels
+from app.services.job_identity import resolve_job
 
 
 def validate_records(db, records):
     if not isinstance(records, list):
-        raise ValueError("Handoff must be a JSON array")
+        raise TypeError("Handoff must be a JSON array")
     results = []
     seen = set()
     for index, row in enumerate(records):
         try:
             if not isinstance(row, dict):
-                raise ValueError("Each record must be an object")
+                raise TypeError("Each record must be an object")
             job = resolve_job(db, row)
             if job.job_id in seen:
                 raise ValueError("Multiple handoff records target the same backend job")
@@ -31,7 +31,7 @@ def validate_records(db, records):
                 "source_key": job.source_key,
                 "category_status": "ready_to_import" if "functional_area" in row else "not_provided",
             })
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise ValueError(f"Row {index + 1}: {exc}") from exc
     return {"matched": len(results), "writes": 0, "items": results}
 
@@ -44,7 +44,7 @@ def main():
         records = json.loads(args.input.read_text(encoding="utf-8-sig"))
         with Session(engine) as db:
             report = validate_records(db, records)
-    except (OSError, ValueError) as exc:
+    except (OSError, TypeError, ValueError) as exc:
         parser.error(str(exc))
     print(json.dumps(report, indent=2))
 

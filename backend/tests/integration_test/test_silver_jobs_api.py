@@ -7,7 +7,7 @@ from app.services.silver_sync import SilverSync
 
 
 def test_synced_jobs_search_filter_pagination_and_detail(db_session):
-    rows = [dict(deduplication_key=str(i), company_name="Example AV", job_name=f"Engineer {i}", job_description="Python autonomy", locations=["Remote", "Pittsburgh"], skills=[{"name": "Python", "skill_type": "programming_language"}]) for i in range(3)]
+    rows = [{"deduplication_key": str(i), "company_name": "Example AV", "job_name": f"Engineer {i}", "job_description": "Python autonomy", "locations": ["Remote", "Pittsburgh"], "skills": [{"name": "Python", "skill_type": "programming_language"}]} for i in range(3)]
     SilverSync(db_session).run(rows)
     SilverSync(db_session).run([{**rows[0], "functional_area": ["Perception", "Controls"]}])
     db_session.commit()

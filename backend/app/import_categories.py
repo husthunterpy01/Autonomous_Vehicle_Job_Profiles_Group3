@@ -20,7 +20,7 @@ def main():
             if engine.dialect.name == "postgresql":
                 db.execute(text("SELECT pg_advisory_xact_lock(80009001)"))
             counts = import_categories(db, records)
-    except (OSError, ValueError) as exc:
+    except (OSError, TypeError, ValueError) as exc:
         parser.error(str(exc))
     print(json.dumps(counts))
 

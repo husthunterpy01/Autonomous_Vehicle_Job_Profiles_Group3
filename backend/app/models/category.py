@@ -1,6 +1,13 @@
 from uuid import uuid4
 
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, Text, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    ForeignKey,
+    Integer,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base

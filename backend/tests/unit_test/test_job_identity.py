@@ -7,8 +7,8 @@ from app.validate_handoff import validate_records
 
 
 def seed(db, key="one", **values):
-    row = dict(deduplication_key=key, company_name="AV", job_name="Engineer",
-               job_description="Autonomy", source_job_id="42", ats_name="greenhouse", bronze_id=1)
+    row = {"deduplication_key": key, "company_name": "AV", "job_name": "Engineer",
+               "job_description": "Autonomy", "source_job_id": "42", "ats_name": "greenhouse", "bronze_id": 1}
     row.update(values)
     SilverSync(db).run([row])
     return resolve_job(db, {"deduplication_key": key})
@@ -62,5 +62,5 @@ def test_preflight_reports_pending_category_and_makes_no_changes(db_session):
 
 @pytest.mark.parametrize("records", [{}, [None]])
 def test_invalid_handoff_shape(db_session, records):
-    with pytest.raises(ValueError):
+    with pytest.raises((TypeError, ValueError)):
         validate_records(db_session, records)

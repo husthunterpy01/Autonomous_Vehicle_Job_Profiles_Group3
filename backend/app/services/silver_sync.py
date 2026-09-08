@@ -66,7 +66,7 @@ class SilverSync:
             self.db.flush()
             locations = row.get("locations") or []
             if not isinstance(locations, (list, tuple)):
-                raise ValueError("locations must be an array, not a delimited string")
+                raise TypeError("locations must be an array, not a delimited string")
             linked = {}
             for name in locations:
                 if not isinstance(name, str) or not name.strip():

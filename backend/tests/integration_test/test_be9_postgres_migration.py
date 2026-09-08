@@ -4,9 +4,9 @@ from pathlib import Path
 from uuid import uuid4
 
 import psycopg2
-from psycopg2 import sql
 import pytest
 from dotenv import dotenv_values
+from psycopg2 import sql
 
 
 @pytest.mark.skipif(os.getenv("BE9_TEST_POSTGRES") != "1", reason="Opt-in local PostgreSQL migration test")
