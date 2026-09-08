@@ -7,9 +7,7 @@ from psycopg2.extras import Json
 
 from scrapers.service.bronze_storage.bronze_ingest import BronzeIngest
 
-DBT_JOB_POSTINGS = (
-    Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze" / "job_postings.sql"
-)
+BRONZE_MODELS = Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze"
 
 
 def _archive_frame(body, source_system="greenhouse", company="Stack AV"):
@@ -59,7 +57,7 @@ def test_extract_lands_raw_payload_then_runs_dbt(
     assert inserted[4].adapted == {"jobs": [{"title": "Engineer"}]}
     assert inserted[5] == "US"
     assert "./scrapers/dbt" in mock_dbt.call_args.args[0]
-    assert "job_postings" in mock_dbt.call_args.args[0]
+    assert "+job_postings" in mock_dbt.call_args.args[0]
     connection.close.assert_called_once()
 
 
@@ -69,9 +67,12 @@ def test_extract_lands_raw_payload_then_runs_dbt(
 @patch("scrapers.service.bronze_storage.bronze_ingest.ResponseArchive")
 @patch("scrapers.service.bronze_storage.bronze_ingest.CompanyScraper")
 @patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
-def test_extract_skips_html_source(
+def test_extract_skips_html_without_html_sources_entry(
     mock_execute_values, mock_companies, mock_archive, mock_connect, mock_dbt, _mock_which
 ):
+    mock_companies.load_company_list.return_value = [
+        {"key": "waymo", "name": "Waymo", "country": "US"}
+    ]
     mock_archive.return_value._extract_data_from_storage.return_value = [
         ("html", "waymo", _archive_frame("<html></html>", source_system="html", company="Waymo"))
     ]
@@ -84,6 +85,46 @@ def test_extract_skips_html_source(
     assert status == 0
     mock_execute_values.assert_not_called()
     mock_dbt.assert_called_once()
+
+
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
+@patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
+@patch("scrapers.service.bronze_storage.bronze_ingest.ResponseArchive")
+@patch("scrapers.service.bronze_storage.bronze_ingest.CompanyScraper")
+@patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
+def test_extract_lands_html_jobs_via_extractor(
+    mock_execute_values, mock_companies, mock_archive, mock_connect, mock_dbt, _mock_which
+):
+    mock_companies.load_company_list.return_value = [
+        {"key": "tensor", "name": "Tensor (AutoX)", "country": "US"}
+    ]
+    page = (
+        '<div class="careers-item"><h3>AI Engineer</h3>'
+        '<div fs-cmsfilter-field="Jobtypes">Full-Time</div>'
+        '<div fs-cmsfilter-field="Regions">San Jose, CA</div>'
+        '<a href="/careers/jd66">Details</a></div>'
+    )
+    frame = _archive_frame(page, source_system="html", company="Tensor (AutoX)")
+    frame["url"] = "https://www.tensor.auto/careers"
+    mock_archive.return_value._extract_data_from_storage.return_value = [
+        ("html", "tensor_(autox)", frame)
+    ]
+    mock_dbt.return_value = MagicMock(returncode=0)
+    connection = mock_connect.return_value
+    connection.cursor.return_value.__enter__.return_value = MagicMock()
+
+    status = BronzeIngest("av-scraped-jobs").extract_raw_data_to_db()
+
+    assert status == 0
+    inserted = mock_execute_values.call_args.args[2][0]
+    assert inserted[2] == "html"
+    assert inserted[3] == "tensor"
+    jobs = inserted[4].adapted
+    assert jobs[0]["source_job_id"] == "jd66"
+    assert jobs[0]["job_name"] == "AI Engineer"
+    assert jobs[0]["job_url"] == "https://www.tensor.auto/careers/jd66"
+    assert inserted[5] == "US"
 
 
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
@@ -135,18 +176,31 @@ def test_extract_returns_error_when_dbt_fails(
 
 
 def test_dbt_job_postings_model_covers_supported_ats():
-    sql = DBT_JOB_POSTINGS.read_text(encoding="utf-8")
-    for ats in ("greenhouse", "lever", "ashby", "smartrecruiters"):
-        assert ats in sql
-    assert "as id" in sql
-    assert "row_number()" in sql
-    assert "categories" in sql
-    assert "commitment" in sql
-    assert "descriptionBodyPlain" in sql
-    assert "openingPlain" in sql
-    assert "not like '%salary%'" in sql
-    assert "workplaceType" not in sql
-    assert "Full Time" not in sql
+    union_sql = (BRONZE_MODELS / "job_postings.sql").read_text(encoding="utf-8")
+    lever_sql = (BRONZE_MODELS / "api" / "lever" / "lever.sql").read_text(encoding="utf-8")
+    ats_models = {
+        "greenhouse": BRONZE_MODELS / "api" / "greenhouse" / "greenhouse.sql",
+        "lever": BRONZE_MODELS / "api" / "lever" / "lever.sql",
+        "ashby": BRONZE_MODELS / "api" / "ashby" / "ashby.sql",
+        "smartrecruiters": BRONZE_MODELS / "api" / "smartrecruiters" / "smartrecruiters.sql",
+        "workday": BRONZE_MODELS / "api" / "workday" / "workday.sql",
+        "workable": BRONZE_MODELS / "api" / "workable" / "workable.sql",
+        "comeet": BRONZE_MODELS / "api" / "comeet" / "comeet.sql",
+        "personio": BRONZE_MODELS / "xml" / "personio" / "personio.sql",
+        "html_jobs": BRONZE_MODELS / "html" / "html_jobs.sql",
+    }
+    for ats, model_path in ats_models.items():
+        assert model_path.is_file()
+        assert f'ref("{ats}")' in union_sql
+    assert "as id" in union_sql
+    assert "row_number()" in union_sql
+    assert "categories" in lever_sql
+    assert "commitment" in lever_sql
+    assert "descriptionBodyPlain" in lever_sql
+    assert "openingPlain" in lever_sql
+    assert "not like '%salary%'" in lever_sql
+    assert "workplaceType" not in lever_sql
+    assert "Full Time" not in lever_sql
 
 
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")

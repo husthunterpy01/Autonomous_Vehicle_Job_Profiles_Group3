@@ -2,10 +2,17 @@ version: 2
 
 models:
   - name: job_postings
-    description: ATS job rows parsed from bronze.raw_responses JSON bodies.
+    description: Union of ATS-specific bronze views with a stable row id.
     columns:
       - name: id
         description: Unique row id across all companies in bronze.job_postings.
+        tests: [not_null, unique]
+      - name: job_id
+        description: >
+          The ATS-native posting id (Greenhouse/SmartRecruiters numbers,
+          Lever/Ashby UUIDs, ...); falls back to the job URL, then a content
+          hash, only when the ATS supplies no id. Stable across re-runs, unlike
+          the row_number() id.
         tests: [not_null, unique]
       - name: company_name
         tests: [not_null]

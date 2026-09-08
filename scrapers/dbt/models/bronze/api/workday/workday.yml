@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: workday
+    description: Workday CXS jobs (list + attached per-job detail) parsed from bronze.raw_responses.
+
+unit_tests:
+  - name: workday_maps_detail_fields
+    model: workday
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'workday'::text as source_system,
+            'NVIDIA'::text as company_name,
+            'US'::text as headquarter,
+            $json${"jobPostings":[{"title":"Senior Software Engineer, NVLINK","bulletFields":["JR2004601"],"externalPath":"/job/Israel-Yokneam/Senior-Software-Engineer--NVLINK_JR2004601","locationsText":"2 Locations","jobPostingDetail":{"jobPostingInfo":{"jobReqId":"JR2004601","title":"Senior Software Engineer, NVLINK","jobDescription":"<p>Build NVLINK</p>","location":"Israel, Yokneam","externalUrl":"https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/job/x","startDate":"2026-09-07","timeType":"Full time"}}}]}$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: workday
+          source_job_id: JR2004601
+          company_name: NVIDIA
+          job_name: "Senior Software Engineer, NVLINK"
+          job_description: "<p>Build NVLINK</p>"
+          headquarter: US
+          location: "Israel, Yokneam"
+          job_url: https://nvidia.wd5.myworkdayjobs.com/NVIDIAExternalCareerSite/job/x
+          job_uploaded_at: "2026-09-07"
+          employment_type: Full time
+
+  - name: workday_falls_back_when_detail_missing
+    model: workday
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'workday'::text as source_system,
+            'General Motors'::text as company_name,
+            'US'::text as headquarter,
+            $json${"jobPostings":[{"title":"Software Engineer","bulletFields":["JR-202"],"externalPath":"/job/Detroit/Software-Engineer_JR-202","locationsText":"Detroit, MI"}]}$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: workday
+          source_job_id: JR-202
+          job_name: Software Engineer
+          job_description: null
+          location: "Detroit, MI"
+          job_url: /job/Detroit/Software-Engineer_JR-202
+          job_uploaded_at: null
+          employment_type: null
