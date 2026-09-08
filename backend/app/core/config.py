@@ -21,8 +21,10 @@ class Settings:
         self.environment = os.getenv("ENVIRONMENT", "development").strip().lower()
         self.jwt_secret_key = os.getenv("JWT_SECRET_KEY")
         if not self.jwt_secret_key:
-            if self.environment == "production":
-                raise RuntimeError("JWT_SECRET_KEY is required in production")
+            if self.environment != "development":
+                raise RuntimeError(
+                    "JWT_SECRET_KEY is required outside the development environment"
+                )
             self.jwt_secret_key = "development-only-change-this-secret"
             warnings.warn(
                 "JWT_SECRET_KEY is not set; using a development-only secret",

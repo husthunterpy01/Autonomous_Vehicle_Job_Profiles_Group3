@@ -1,3 +1,5 @@
+import sqlite3
+
 from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -12,6 +14,21 @@ class DuplicateUserError(Exception):
 
 
 class AuthService:
+    @staticmethod
+    def _is_unique_violation(error: IntegrityError) -> bool:
+        original_error = error.orig
+        sqlstate = getattr(original_error, "sqlstate", None) or getattr(
+            original_error, "pgcode", None
+        )
+        if sqlstate == "23505":
+            return True
+
+        sqlite_error_code = getattr(original_error, "sqlite_errorcode", None)
+        return sqlite_error_code in {
+            sqlite3.SQLITE_CONSTRAINT_PRIMARYKEY,
+            sqlite3.SQLITE_CONSTRAINT_UNIQUE,
+        }
+
     @staticmethod
     def create_user(db: Session, data: SignUpRequest) -> User:
         duplicate = (
@@ -33,7 +50,9 @@ class AuthService:
             db.commit()
         except IntegrityError as error:
             db.rollback()
-            raise DuplicateUserError from error
+            if AuthService._is_unique_violation(error):
+                raise DuplicateUserError from error
+            raise
         db.refresh(user)
         return user
 

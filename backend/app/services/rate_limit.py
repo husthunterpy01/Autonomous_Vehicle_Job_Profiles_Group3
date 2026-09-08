@@ -4,6 +4,13 @@ from time import monotonic
 
 
 class LoginRateLimiter:
+    """Process-local limiter for development and single-worker deployments.
+
+    Production deployments with multiple workers or application instances must
+    replace this with a shared-store implementation, such as Redis, so every
+    process observes the same failed-login counters.
+    """
+
     def __init__(self, max_attempts: int, window_seconds: int):
         self.max_attempts = max_attempts
         self.window_seconds = window_seconds

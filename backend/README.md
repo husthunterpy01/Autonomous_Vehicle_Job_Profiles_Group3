@@ -95,8 +95,8 @@ Use the same password you set when creating the Postgres user. If you used the D
 
 Generate `JWT_SECRET_KEY` with a cryptographically secure random generator and
 keep it outside source control. Set `AUTH_COOKIE_SECURE=true` when the frontend
-and API are served over HTTPS. Production startup fails when `JWT_SECRET_KEY`
-is missing.
+and API are served over HTTPS. Any environment other than an explicitly named
+`development` environment fails at startup when `JWT_SECRET_KEY` is missing.
 
 ### CI note
 
@@ -138,6 +138,11 @@ The login identifier accepts either the normalized email address or username.
 Five failed attempts for the same client and identifier within five minutes are
 rate limited by default; both values can be changed with
 `AUTH_LOGIN_MAX_ATTEMPTS` and `AUTH_LOGIN_WINDOW_SECONDS`.
+
+The included limiter stores counters in the current API process. This is
+appropriate for local development and single-worker deployments. Production
+deployments with multiple workers or instances must use a shared store such as
+Redis so failed-login counters are enforced consistently across processes.
 
 ### Sign up
 
