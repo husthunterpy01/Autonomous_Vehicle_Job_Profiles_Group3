@@ -4,12 +4,7 @@ from collections.abc import Mapping
 from sqlalchemy.orm import Session
 
 from app.models import JobPosting
-
-
-def _identifier(value, field):
-    if not isinstance(value, str) or not value.strip():
-        raise ValueError(f"{field} must be a non-empty string")
-    return value
+from app.utils.validation import require_identifier
 
 
 def resolve_job(db: Session, row: Mapping) -> JobPosting:
@@ -23,14 +18,14 @@ def resolve_job(db: Session, row: Mapping) -> JobPosting:
     ats = row.get("ats_name")
     if key is not None:
         query = db.query(JobPosting).filter_by(
-            source_key="silver:" + _identifier(key, "deduplication_key")
+            source_key="silver:" + require_identifier(key, "deduplication_key")
         )
     else:
         if source_id is None or ats is None:
             raise ValueError("Provide deduplication_key or source_job_id together with ats_name; job_id/bronze_id are not join keys")
         query = db.query(JobPosting).filter_by(
-            source_job_id=_identifier(source_id, "source_job_id"),
-            source_platform=_identifier(ats, "ats_name"),
+            source_job_id=require_identifier(source_id, "source_job_id"),
+            source_platform=require_identifier(ats, "ats_name"),
         )
     matches = query.limit(2).all()
     if not matches:
@@ -42,6 +37,6 @@ def resolve_job(db: Session, row: Mapping) -> JobPosting:
         ("source_job_id", source_id, job.source_job_id),
         ("ats_name", ats, job.source_platform),
     ):
-        if value is not None and _identifier(value, field) != stored:
+        if value is not None and require_identifier(value, field) != stored:
             raise ValueError(f"{field} conflicts with the matched Silver identity")
     return job

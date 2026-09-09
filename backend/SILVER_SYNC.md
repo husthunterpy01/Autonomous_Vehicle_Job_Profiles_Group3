@@ -1,10 +1,24 @@
 # BE-9: backend integration (development stage)
 
+See [review follow-up and API screenshot](evidence/README.md) for the refactoring
+checklist and a reproducible snapshot using isolated synthetic data.
+
 The API reads backend tables, not the staging schema. The data path is:
 
 `silver.cleaned_job_postings -> manual sync -> company / jobposting / location / job_location / skill / job_skill / category / job_category -> API`
 
 ## Schema and migration
+
+Each ORM entity has its own file in `app/models/`, including the junction tables.
+The job router handles HTTP parameters and 404 responses; filtering, sorting,
+pagination and response assembly live in `app/services/job.py`.
+Shared identifier validation and text normalization live in `app/utils/`.
+
+The three manual commands retain their existing module names. They use shared
+CLI helpers (`app/utils/cli.py`) and delegate workflow execution to
+`app/services/silver_pipeline.py`: sync jobs -> validate handoff -> import
+categories. The pipeline owns sessions, transactions and writer locking;
+record-level behavior remains in the individual services.
 
 The logical ERD is in `Document/erd-job-categorizing/schema_silver.dbml`.
 Its `silver` namespace describes the normalized logical layer; the backend's
@@ -69,6 +83,15 @@ Fallback record: `{"source_job_id": "42", "ats_name": "greenhouse"}`.
 Identifiers must be strings, preserving leading zeros and case. A supplied
 deduplication key must match; a failed key lookup never falls back silently.
 Additional source identifiers must agree with the matched job.
+
+The current upstream key is **MD5 text, not a GUID**:
+`scrapers/dbt/models/silver/cleaned_job_postings.sql` selects
+`md5(natural_key) as deduplication_key`. It is a 32-character hexadecimal string.
+Backend `job_id` is a separate generated UUID; `source_key` retains the exact
+upstream key with a `silver:` prefix. Identity tests use representative MD5-shaped
+keys. Do not cast or regenerate them as UUIDs: that would change the integration
+contract. The resolver treats the upstream key as opaque non-empty text so a
+future key-format migration can be reconciled explicitly.
 
 Backend `job_id` is an internal UUID. External `job_id` is not automatically
 interpreted: if the producer confirms it is an ATS identifier, rename it to

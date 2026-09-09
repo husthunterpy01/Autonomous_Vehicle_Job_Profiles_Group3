@@ -7,13 +7,10 @@ from sqlalchemy.orm import Session
 
 from app.models import Company, JobPosting, Location, Skill
 from app.services.category_sync import sync_categories
+from app.utils.normalization import normalized
 
 EMPLOYMENT_TYPES = {"full-time": 1, "part-time": 2, "contract": 3, "temporary": 4, "internship": 5}
 SKILL_TYPES = {"tool", "programming_language", "framework", "domain_concept", "certification"}
-
-
-def normalized(value: str) -> str:
-    return " ".join(value.split()).lower()
 
 
 class SilverSync:

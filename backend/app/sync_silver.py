@@ -1,37 +1,31 @@
 """Manual sync: python -m app.sync_silver --allow-unclassified (development only)."""
 import argparse
-import json
 import os
 
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
+from sqlalchemy import create_engine
 
 from app.core.database import engine
-from app.services.silver_sync import SilverSync
+from app.services.silver_pipeline import SilverPipeline
+from app.utils.cli import run_command
 
 
 def main():
     parser = argparse.ArgumentParser(description="Sync Silver staging rows into backend ERD tables")
-    parser.add_argument("--allow-unclassified", action="store_true", help="Explicitly allow staging rows before Harshil's AV gate is integrated; development only")
-    args = parser.parse_args()
-    if not args.allow_unclassified:
-        parser.error("AV classification handoff is not integrated yet. Use --allow-unclassified only for development validation.")
-    source_url = os.environ.get("SILVER_DATABASE_URL")
-    if not source_url:
-        parser.error("Set SILVER_DATABASE_URL to the database containing silver.cleaned_job_postings")
-    source = create_engine(source_url, pool_pre_ping=True)
-    try:
-        with source.connect() as connection, Session(engine) as db, db.begin():
-            if engine.dialect.name == "postgresql":
-                # Prevent two manual sync processes from racing on natural keys.
-                db.execute(text("SELECT pg_advisory_xact_lock(80009001)"))
-            records = connection.execution_options(stream_results=True).execute(
-                text("SELECT * FROM silver.cleaned_job_postings ORDER BY deduplication_key")
-            ).mappings()
-            counts = SilverSync(db).run(records)
-        print(json.dumps(counts))
-    finally:
-        source.dispose()
+    parser.add_argument("--allow-unclassified", action="store_true", help="Allow unclassified staging rows for development only")
+
+    def execute(args):
+        if not args.allow_unclassified:
+            raise ValueError("AV classification handoff is not integrated yet. Use --allow-unclassified only for development validation.")
+        source_url = os.environ.get("SILVER_DATABASE_URL")
+        if not source_url:
+            raise ValueError("Set SILVER_DATABASE_URL to the database containing silver.cleaned_job_postings")
+        source = create_engine(source_url, pool_pre_ping=True)
+        try:
+            return SilverPipeline(engine).sync(source, allow_unclassified=args.allow_unclassified)
+        finally:
+            source.dispose()
+
+    run_command(parser, execute)
 
 
 if __name__ == "__main__":

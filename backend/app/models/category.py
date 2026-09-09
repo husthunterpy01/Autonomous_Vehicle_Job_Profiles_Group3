@@ -3,7 +3,6 @@ from uuid import uuid4
 from sqlalchemy import (
     CheckConstraint,
     Column,
-    ForeignKey,
     Integer,
     Text,
     UniqueConstraint,
@@ -25,10 +24,3 @@ class Category(Base):
     sub_type = Column(Text, nullable=False)
     normalized_name = Column(Text, nullable=False)
     taxonomy_version = Column(Integer, nullable=False)
-
-
-class JobCategory(Base):
-    __tablename__ = "job_category"
-
-    job_id = Column(UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True)
-    category_id = Column(UUID(as_uuid=True), ForeignKey("category.category_id"), primary_key=True)
