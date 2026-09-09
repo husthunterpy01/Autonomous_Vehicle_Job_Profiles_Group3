@@ -11,6 +11,8 @@ jobs:
       POSTGRES_USER: team3
       POSTGRES_DB: autojobdatabase
       DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
+      BE9_TEST_POSTGRES: '1'
+      BE9_TEST_DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
     services:
       postgres:
         image: postgres:16

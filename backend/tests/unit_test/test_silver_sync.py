@@ -47,3 +47,39 @@ def test_sync_failure_rolls_back_whole_batch(db_session):
         SilverSync(db_session).run([record(), record()])
     assert db_session.query(JobPosting).count() == 0
     assert db_session.query(Company).count() == 0
+
+
+@pytest.mark.parametrize("invalid", [False, 0, "", {}, "Remote", [""], [None]])
+def test_invalid_locations_roll_back_all_updates(db_session, invalid):
+    sync = SilverSync(db_session)
+    sync.run([record()])
+    db_session.commit()
+    first = {**record(), "locations": ["New York"]}
+    second = {**record(), "deduplication_key": "two", "locations": invalid}
+    with pytest.raises((TypeError, ValueError)), db_session.begin():
+        sync.run([first, second])
+    job = db_session.query(JobPosting).one()
+    assert sorted(location.name for location in job.locations) == ["Pittsburgh", "Remote"]
+    assert job.job_location == "Pittsburgh | Remote"
+    assert db_session.query(Location).count() == 2
+
+
+@pytest.mark.parametrize("empty", [None, [], ()])
+def test_empty_locations_clear_associations(db_session, empty):
+    sync = SilverSync(db_session)
+    sync.run([record()])
+    sync.run([{**record(), "locations": empty}])
+    job = db_session.query(JobPosting).one()
+    assert job.locations == []
+    assert job.job_location is None
+
+
+def test_missing_locations_clear_associations(db_session):
+    sync = SilverSync(db_session)
+    row = record()
+    sync.run([row])
+    del row["locations"]
+    sync.run([row])
+    job = db_session.query(JobPosting).one()
+    assert job.locations == []
+    assert job.job_location is None

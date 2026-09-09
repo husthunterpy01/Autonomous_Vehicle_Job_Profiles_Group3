@@ -15,7 +15,7 @@ class JobPosting(Base):
     title = Column(String(255), nullable=False)
     department = Column(String(255), nullable=True)
     employment_type = Column(Integer, nullable=True)
-    job_location = Column(String(255), nullable=True)
+    job_location = Column(Text, nullable=True)
     seniority_level = Column(Integer, nullable=True)
     salary_average = Column(Float, nullable=True)
     salary_currency = Column(String(255), nullable=True)

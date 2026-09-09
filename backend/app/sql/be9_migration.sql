@@ -7,6 +7,7 @@ ALTER TABLE company ALTER COLUMN career_page_url DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN department DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN employment_type DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN job_location DROP NOT NULL;
+ALTER TABLE jobposting ALTER COLUMN job_location TYPE text;
 ALTER TABLE jobposting ALTER COLUMN seniority_level DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN salary_average DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN salary_currency DROP NOT NULL;

@@ -37,5 +37,5 @@ startup; this does not represent a Silver resync. Stop it with Ctrl+C.
 ## Validation
 
 - Ruff passed without disabling rules.
-- 43 tests passed, including pipeline commit/rollback and CLI JSON/error handling.
-- One opt-in PostgreSQL migration test remains skipped locally.
+- 54 local tests passed, including pipeline rollback, invalid location input and CLI handling.
+- PostgreSQL migration regression is now enabled in CI, including legacy row preservation and long-location sync; local execution requires a test database URL.

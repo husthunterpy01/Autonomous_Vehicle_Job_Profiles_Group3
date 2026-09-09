@@ -61,7 +61,11 @@ class SilverSync:
                     raise ValueError(f"{source} must be a database timestamp")
                 setattr(job, destination, value)
             self.db.flush()
-            locations = row.get("locations") or []
+            # Missing/null represent no source locations; other non-array values
+            # must not silently clear existing associations.
+            locations = row.get("locations")
+            if locations is None:
+                locations = []
             if not isinstance(locations, (list, tuple)):
                 raise TypeError("locations must be an array, not a delimited string")
             linked = {}

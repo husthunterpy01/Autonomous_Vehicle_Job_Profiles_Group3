@@ -35,6 +35,11 @@ Fresh databases use the normal ORM `init_db()` startup path.
 
 `JobPosting.job_location` remains a compatibility display field. New consumers
 use `locations`; no country/city is guessed from a free-text location label.
+The display field is Text in both the ORM and migration, so combined location
+names are not limited to 255 characters. Location arrays replace the previous
+associations; an empty array, null, or missing field clears them, matching the
+full Silver snapshot contract. False, numbers, strings and objects are invalid
+and roll back the batch rather than silently clearing existing locations.
 Salary and seniority are not inferred. Existing company metadata is preserved;
 new companies have null URLs/type and `datasource_status=unverified`.
 
@@ -151,7 +156,11 @@ extraction, and final classified-data integration are not completed by this slic
 python -m pytest tests -q
 ```
 
-Set `DATABASE_URL=sqlite://` for isolated API/service tests. Set
-`BE9_TEST_POSTGRES=1` to additionally test the migration against local PostgreSQL
-using `scrapers/.env`; that test creates and removes only a uniquely named test
-schema. It never modifies the backend's public tables.
+Set `DATABASE_URL=sqlite://` for isolated API/service tests. To also run the
+PostgreSQL regression locally, set `BE9_TEST_POSTGRES=1` and
+`BE9_TEST_DATABASE_URL=postgresql://...` to a test database whose user can create
+schemas. The test falls back to DATABASE_URL if the dedicated URL is unset; it
+never reads scrapers/.env. CI supplies the dedicated URL and enables the test.
+The test creates and removes only a uniquely named schema. It verifies repeated
+migration, preservation of legacy company/job rows, Text column type, and a real
+Silver sync with more than 255 characters of locations. Public tables are untouched.
