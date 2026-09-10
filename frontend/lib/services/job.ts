@@ -32,5 +32,7 @@ export function getJobs(params: {
   if (params.q) search.set("q", params.q);
   search.set("page", String(params.page ?? 1));
   search.set("page_size", String(params.page_size ?? 10));
-  return apiFetch<PageResponse<JobListItem>>(`/api/v1/jobs?${search.toString()}`);
+  return apiFetch<PageResponse<JobListItem>>(
+    `/api/v1/jobs?${search.toString()}`,
+  );
 }

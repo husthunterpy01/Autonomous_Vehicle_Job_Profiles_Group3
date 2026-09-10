@@ -8,7 +8,10 @@ import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
 import { ApiError } from "@/lib/services/api";
-import { COMPANY_TYPE_LABELS, getCompaniesWithJobCounts } from "@/lib/services/company";
+import {
+  COMPANY_TYPE_LABELS,
+  getCompaniesWithJobCounts,
+} from "@/lib/services/company";
 
 const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
   { value: "All", label: "All Company Types" },
@@ -182,9 +185,7 @@ export default function CompanyClient() {
         <div className="mt-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-ink-secondary">
-              <span className="font-semibold text-ink">
-                {filtered.length}
-              </span>{" "}
+              <span className="font-semibold text-ink">{filtered.length}</span>{" "}
               {filtered.length === 1 ? "company" : "companies"} found
               {type !== "All" ? ` · ${COMPANY_TYPE_LABELS[type]}` : ""}
             </p>
