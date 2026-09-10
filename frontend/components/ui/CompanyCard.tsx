@@ -1,8 +1,15 @@
 import Link from "next/link";
-import type { Company } from "@/lib/mock-data";
 import CompanyLogo from "./CompanyLogo";
 
-export default function CompanyCard({ company }: { company: Company }) {
+export type CompanyCardData = {
+  id: string;
+  name: string;
+  type: string;
+  country?: string | null;
+  openPositions: number;
+};
+
+export default function CompanyCard({ company }: { company: CompanyCardData }) {
   return (
     <Link
       href={`/companies/${company.id}`}
@@ -12,7 +19,8 @@ export default function CompanyCard({ company }: { company: Company }) {
       <div className="min-w-0 flex-1">
         <h3 className="font-semibold text-ink">{company.name}</h3>
         <p className="mt-1 text-sm text-ink-secondary">
-          {company.type} · {company.country}
+          {company.type}
+          {company.country ? ` · ${company.country}` : ""}
         </p>
         <p className="mt-2 text-sm text-ink-muted">
           {company.openPositions} open positions
