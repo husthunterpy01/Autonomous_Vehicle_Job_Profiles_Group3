@@ -82,12 +82,33 @@ def test_rate_limiter_blocks_at_configured_limit_and_can_be_cleared():
     assert limiter.retry_after("client:user") is None
 
 
-def test_non_development_environment_requires_jwt_secret(monkeypatch):
-    monkeypatch.setenv("ENVIRONMENT", "staging")
-    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+@pytest.mark.parametrize("environment", [None, "", "   ", "staging", "production", "test", "developmnt"])
+@pytest.mark.parametrize("secret", [None, "", "   "])
+def test_non_development_environment_requires_jwt_secret(monkeypatch, environment, secret):
+    if environment is None:
+        monkeypatch.delenv("ENVIRONMENT", raising=False)
+    else:
+        monkeypatch.setenv("ENVIRONMENT", environment)
+    if secret is None:
+        monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+    else:
+        monkeypatch.setenv("JWT_SECRET_KEY", secret)
 
     with pytest.raises(RuntimeError, match="outside the development environment"):
         Settings()
+
+
+def test_explicit_development_allows_warned_fallback(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("JWT_SECRET_KEY", raising=False)
+    with pytest.warns(UserWarning, match="development-only secret"):
+        assert Settings().jwt_secret_key == "development-only-change-this-secret"
+
+
+def test_unset_environment_accepts_configured_secret(monkeypatch):
+    monkeypatch.delenv("ENVIRONMENT", raising=False)
+    monkeypatch.setenv("JWT_SECRET_KEY", "test-only-configured-signing-key-value")
+    assert Settings().jwt_secret_key == "test-only-configured-signing-key-value"
 
 
 class DatabaseError(Exception):

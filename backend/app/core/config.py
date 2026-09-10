@@ -18,9 +18,9 @@ class Settings:
             "yes",
             "on",
         }
-        self.environment = os.getenv("ENVIRONMENT", "development").strip().lower()
+        self.environment = os.getenv("ENVIRONMENT", "").strip().lower()
         self.jwt_secret_key = os.getenv("JWT_SECRET_KEY")
-        if not self.jwt_secret_key:
+        if not self.jwt_secret_key or not self.jwt_secret_key.strip():
             if self.environment != "development":
                 raise RuntimeError(
                     "JWT_SECRET_KEY is required outside the development environment"

@@ -96,7 +96,10 @@ Use the same password you set when creating the Postgres user. If you used the D
 Generate `JWT_SECRET_KEY` with a cryptographically secure random generator and
 keep it outside source control. Set `AUTH_COOKIE_SECURE=true` when the frontend
 and API are served over HTTPS. Any environment other than an explicitly named
-`development` environment fails at startup when `JWT_SECRET_KEY` is missing.
+`development` environment fails at startup when `JWT_SECRET_KEY` is missing or
+blank. An unset or blank `ENVIRONMENT` does not enable development mode. To use
+the local fallback explicitly, set `ENVIRONMENT=development`; otherwise provide
+a real signing key. CI uses a freshly generated test-only key.
 
 ### CI note
 
