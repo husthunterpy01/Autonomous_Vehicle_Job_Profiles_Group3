@@ -17,9 +17,9 @@ export default function SearchBar({
   keyword: string;
   onKeywordChange: (value: string) => void;
   placeholder: string;
-  dropdownValue: string;
-  onDropdownChange: (value: string) => void;
-  dropdownOptions: DropdownOption[];
+  dropdownValue?: string;
+  onDropdownChange?: (value: string) => void;
+  dropdownOptions?: DropdownOption[];
   dropdownClassName?: string;
   className?: string;
   onSubmit: (e: FormEvent) => void;
@@ -53,12 +53,14 @@ export default function SearchBar({
           className="w-full bg-transparent px-1 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
         />
       </div>
-      <Dropdown
-        value={dropdownValue}
-        onChange={onDropdownChange}
-        options={dropdownOptions}
-        className={dropdownClassName}
-      />
+      {dropdownOptions && onDropdownChange && (
+        <Dropdown
+          value={dropdownValue ?? ""}
+          onChange={onDropdownChange}
+          options={dropdownOptions}
+          className={dropdownClassName}
+        />
+      )}
     </form>
   );
 }

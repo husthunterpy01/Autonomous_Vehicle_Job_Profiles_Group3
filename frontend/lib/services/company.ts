@@ -1,4 +1,4 @@
-import { apiFetch } from "./api";
+import { apiFetch, type PageResponse } from "./api";
 
 /* Matches backend/app/models/company.py's `company_type` column values —
    free-text in the DB, not a real enum, so keep this list in sync with
@@ -18,14 +18,6 @@ export type CompanyWithJobCount = {
   company_type: string;
   location: string | null;
   number_of_jobs: number;
-};
-
-export type PageResponse<T> = {
-  items: T[];
-  total: number;
-  page: number;
-  page_size: number;
-  total_pages: number;
 };
 
 export function getCompaniesWithJobCounts(

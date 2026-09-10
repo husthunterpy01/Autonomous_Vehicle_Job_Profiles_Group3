@@ -1,6 +1,14 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+export type PageResponse<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+};
+
 export class ApiError extends Error {
   constructor(
     message: string,
