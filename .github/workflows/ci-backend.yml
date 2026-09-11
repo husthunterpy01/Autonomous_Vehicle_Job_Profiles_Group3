@@ -8,6 +8,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
+      ENVIRONMENT: test
       POSTGRES_USER: team3
       POSTGRES_DB: autojobdatabase
       DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
@@ -33,6 +34,8 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: '3.10'
+    - name: Generate ephemeral test signing key
+      run: python -c "import os, secrets; open(os.environ['GITHUB_ENV'], 'a').write('JWT_SECRET_KEY=' + secrets.token_hex(32) + '\n')"
     - name: Install dependencies
       working-directory: backend
       run: |

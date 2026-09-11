@@ -7,5 +7,6 @@ from app.models.job_skill import JobSkill
 from app.models.jobposting import JobPosting
 from app.models.location import Location
 from app.models.skill import Skill
+from app.models.user import User
 
-__all__ = ["Category", "Company", "CompanyLocation", "JobCategory", "JobLocation", "JobPosting", "JobSkill", "Location", "Skill"]
+__all__ = ["Category", "Company", "CompanyLocation", "JobCategory", "JobLocation", "JobPosting", "JobSkill", "Location", "Skill", "User"]

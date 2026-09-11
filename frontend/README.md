@@ -43,6 +43,13 @@ Open the following pages:
 
 - http://localhost:3000
 - http://localhost:3000/search
+- http://localhost:3000/signup
+- http://localhost:3000/login
+
+The signup and login forms call the backend authentication API with
+`credentials: "include"`. The JWT is kept in an HTTP-only cookie and is never
+written to `localStorage` or `sessionStorage`. After authentication, the navbar
+loads `/api/v1/auth/me` and displays the signed-in profile menu.
 
 ## Code checks
 
