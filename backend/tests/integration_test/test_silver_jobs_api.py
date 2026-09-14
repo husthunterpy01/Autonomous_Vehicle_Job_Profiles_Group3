@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.core.database import get_db
+from app.models import JobPosting
 from app.routers.job import router
+from app.services.salary_sync import import_salary
 from app.services.silver_sync import SilverSync
 
 
@@ -39,3 +41,59 @@ def test_synced_jobs_search_filter_pagination_and_detail(db_session):
         assert client.get("/jobs?category_id=bad").status_code == 422
         assert client.get("/jobs?page=0").status_code == 422
         assert client.get("/jobs/00000000-0000-0000-0000-000000000000").status_code == 404
+
+
+def test_salary_filters_and_response_fields(db_session):
+    rows = [
+        {"deduplication_key": "yearly-1", "company_name": "Example AV", "job_name": "Yearly Low", "job_description": "d"},
+        {"deduplication_key": "yearly-2", "company_name": "Example AV", "job_name": "Yearly High", "job_description": "d"},
+        {"deduplication_key": "hourly-1", "company_name": "Example AV", "job_name": "Hourly", "job_description": "d"},
+        {"deduplication_key": "no-salary", "company_name": "Example AV", "job_name": "No Salary", "job_description": "d"},
+    ]
+    SilverSync(db_session).run(rows)
+    db_session.commit()
+    import_salary(
+        db_session,
+        [
+            {"deduplication_key": "yearly-1", "salary_min": 80000, "salary_max": 100000, "salary_currency": "usd", "salary_period": "yearly", "salary_source": "api"},
+            {"deduplication_key": "yearly-2", "salary_min": 150000, "salary_max": 200000, "salary_currency": "usd", "salary_period": "yearly", "salary_source": "regex"},
+            {"deduplication_key": "hourly-1", "salary_min": 20, "salary_max": 40, "salary_currency": "usd", "salary_period": "hourly", "salary_source": "regex"},
+        ],
+    )
+    db_session.commit()
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db_session
+    with TestClient(app) as client:
+        yearly_high = client.get("/jobs/" + str(db_session.query(JobPosting).filter_by(title="Yearly High").one().job_id)).json()
+        assert yearly_high["salary_min"] == 150000.0
+        assert yearly_high["salary_max"] == 200000.0
+        assert yearly_high["salary_currency"] == "USD"
+        assert yearly_high["salary_period"] == "yearly"
+        assert yearly_high["salary_source"] == "regex"
+
+        no_salary = client.get("/jobs/" + str(db_session.query(JobPosting).filter_by(title="No Salary").one().job_id)).json()
+        assert no_salary["salary_min"] is None
+        assert no_salary["salary_source"] is None
+
+        # min_salary/max_salary compare raw magnitudes (not currency/period
+        # normalized) - overlap semantics: job's range must reach the floor
+        # and/or stay under the ceiling.
+        above_120k = client.get("/jobs", params={"min_salary": 120000}).json()
+        assert {item["title"] for item in above_120k["items"]} == {"Yearly High"}
+
+        under_120k = client.get("/jobs", params={"max_salary": 120000}).json()
+        assert {item["title"] for item in under_120k["items"]} == {"Yearly Low", "Hourly"}
+
+        yearly_only = client.get("/jobs", params={"salary_period": "yearly"}).json()
+        assert {item["title"] for item in yearly_only["items"]} == {"Yearly Low", "Yearly High"}
+
+        has_salary = client.get("/jobs", params={"has_salary": True}).json()
+        assert has_salary["total"] == 3
+        assert "No Salary" not in {item["title"] for item in has_salary["items"]}
+
+        no_salary_only = client.get("/jobs", params={"has_salary": False}).json()
+        assert {item["title"] for item in no_salary_only["items"]} == {"No Salary"}
+
+        assert client.get("/jobs?min_salary=-1").status_code == 422

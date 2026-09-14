@@ -22,10 +22,18 @@ def list_jobs(
     category_id: UUID | None = None,
     company_id: UUID | None = None,
     employment_type: int | None = Query(None, ge=1, le=6),
+    min_salary: float | None = Query(None, ge=0),
+    max_salary: float | None = Query(None, ge=0),
+    salary_period: str | None = None,
+    has_salary: bool | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
 ):
-    return job_service.list_jobs(db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id, employment_type=employment_type, page=page, page_size=page_size)
+    return job_service.list_jobs(
+        db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
+        employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
+        salary_period=salary_period, has_salary=has_salary, page=page, page_size=page_size,
+    )
 
 
 @router.get("/{job_id}", response_model=JobResponse)

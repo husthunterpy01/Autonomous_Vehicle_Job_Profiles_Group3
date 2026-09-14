@@ -30,7 +30,12 @@ def job_query(db):
     )
 
 
-def list_jobs(db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None, category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None, page: int = 1, page_size: int = 10):
+def list_jobs(
+    db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
+    category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
+    min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
+    has_salary: bool | None = None, page: int = 1, page_size: int = 10,
+):
     query = job_query(db)
     if q:
         query = query.filter(or_(JobPosting.title.icontains(q, autoescape=True), JobPosting.company.has(Company.name.icontains(q, autoescape=True))))
@@ -44,6 +49,15 @@ def list_jobs(db: Session, *, q: str | None = None, location: str | None = None,
         query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
         query = query.filter(JobPosting.employment_type == employment_type)
+    if min_salary is not None:
+        query = query.filter(JobPosting.salary_max >= min_salary)
+    if max_salary is not None:
+        query = query.filter(JobPosting.salary_min <= max_salary)
+    if salary_period:
+        query = query.filter(JobPosting.salary_period == salary_period)
+    if has_salary is not None:
+        condition = JobPosting.salary_min.isnot(None)
+        query = query.filter(condition if has_salary else ~condition)
     query = query.order_by(JobPosting.posted_date.desc().nullslast(), JobPosting.job_id)
     total = query.count()
     jobs = query.offset((page - 1) * page_size).limit(page_size).all()

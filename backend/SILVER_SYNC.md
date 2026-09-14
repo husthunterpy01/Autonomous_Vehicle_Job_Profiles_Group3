@@ -40,8 +40,13 @@ names are not limited to 255 characters. Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
-Salary and seniority are not inferred. Existing company metadata is preserved;
-new companies have null URLs/type and `datasource_status=unverified`.
+Seniority is not inferred. Salary (`salary_min`/`salary_max`/`salary_currency`/
+`salary_period`/`salary_source`) is populated separately via `python -m
+app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of
+`SilverSync`/`sync_silver`, since the Silver staging table itself carries no
+salary data for most ATS sources; see `scrapers/README.md` for how the
+scraper pipeline derives it. Existing company metadata is preserved; new
+companies have null URLs/type and `datasource_status=unverified`.
 
 ## Manual development refresh
 
@@ -149,6 +154,18 @@ counts. Ordering is posted date descending then UUID for stable page boundaries.
 Frontend pages still use mock data and must be wired to this API after agreeing
 their nullable-field/category contract. Market Trends aggregates, LLM skill
 extraction, and final classified-data integration are not completed by this slice.
+
+## Supabase mirror
+
+When `SUPABASE_DATABASE_URL` is set in `backend/.env`, `sync_silver`,
+`import_categories`, `import_skills`, and `import_salary` each automatically
+push a full mirror (`scripts/sync_to_supabase.py`: `pg_dump --schema public`
+locally, `pg_restore --clean --if-exists` into Supabase) after they succeed.
+A mirror failure is logged, not raised - it never fails the command that
+triggered it, since the local write already committed. Unset the variable to
+disable mirroring; run `python -m scripts.sync_to_supabase` directly to sync
+on demand without running an import. See the root README's "Supabase mirror"
+section for setup (connection-pooler string, not the IPv6-only direct host).
 
 ## Tests
 
