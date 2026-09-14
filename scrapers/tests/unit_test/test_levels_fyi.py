@@ -1,8 +1,10 @@
-from io import BytesIO
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError
 
-from scrapers.service.silver_cleaning.levels_fyi import LevelsFyiAverage, fetch_company_average
+from scrapers.service.silver_cleaning.levels_fyi import (
+    LevelsFyiAverage,
+    fetch_company_average,
+)
 
 # A trimmed real excerpt of the markdown format fetched live from
 # https://www.levels.fyi/companies/waymo/salaries.md this session.

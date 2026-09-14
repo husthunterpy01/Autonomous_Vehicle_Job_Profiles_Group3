@@ -5,13 +5,21 @@ import json
 import logging
 from pathlib import Path
 
-from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
-from sklearn.model_selection import train_test_split
-
 from scrapers.service.llm import JobFilterConfig, JobPostingIO
 from scrapers.service.ml.relevance_classifier import RelevanceClassifier
 from scrapers.service.ml.relevance_classifier import job_text as tfidf_job_text
-from scrapers.utils.job_classifier import _group_by_company_title, _load_processed_ids, _resolve, _write_line
+from scrapers.utils.job_classifier import (
+    _group_by_company_title,
+    _load_processed_ids,
+    _resolve,
+    _write_line,
+)
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    precision_recall_fscore_support,
+)
+from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +39,9 @@ def _make_classifier(backend: str):
     if backend == "tfidf":
         return RelevanceClassifier()
     if backend == "embedding":
-        from scrapers.service.ml.embedding_classifier import EmbeddingRelevanceClassifier
+        from scrapers.service.ml.embedding_classifier import (
+            EmbeddingRelevanceClassifier,
+        )
 
         return EmbeddingRelevanceClassifier()
     if backend == "setfit":
@@ -49,7 +59,9 @@ def _load_classifier(backend: str, model_path: Path, hf_repo_id: str | None = No
     if backend == "tfidf":
         return RelevanceClassifier.load(model_path)
     if backend == "embedding":
-        from scrapers.service.ml.embedding_classifier import EmbeddingRelevanceClassifier
+        from scrapers.service.ml.embedding_classifier import (
+            EmbeddingRelevanceClassifier,
+        )
 
         return EmbeddingRelevanceClassifier.load(model_path)
     if backend == "setfit":

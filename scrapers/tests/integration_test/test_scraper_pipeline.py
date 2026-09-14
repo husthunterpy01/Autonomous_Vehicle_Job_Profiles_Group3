@@ -2,7 +2,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 from psycopg2.extras import Json
-
 from scrapers.scraper_main import main
 from scrapers.utils.company_scraper import CompanyScraper
 

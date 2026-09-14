@@ -1,5 +1,4 @@
 import pytest
-
 from scrapers.service.ml.relevance_classifier import RelevanceClassifier, job_text
 
 

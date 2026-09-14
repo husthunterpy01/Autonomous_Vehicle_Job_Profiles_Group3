@@ -5,7 +5,6 @@ import subprocess
 from pathlib import Path
 
 import pytest
-
 from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 
@@ -60,6 +59,7 @@ def test_dbt_job_postings_unit_tests():
         env=DbtConfig().env(PostgresConfig()),
         capture_output=True,
         text=True,
+        check=False,
     )
     output = "\n".join(part for part in (completed.stdout, completed.stderr) if part)
     if completed.returncode != 0:

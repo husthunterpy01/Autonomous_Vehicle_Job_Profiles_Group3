@@ -1,4 +1,7 @@
-from scrapers.service.silver_cleaning.salary_extractor import SalaryEstimate, extract_salary_from_text
+from scrapers.service.silver_cleaning.salary_extractor import (
+    SalaryEstimate,
+    extract_salary_from_text,
+)
 
 
 def test_extracts_dollar_range_with_per_year():

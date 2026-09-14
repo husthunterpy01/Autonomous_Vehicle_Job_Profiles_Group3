@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 
 import yaml
-
 from scrapers.service.llm.io import JobPostingIO
 from scrapers.service.silver_cleaning.salary_extractor import extract_salary_from_text
 
@@ -22,7 +21,7 @@ def _load_main_types(path: Path | None) -> dict[str, str]:
     with path.open("r", encoding="utf-8") as stream:
         mapping = yaml.safe_load(stream) or {}
     if not isinstance(mapping, dict):
-        raise ValueError(f"{path} must be a YAML mapping of sub_type -> main_type")
+        raise ValueError(f"{path} must be a YAML mapping of sub_type -> main_type")  # noqa: TRY004 - malformed YAML, not a Python type error
     return mapping
 
 
@@ -32,7 +31,7 @@ def _load_company_salary_cache(path: Path | None) -> dict[str, dict]:
     with path.open("r", encoding="utf-8") as stream:
         cache = yaml.safe_load(stream) or {}
     if not isinstance(cache, dict):
-        raise ValueError(f"{path} must be a YAML mapping of company_name -> cache entry")
+        raise ValueError(f"{path} must be a YAML mapping of company_name -> cache entry")  # noqa: TRY004 - malformed YAML, not a Python type error
     return cache
 
 

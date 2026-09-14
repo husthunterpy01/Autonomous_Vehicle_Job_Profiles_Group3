@@ -3,9 +3,12 @@ from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 import yaml
-
 from scrapers.service.silver_cleaning.levels_fyi import LevelsFyiAverage
-from scrapers.utils.refresh_company_salary_cache import _company_names, _slugify, refresh
+from scrapers.utils.refresh_company_salary_cache import (
+    _company_names,
+    _slugify,
+    refresh,
+)
 
 
 def test_slugify_lowercases_and_strips_punctuation():

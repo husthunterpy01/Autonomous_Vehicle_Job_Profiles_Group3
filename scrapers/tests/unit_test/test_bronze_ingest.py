@@ -4,7 +4,6 @@ from unittest.mock import MagicMock, patch
 
 import pandas as pd
 from psycopg2.extras import Json
-
 from scrapers.service.bronze_storage.bronze_ingest import BronzeIngest
 
 BRONZE_MODELS = Path(__file__).resolve().parents[2] / "dbt" / "models" / "bronze"

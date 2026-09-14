@@ -3,7 +3,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from scripts.sync_to_supabase import _grant_api_read_access, sync_if_configured, sync_to_supabase
+from scripts.sync_to_supabase import (
+    _grant_api_read_access,
+    sync_if_configured,
+    sync_to_supabase,
+)
 
 
 @patch("scripts.sync_to_supabase._grant_api_read_access")

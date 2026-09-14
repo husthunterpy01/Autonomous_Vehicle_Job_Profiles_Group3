@@ -6,7 +6,6 @@ from pathlib import Path
 
 import psycopg2
 import psycopg2.extras
-
 from scrapers.config.postgres import PostgresConfig
 from scrapers.service.llm.io import JobPostingIO
 

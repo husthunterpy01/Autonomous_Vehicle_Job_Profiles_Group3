@@ -8,7 +8,6 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import yaml
-
 from scrapers.service.llm.io import JobPostingIO
 from scrapers.service.silver_cleaning.levels_fyi import fetch_company_average
 

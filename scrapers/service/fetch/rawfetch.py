@@ -14,7 +14,6 @@ from urllib.request import Request, urlopen
 
 import yaml
 from dotenv import load_dotenv
-
 from scrapers.config.minio import MinioConfig
 from scrapers.response_archive import ResponseArchive
 
@@ -220,7 +219,7 @@ class RawFetch:
                     next_selector=self.paginate.get("next_selector"),
                     max_pages=int(self.paginate.get("max_pages", 1)),
                 )
-        except Exception as exc:  # noqa: BLE001 - surface any webdriver failure uniformly
+        except Exception as exc:
             raise RuntimeError(f"headless render failed for {url}: {exc}") from exc
 
     def _fetch_paginated(self, url: str, timeout: float) -> str:

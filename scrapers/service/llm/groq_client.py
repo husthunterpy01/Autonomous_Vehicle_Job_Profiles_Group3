@@ -3,10 +3,9 @@ from __future__ import annotations
 import logging
 import re
 import time
-from typing import Sequence
+from collections.abc import Sequence
 
 from groq import Groq, RateLimitError
-
 from scrapers.config.groq import GroqConfig
 
 logger = logging.getLogger(__name__)
@@ -105,7 +104,7 @@ class _ApiKeyHub:
         return self._clients[self._index]
 
     @property
-    def limiter(self) -> "_FixedWindowRateLimiter":
+    def limiter(self) -> _FixedWindowRateLimiter:
         return self._limiters[self._index]
 
     def rotate(self) -> bool:

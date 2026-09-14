@@ -1,10 +1,8 @@
 import json
-from io import BytesIO
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError
 
 import pytest
-
 from scrapers.service.fetch.rawfetch import RawFetch
 
 

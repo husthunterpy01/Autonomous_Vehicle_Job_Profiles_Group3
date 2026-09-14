@@ -15,7 +15,7 @@ class ExtractedSkill:
 
 def parse_skills(skills: object) -> tuple[ExtractedSkill, ...]:
     if not isinstance(skills, list):
-        raise ValueError("'skills' must be a list")
+        raise ValueError("'skills' must be a list")  # noqa: TRY004 - malformed handoff JSON, not a Python type error
 
     extracted: list[ExtractedSkill] = []
     seen: set[str] = set()

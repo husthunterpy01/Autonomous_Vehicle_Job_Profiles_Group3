@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Mapping, Sequence
 
 from scrapers.service.llm.json_response import parse_string_list, strip_code_fence
 from scrapers.service.llm.text import normalize_text
@@ -67,7 +67,7 @@ class JobClassifier:
         batch, so the caller can retry just those job ids."""
         payload = json.loads(strip_code_fence(response))
         if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
-            raise ValueError("LLM relevance response must be a JSON object with a 'results' array")
+            raise ValueError("LLM relevance response must be a JSON object with a 'results' array")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
 
         expected = set(expected_ids)
         results: dict[str, RelevanceDecision] = {}
@@ -87,7 +87,7 @@ class JobClassifier:
     def _parse_one(payload: Mapping[str, object]) -> RelevanceDecision:
         is_av_relevant = payload.get("is_av_relevant")
         if not isinstance(is_av_relevant, bool):
-            raise ValueError("'is_av_relevant' must be a boolean")
+            raise ValueError("'is_av_relevant' must be a boolean")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
 
         confidence = str(payload.get("confidence") or "").strip().title()
         if confidence not in ALLOWED_CONFIDENCE:
