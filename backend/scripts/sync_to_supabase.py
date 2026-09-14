@@ -1,20 +1,3 @@
-"""Mirror the backend's public schema to Supabase.
-
-Standalone: python -m scripts.sync_to_supabase (from backend/)
-Automatic: called after app.sync_silver / app.import_categories /
-app.import_skills / app.import_salary succeed, whenever SUPABASE_DATABASE_URL
-is set (see backend/.env and README). Silently skipped when it isn't -
-Supabase is an optional mirror, not a requirement to run the backend.
-
-This does a full schema dump/restore each time (pg_dump --schema public,
-pg_restore --clean --if-exists) rather than an incremental table-by-table
-sync. That's deliberate: a partial, table-scoped restore breaks foreign-key
-ordering unless you get the table order exactly right by hand (hit this for
-real doing the first migration - job_category/job_location/job_skill must
-land after jobposting, not before). --clean --if-exists makes a full
-dump/restore idempotent and safe to re-run without worrying about ordering
-or duplicate-key conflicts.
-"""
 from __future__ import annotations
 
 import logging
@@ -26,12 +9,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 SCHEMA = "public"
-# Supabase's auto-generated Data API (PostgREST) and dashboard tooling read
-# through these roles, not the admin connection this script uses. --clean
-# --if-exists drops and recreates every table on each sync, and the dump is
-# taken with --no-privileges, so without this, every sync silently wipes API
-# read access back to nothing (hit this for real: local data was intact,
-# but the Data API/dashboard showed it as "gone" because no GRANTs existed).
+
 _API_ROLES = ("anon", "authenticated")
 
 
@@ -42,9 +20,6 @@ def _grant_api_read_access(target_dsn: str) -> None:
     statements = (
         f"GRANT USAGE ON SCHEMA {SCHEMA} TO {grants};",
         f"GRANT SELECT ON ALL TABLES IN SCHEMA {SCHEMA} TO {grants};",
-        # Applies to tables created *after* this runs too - pg_restore
-        # --clean drops and recreates every table each sync, which would
-        # otherwise silently drop this grant along with the old table.
         f"ALTER DEFAULT PRIVILEGES IN SCHEMA {SCHEMA} GRANT SELECT ON TABLES TO {grants};",
     )
     conn = psycopg2.connect(target_dsn)
