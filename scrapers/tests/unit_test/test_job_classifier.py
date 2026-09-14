@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from scrapers.service.llm import JobClassifier, RelevanceDecision
 
 

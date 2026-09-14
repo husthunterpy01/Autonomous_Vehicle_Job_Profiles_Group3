@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 
 import yaml
-
 from scrapers.service.llm.io import JobPostingIO
 
 logger = logging.getLogger(__name__)
@@ -20,7 +19,7 @@ def _load_main_types(path: Path | None) -> dict[str, str]:
     with path.open("r", encoding="utf-8") as stream:
         mapping = yaml.safe_load(stream) or {}
     if not isinstance(mapping, dict):
-        raise ValueError(f"{path} must be a YAML mapping of sub_type -> main_type")
+        raise ValueError(f"{path} must be a YAML mapping of sub_type -> main_type")  # noqa: TRY004 - malformed YAML, not a Python type error
     return mapping
 
 

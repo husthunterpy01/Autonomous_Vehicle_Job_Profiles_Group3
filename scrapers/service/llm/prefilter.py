@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import logging
 import re
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from scrapers.service.llm.config import JobFilterConfig
 from scrapers.service.llm.decision import FilterDecision
@@ -28,7 +29,7 @@ class JobPrefilter:
         )
 
     @classmethod
-    def from_config(cls, path: str | Path | None = None) -> "JobPrefilter":
+    def from_config(cls, path: str | Path | None = None) -> JobPrefilter:
         return cls(JobFilterConfig.load(path))
 
     @staticmethod
@@ -63,7 +64,7 @@ class JobPrefilter:
         department = normalize_text(self._resolve(posting, "department"))
         team = normalize_text(self._resolve(posting, "team"))
 
-        for text in (title, " ".join((description, department, team))):
+        for text in (title, f"{description} {department} {team}"):
             for category, patterns in self._category_patterns:
                 evidence = self._matches(text, patterns)
                 if evidence:

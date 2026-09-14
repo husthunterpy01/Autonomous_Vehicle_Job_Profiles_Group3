@@ -1,4 +1,8 @@
-from scrapers.utils.job_classifier import JobClassifierMain, _group_by_company_title, _relevance_input
+from scrapers.utils.job_classifier import (
+    JobClassifierMain,
+    _group_by_company_title,
+    _relevance_input,
+)
 
 ALIASES = {
     "company": ("company_name",),

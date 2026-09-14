@@ -4,10 +4,21 @@ import json
 import logging
 from pathlib import Path
 
-from scrapers.service.llm import JobEnricher, JobFilterConfig, JobPostingIO, classification_as_dict
+from scrapers.service.llm import (
+    JobEnricher,
+    JobFilterConfig,
+    JobPostingIO,
+)
 from scrapers.service.llm.groq_client import GroqCompletion
 from scrapers.service.llm.text import compress_job_text
-from scrapers.utils.job_classifier import _chunk, _count_lines, _group_by_company_title, _load_processed_ids, _resolve, _write_line
+from scrapers.utils.job_classifier import (
+    _chunk,
+    _count_lines,
+    _group_by_company_title,
+    _load_processed_ids,
+    _resolve,
+    _write_line,
+)
 from scrapers.utils.parser import ScraperParser
 
 logger = logging.getLogger(__name__)

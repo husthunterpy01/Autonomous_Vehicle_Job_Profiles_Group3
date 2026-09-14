@@ -46,7 +46,7 @@ class SetFitRelevanceClassifier:
         self.model.save_pretrained(str(path))
 
     @classmethod
-    def load(cls, path: Path, hf_repo_id: str | None = _HF_REPO_ID) -> "SetFitRelevanceClassifier":
+    def load(cls, path: Path, hf_repo_id: str | None = _HF_REPO_ID) -> SetFitRelevanceClassifier:
         """Load the fine-tuned model from `path` if it exists locally,
         otherwise fall back to the published Hugging Face Hub repo -
         `SetFitModel.from_pretrained` accepts a repo id exactly like a local

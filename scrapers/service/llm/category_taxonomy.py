@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Callable, Mapping
 
 from scrapers.service.llm.job_enricher import ALLOWED_CATEGORIES
 from scrapers.service.llm.json_response import strip_code_fence
@@ -43,12 +43,12 @@ class CategoryTaxonomyExtractor:
     def parse_response(response: str) -> dict[str, str]:
         payload = json.loads(strip_code_fence(response))
         if not isinstance(payload, dict) or not isinstance(payload.get("categories"), list):
-            raise ValueError("Expected a JSON object with a 'categories' array")
+            raise ValueError("Expected a JSON object with a 'categories' array")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
 
         mapping: dict[str, str] = {}
         for item in payload["categories"]:
             if not isinstance(item, Mapping):
-                raise ValueError("Each category entry must be an object")
+                raise ValueError("Each category entry must be an object")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
             sub_type = item.get("sub_type")
             main_type = item.get("main_type")
             if not isinstance(sub_type, str) or not isinstance(main_type, str) or not main_type.strip():

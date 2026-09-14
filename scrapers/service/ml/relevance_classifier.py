@@ -73,5 +73,5 @@ class RelevanceClassifier:
         joblib.dump(self.pipeline, path)
 
     @classmethod
-    def load(cls, path: Path) -> "RelevanceClassifier":
+    def load(cls, path: Path) -> RelevanceClassifier:
         return cls(joblib.load(path))

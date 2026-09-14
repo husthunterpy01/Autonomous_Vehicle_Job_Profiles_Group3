@@ -1,7 +1,6 @@
 from types import SimpleNamespace
 
 import pytest
-
 from scrapers.config.groq import GroqConfig
 from scrapers.service.llm.groq_client import GroqCompletion, _FixedWindowRateLimiter
 
@@ -107,8 +106,8 @@ def test_rotates_to_next_key_after_more_than_three_consecutive_rate_limits(monke
     """Regression test for the key-hub: a key stuck on repeated 429s should
     be abandoned in favor of the next one in the pool rather than retried
     forever, and the call should still succeed once the new key works."""
-    import httpx
     import groq
+    import httpx
 
     config = GroqConfig(api_key="key-one", api_keys=("key-one", "key-two"))
     completion = GroqCompletion(config)

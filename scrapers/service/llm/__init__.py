@@ -11,7 +11,6 @@ from scrapers.service.llm.skill import ExtractedSkill
 
 __all__ = [
     "AuditCategoryRule",
-    "classification_as_dict",
     "ExtractedSkill",
     "FilterDecision",
     "FilterResult",
@@ -22,4 +21,5 @@ __all__ = [
     "JobPostingIO",
     "JobPrefilter",
     "RelevanceDecision",
+    "classification_as_dict",
 ]

@@ -3,8 +3,9 @@ from __future__ import annotations
 import json
 import logging
 import random
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from scrapers.service.llm import (
     JobClassifier,
@@ -175,7 +176,7 @@ class JobClassifierMain:
         with paths["non_av"].open("a", encoding="utf-8") as non_av_file, paths["av_candidates"].open(
             "a", encoding="utf-8"
         ) as av_candidates_file, paths["failed"].open("a", encoding="utf-8") as failed_file:
-            av_count = cls._run_relevance_stage(
+            cls._run_relevance_stage(
                 classifier,
                 aliases,
                 representatives,

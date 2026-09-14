@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from scrapers.service.llm.json_response import strip_code_fence
 from scrapers.service.llm.skill import ExtractedSkill, parse_skills

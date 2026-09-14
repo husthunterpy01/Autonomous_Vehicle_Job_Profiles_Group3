@@ -1,7 +1,6 @@
 import json
 
 import pytest
-
 from scrapers.service.llm.category_taxonomy import CategoryTaxonomyExtractor
 from scrapers.service.llm.job_enricher import ALLOWED_CATEGORIES
 

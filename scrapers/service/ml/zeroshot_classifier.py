@@ -44,5 +44,5 @@ class ZeroShotRelevanceClassifier:
         pass  # nothing to persist - the pretrained model is loaded by name each time
 
     @classmethod
-    def load(cls, path: Path) -> "ZeroShotRelevanceClassifier":
+    def load(cls, path: Path) -> ZeroShotRelevanceClassifier:
         return cls()

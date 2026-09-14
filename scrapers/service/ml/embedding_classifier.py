@@ -43,5 +43,5 @@ class EmbeddingRelevanceClassifier:
         joblib.dump(self.classifier, path)
 
     @classmethod
-    def load(cls, path: Path) -> "EmbeddingRelevanceClassifier":
+    def load(cls, path: Path) -> EmbeddingRelevanceClassifier:
         return cls(classifier=joblib.load(path))

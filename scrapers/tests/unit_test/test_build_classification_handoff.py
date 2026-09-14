@@ -1,7 +1,6 @@
 import json
 
 import yaml
-
 from scrapers.utils.build_classification_handoff import build_handoff_records, main
 
 

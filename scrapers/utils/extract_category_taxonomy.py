@@ -5,7 +5,6 @@ import logging
 from pathlib import Path
 
 import yaml
-
 from scrapers.service.llm.category_taxonomy import CategoryTaxonomyExtractor
 from scrapers.service.llm.groq_client import GroqCompletion
 

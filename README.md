@@ -180,12 +180,12 @@ Example for a manual local install (port `5432`):
 DATABASE_URL=postgresql://team3:<password>@localhost:5432/autojobdatabase
 DATABASE_USER=team3
 DATABASE_PASSWORD=<password>
-SEED_ON_STARTUP=true
+SEED_ON_STARTUP=false
 ```
 
 Use the same password you set when creating the Postgres user. If you used the Docker option above, use port `5433` instead.
 
-`SEED_ON_STARTUP=true` reseeds companies on every API start (local/dev). Leave it unset or `false` outside local development so production data is not truncated.
+**Leave `SEED_ON_STARTUP=false` once you have real data.** `app/sql/seed_companies.sql` opens with `TRUNCATE TABLE company CASCADE`, which wipes `jobposting` and every junction table (`job_category`/`job_skill`/`job_location`) along with it — not just company rows. `true` means **every single API start** silently destroys any Silver-synced data back down to the 12 hardcoded demo postings. Only set it `true` for a genuine from-scratch reseed on a database you don't mind emptying.
 
 Backend CI starts an ephemeral Postgres service with `POSTGRES_HOST_AUTH_METHOD=trust` (no password). That is for GitHub Actions only — local Postgres should still use a password in `.env`.
 

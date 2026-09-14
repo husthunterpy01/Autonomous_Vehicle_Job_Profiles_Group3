@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Mapping, Sequence
 
 from scrapers.service.llm.json_response import parse_string_list, strip_code_fence
 from scrapers.service.llm.skill import ExtractedSkill, parse_skills
@@ -81,7 +81,7 @@ class JobEnricher:
         batch, so the caller can retry just those job ids."""
         payload = json.loads(strip_code_fence(response))
         if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
-            raise ValueError("LLM enrichment response must be a JSON object with a 'results' array")
+            raise ValueError("LLM enrichment response must be a JSON object with a 'results' array")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
 
         expected = set(expected_ids)
         results: dict[str, JobEnrichment] = {}
