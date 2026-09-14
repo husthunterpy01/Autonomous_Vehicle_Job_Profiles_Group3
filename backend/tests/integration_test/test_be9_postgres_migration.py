@@ -50,8 +50,11 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
                     '00000000-0000-0000-0000-000000000001');
             """)
             migration = (root / "backend/app/sql/be9_migration.sql").read_text(encoding="utf-8")
+            salary_migration = (root / "backend/app/sql/be10_salary_migration.sql").read_text(encoding="utf-8")
             cursor.execute(migration)
             cursor.execute(migration)
+            cursor.execute(salary_migration)
+            cursor.execute(salary_migration)
             cursor.execute("SELECT name FROM company")
             assert cursor.fetchall() == [("Legacy",)]
             cursor.execute("SELECT count(*) FROM job_location")
