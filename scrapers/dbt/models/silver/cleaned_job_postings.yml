@@ -19,6 +19,10 @@ unit_tests:
             'https://example.test/jobs/123'::text as job_url,
             '2026-09-01T00:00:00Z'::text as job_uploaded_at,
             'Full Time'::text as employment_type,
+            null::numeric as salary_min,
+            null::numeric as salary_max,
+            null::text as salary_currency,
+            null::text as salary_period,
             '2026-09-01T01:00:00Z'::timestamptz as ingested_at
           union all
           select
@@ -33,6 +37,10 @@ unit_tests:
             'https://example.test/jobs/123'::text,
             '2026-09-01T00:00:00Z'::text,
             'full-time'::text,
+            135000::numeric,
+            155000::numeric,
+            'USD'::text,
+            'yearly'::text,
             '2026-09-02T01:00:00Z'::timestamptz
           union all
           select
@@ -47,6 +55,10 @@ unit_tests:
             null::text,
             null::text,
             null::text,
+            null::numeric,
+            null::numeric,
+            null::text,
+            null::text,
             '2026-09-02T01:00:00Z'::timestamptz
     expect:
       rows:
@@ -56,3 +68,7 @@ unit_tests:
           job_name: Perception Engineer
           job_description: Build autonomy and mapping.
           employment_type: full-time
+          salary_min: 135000
+          salary_max: 155000
+          salary_currency: USD
+          salary_period: yearly

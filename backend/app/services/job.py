@@ -18,6 +18,8 @@ def to_response(job):
                     for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
+        salary_min=job.salary_min, salary_max=job.salary_max, salary_currency=job.salary_currency,
+        salary_period=job.salary_period, salary_source=job.salary_source,
     )
 
 

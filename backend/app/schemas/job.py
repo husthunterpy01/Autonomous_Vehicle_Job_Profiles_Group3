@@ -23,3 +23,8 @@ class JobResponse(BaseModel):
     raw_description: str
     source_url: str | None
     posted_date: datetime | None
+    salary_min: float | None
+    salary_max: float | None
+    salary_currency: str | None
+    salary_period: str | None
+    salary_source: str | None
