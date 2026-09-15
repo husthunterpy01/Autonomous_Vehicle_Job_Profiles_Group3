@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  formatPayPeriod,
   formatSalary,
   formatSalaryAmount,
   resolveSalaryRange,
@@ -143,6 +144,22 @@ describe("formatSalary", () => {
       salaryLabel({ min: 50, max: 60, currency: "EUR" }),
       "€50 – €60",
     );
+  });
+
+  it("names the pay period for its own column", () => {
+    const posted = {
+      min: 26.39,
+      max: 39.59,
+      currency: "USD",
+      period: "hourly",
+    };
+    assert.equal(formatPayPeriod(posted), "Hourly");
+    assert.equal(
+      formatPayPeriod({ average: 180605, period: "YEARLY" }),
+      "Yearly",
+    );
+    assert.equal(formatPayPeriod({ min: 50, max: 60, period: "annual" }), null);
+    assert.equal(formatPayPeriod({ period: "yearly" }), null);
   });
 
   it("returns null when salary data is missing", () => {

@@ -41,6 +41,14 @@ const PERIOD_LABELS: Record<SalaryPeriod, string> = {
   hourly: "hour",
 };
 
+const PERIOD_NAMES: Record<SalaryPeriod, string> = {
+  yearly: "Yearly",
+  monthly: "Monthly",
+  weekly: "Weekly",
+  daily: "Daily",
+  hourly: "Hourly",
+};
+
 const ESTIMATED_SOURCES: ReadonlySet<string> = new Set<SalarySource>([
   "levels_fyi_average",
 ]);
@@ -49,11 +57,16 @@ function isAmount(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function periodLabel(period: string | null | undefined): string | null {
+function knownPeriod(period: string | null | undefined): SalaryPeriod | null {
   const normalized = period?.trim().toLowerCase();
   return normalized && normalized in PERIOD_LABELS
-    ? PERIOD_LABELS[normalized as SalaryPeriod]
+    ? (normalized as SalaryPeriod)
     : null;
+}
+
+function periodLabel(period: string | null | undefined): string | null {
+  const known = knownPeriod(period);
+  return known ? PERIOD_LABELS[known] : null;
 }
 
 /** The figures to display: the posted pair when both bounds are valid,
@@ -122,6 +135,14 @@ export function formatSalary(input: SalaryInput): SalaryDisplay | null {
     period: period ? `/ ${period}` : null,
     estimated,
   };
+}
+
+/** Pay period for its own table column ("Yearly", "Hourly", …), or null
+ *  when the job shows no salary or the period is unknown. */
+export function formatPayPeriod(input: SalaryInput): string | null {
+  if (!resolveSalaryRange(input)) return null;
+  const known = knownPeriod(input.period);
+  return known ? PERIOD_NAMES[known] : null;
 }
 
 /** One-line text form, e.g. "US$189,000 – US$303,000 / year", or null. */

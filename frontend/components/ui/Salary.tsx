@@ -5,6 +5,8 @@ type SalaryProps = SalaryInput & {
   /** Shown when the job has no salary, e.g. "—" to keep a table cell
    *  aligned. Defaults to rendering nothing. */
   fallback?: string;
+  /** Append "/ year" etc. Turn off where the period has its own column. */
+  showPeriod?: boolean;
 };
 
 /* Shows pay as posted: a range when the source gives one, a single figure
@@ -14,6 +16,7 @@ type SalaryProps = SalaryInput & {
 export default function Salary({
   className,
   fallback,
+  showPeriod = true,
   ...salary
 }: SalaryProps) {
   const display = formatSalary(salary);
@@ -25,7 +28,7 @@ export default function Salary({
   return (
     <p className={["text-sm", className].filter(Boolean).join(" ")}>
       <span className="font-semibold text-primary">{display.amount}</span>
-      {display.period && (
+      {showPeriod && display.period && (
         <span className="ml-1 text-ink-secondary">{display.period}</span>
       )}
     </p>
