@@ -1,4 +1,4 @@
-"""Manual command: python -m app.import_categories handoff.json."""
+"""Manual command: python -m app.import_salary handoff.json."""
 from app.core.database import engine
 from app.services.silver_pipeline import SilverPipeline
 from app.utils.cli import input_parser, read_json, run_command
@@ -6,8 +6,8 @@ from scripts.sync_to_supabase import sync_if_configured
 
 
 def main():
-    parser = input_parser("Import functional_area labels into backend categories")
-    run_command(parser, lambda args: SilverPipeline(engine).import_categories(read_json(args.input)))
+    parser = input_parser("Import salary data into backend jobposting salary_* columns")
+    run_command(parser, lambda args: SilverPipeline(engine).import_salary(read_json(args.input)))
     sync_if_configured()
 
 

@@ -32,5 +32,11 @@ select
     coalesce(nullif(info->>'location', ''), nullif(job->>'locationsText', '')) as location,
     coalesce(nullif(info->>'externalUrl', ''), job->>'externalPath') as job_url,
     coalesce(nullif(info->>'startDate', ''), nullif(info->>'postedOn', '')) as job_uploaded_at,
-    info->>'timeType' as employment_type
+    info->>'timeType' as employment_type,
+    -- No structured salary field on this ATS; carried as null to keep the
+    -- column set matching across job_postings.sql's UNION ALL.
+    null::numeric as salary_min,
+    null::numeric as salary_max,
+    null::text as salary_currency,
+    null::text as salary_period
 from postings

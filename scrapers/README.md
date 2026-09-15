@@ -132,3 +132,40 @@ The final output of the whole pipeline is
 skills assigned. Loading that into the backend's ERD tables
 (`jobposting`/`category`/`skill`/...) is a separate, currently manual step; see
 `backend/SILVER_SYNC.md`.
+
+## Building the backend classification handoff
+
+```bash
+python3 -m scrapers.utils.build_classification_handoff \
+  --input data/job_classification/av_jobs.jsonl \
+  --output data/job_classification/handoff.json
+```
+
+Reshapes `av_jobs.jsonl` rows into the JSON array `backend/app/import_categories.py`
+and `import_skills.py`/`import_salary.py` expect: `deduplication_key`,
+`functional_area` (categories, each tagged with its static `main_type` from
+`scrapers/config/category_main_types.yaml`), `skills`, and salary fields.
+
+**Salary derivation** tries three sources per job, in order, and stops at the
+first that resolves - never inventing a number:
+
+1. **Structured API field** - `salary_min`/`salary_max`/`salary_currency`/
+   `salary_period`, if the Silver row already has all four (see the bronze
+   dbt models, e.g. `greenhouse.sql`'s `pay_input_ranges` parsing). Missing
+   any one of the four (a null currency/period the source didn't disclose)
+   falls through to the next source instead of importing an incomplete row -
+   `salary_sync.sync_salary` rejects a null currency/period, and one bad row
+   would otherwise roll back the entire `import_salary` batch.
+2. **Regex extraction** (`scrapers/service/silver_cleaning/salary_extractor.py`)
+   - a conservative min-max range pattern read directly from the job
+   description text, requiring both a recognizable currency and pay period
+   nearby before accepting a match.
+3. **levels.fyi company average** (`--company-salary-cache`, refreshed via
+   `scrapers/utils/refresh_company_salary_cache.py`) - a single company-wide
+   median total-compensation figure, not a real range for this posting. This
+   fills `salary_average` only, tagged `salary_source: levels_fyi_average`,
+   never `salary_min`/`salary_max` (which would make an estimate look like a
+   precise disclosed range).
+
+If none of the three resolve, no salary fields are added and the backend
+leaves the job's salary columns null.
