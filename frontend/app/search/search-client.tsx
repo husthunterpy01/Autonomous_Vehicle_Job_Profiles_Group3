@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import CompanyLogo from "@/components/ui/CompanyLogo";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
+import Salary from "@/components/ui/Salary";
 import SearchBar from "@/components/ui/SearchBar";
 import Tag from "@/components/ui/Tag";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
@@ -12,6 +13,7 @@ import { ApiError } from "@/lib/services/api";
 import {
   EMPLOYMENT_TYPE_LABELS,
   getJobs,
+  jobSalary,
   type JobListItem,
 } from "@/lib/services/job";
 
@@ -20,6 +22,15 @@ const DEFAULT_PER_PAGE = 6;
    (fetched once, filtered client-side), jobs are paginated server-side, so
    every keystroke would otherwise be a new request. */
 const SEARCH_DEBOUNCE_MS = 400;
+
+const JOB_TABLE_COLUMNS = [
+  "Role",
+  "Company",
+  "Location",
+  "Salary",
+  "Type",
+  "Posted",
+];
 
 function locationLabel(job: JobListItem): string {
   return job.locations.length > 0
@@ -55,6 +66,7 @@ function JobRow({ job }: { job: JobListItem }) {
         <p className="mt-1 text-sm text-ink-secondary">
           {job.company_name} · {locationLabel(job)}
         </p>
+        <Salary className="mt-1" {...jobSalary(job)} />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {type && <Tag label={type} />}
           <span className="text-xs text-ink-muted">
@@ -72,7 +84,7 @@ function JobsTable({ jobs }: { jobs: JobListItem[] }) {
       <table className="w-full min-w-[800px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-section/60">
-            {["Role", "Company", "Location", "Type", "Posted"].map((label) => (
+            {JOB_TABLE_COLUMNS.map((label) => (
               <th
                 key={label}
                 scope="col"
@@ -97,6 +109,9 @@ function JobsTable({ jobs }: { jobs: JobListItem[] }) {
               </td>
               <td className="px-4 py-4 text-sm text-ink">
                 {locationLabel(job)}
+              </td>
+              <td className="whitespace-nowrap px-4 py-4">
+                <Salary fallback="—" {...jobSalary(job)} />
               </td>
               <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary">
                 {typeLabel(job) ?? "—"}

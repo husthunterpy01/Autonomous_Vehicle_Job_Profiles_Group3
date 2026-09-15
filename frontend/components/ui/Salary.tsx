@@ -1,11 +1,38 @@
-import type { Job } from "@/lib/mock-data";
+import { formatSalary, type SalaryInput } from "@/lib/salary";
 
-export function formatSalary(job: Job): string {
-  return `$${job.salaryMin}k – $${job.salaryMax}k`;
-}
+type SalaryProps = SalaryInput & {
+  className?: string;
+  /** Shown when the job has no salary, e.g. "—" to keep a table cell
+   *  aligned. Defaults to rendering nothing. */
+  fallback?: string;
+};
 
-export default function Salary({ job }: { job: Job }) {
+/* Shows pay as posted: a range when the source gives one, a single figure
+   otherwise, with the pay period and a provenance label so levels.fyi
+   estimates are not mistaken for posted pay (FE-14). Renders nothing when
+   the job has no usable salary data. */
+export default function Salary({
+  className,
+  fallback,
+  ...salary
+}: SalaryProps) {
+  const display = formatSalary(salary);
+  if (!display) {
+    return fallback ? (
+      <span className="text-sm text-ink-muted">{fallback}</span>
+    ) : null;
+  }
   return (
-    <p className="text-sm font-semibold text-primary">{formatSalary(job)}</p>
+    <p className={["text-sm", className].filter(Boolean).join(" ")}>
+      <span className="font-semibold text-primary">{display.amount}</span>
+      {display.period && (
+        <span className="ml-1 text-ink-secondary">{display.period}</span>
+      )}
+      {display.sourceLabel && (
+        <span className="ml-2 text-xs text-ink-muted">
+          {display.sourceLabel}
+        </span>
+      )}
+    </p>
   );
 }

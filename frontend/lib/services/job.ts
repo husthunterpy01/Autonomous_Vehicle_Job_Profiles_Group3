@@ -1,3 +1,4 @@
+import type { SalaryInput } from "@/lib/salary";
 import { apiFetch, type PageResponse } from "./api";
 
 /* Matches backend/app/enums/employment_type.py's EmploymentType IntEnum. */
@@ -21,7 +22,26 @@ export type JobListItem = {
   raw_description: string;
   source_url: string | null;
   posted_date: string | null;
+  /** Pay as posted or estimated; a single figure arrives as min === max.
+   *  Optional so the page keeps working against a backend that predates
+   *  the salary columns. */
+  salary_min?: number | null;
+  salary_max?: number | null;
+  salary_currency?: string | null;
+  salary_period?: string | null;
+  salary_source?: string | null;
 };
+
+/** Salary props for the API shape; see lib/salary.ts for the display rules. */
+export function jobSalary(job: JobListItem): SalaryInput {
+  return {
+    min: job.salary_min ?? null,
+    max: job.salary_max ?? null,
+    currency: job.salary_currency ?? null,
+    period: job.salary_period ?? null,
+    source: job.salary_source ?? null,
+  };
+}
 
 export function getJobs(params: {
   q?: string;
