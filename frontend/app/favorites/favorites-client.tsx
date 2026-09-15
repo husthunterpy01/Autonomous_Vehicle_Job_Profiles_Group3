@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import PageHeader from "@/components/ui/PageHeader";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
 import {
@@ -24,6 +25,9 @@ export default function FavoritesClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+  const [pendingRemoval, setPendingRemoval] = useState<JobListItem | null>(
+    null,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -52,11 +56,14 @@ export default function FavoritesClient() {
     };
   }, [reloadToken, router]);
 
-  const handleRemove = async (jobId: string) => {
-    setRemovingId(jobId);
+  const confirmRemove = async () => {
+    const job = pendingRemoval;
+    if (!job) return;
+    setPendingRemoval(null);
+    setRemovingId(job.job_id);
     try {
-      await removeFavorite(jobId);
-      setJobs((prev) => prev.filter((job) => job.job_id !== jobId));
+      await removeFavorite(job.job_id);
+      setJobs((prev) => prev.filter((j) => j.job_id !== job.job_id));
     } catch {
       // Leave the row in place so the user can just try the button again.
     } finally {
@@ -67,7 +74,7 @@ export default function FavoritesClient() {
   const renderRemoveAction = (job: JobListItem) => (
     <RemoveFavoriteButton
       disabled={removingId === job.job_id}
-      onClick={() => handleRemove(job.job_id)}
+      onClick={() => setPendingRemoval(job)}
     />
   );
 
@@ -159,6 +166,20 @@ export default function FavoritesClient() {
           </p>
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingRemoval !== null}
+        title="Remove from favorites?"
+        description={
+          pendingRemoval
+            ? `Are you sure you want to remove "${pendingRemoval.title}" from your favorites list?`
+            : undefined
+        }
+        confirmLabel="Yes"
+        cancelLabel="No"
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemoval(null)}
+      />
     </div>
   );
 }
