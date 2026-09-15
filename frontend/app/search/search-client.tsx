@@ -2,115 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import CompanyLogo from "@/components/ui/CompanyLogo";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
-import Tag from "@/components/ui/Tag";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
+import { JobRow, JobsTable } from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
-import {
-  EMPLOYMENT_TYPE_LABELS,
-  getJobs,
-  type JobListItem,
-} from "@/lib/services/job";
+import { addFavorite } from "@/lib/services/favorite";
+import { getJobs, type JobListItem } from "@/lib/services/job";
 
 const DEFAULT_PER_PAGE = 6;
 /* Debounce keyword input before hitting the API — unlike the Companies list
    (fetched once, filtered client-side), jobs are paginated server-side, so
    every keystroke would otherwise be a new request. */
 const SEARCH_DEBOUNCE_MS = 400;
-
-function locationLabel(job: JobListItem): string {
-  return job.locations.length > 0
-    ? job.locations.join(", ")
-    : "Location not specified";
-}
-
-function typeLabel(job: JobListItem): string | null {
-  return job.employment_type != null
-    ? (EMPLOYMENT_TYPE_LABELS[job.employment_type] ?? "Other")
-    : null;
-}
-
-function postedLabel(job: JobListItem): string {
-  if (!job.posted_date) return "Date unknown";
-  return new Date(job.posted_date).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
-function JobRow({ job }: { job: JobListItem }) {
-  const type = typeLabel(job);
-  return (
-    // Not a Link: job detail pages are still mock-only (static export
-    // requires every dynamic route known at build time), so a real job id
-    // would 404/crash. Re-enable once /jobs/[id] is wired to the real API.
-    <div className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5">
-      <CompanyLogo text={job.company_name.charAt(0)} />
-      <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-ink">{job.title}</h3>
-        <p className="mt-1 text-sm text-ink-secondary">
-          {job.company_name} · {locationLabel(job)}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {type && <Tag label={type} />}
-          <span className="text-xs text-ink-muted">
-            Posted {postedLabel(job)}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function JobsTable({ jobs }: { jobs: JobListItem[] }) {
-  return (
-    <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-      <table className="w-full min-w-[800px] border-collapse text-left">
-        <thead>
-          <tr className="border-b border-line bg-section/60">
-            {["Role", "Company", "Location", "Type", "Posted"].map((label) => (
-              <th
-                key={label}
-                scope="col"
-                className="px-4 py-4 text-sm font-semibold text-ink-secondary first:pl-5 last:pr-5"
-              >
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {jobs.map((job) => (
-            <tr
-              key={job.job_id}
-              className="border-b border-line last:border-b-0 hover:bg-section/40"
-            >
-              <td className="px-4 py-4 pl-5 align-middle font-semibold text-ink">
-                {job.title}
-              </td>
-              <td className="px-4 py-4 text-sm text-ink-secondary">
-                {job.company_name}
-              </td>
-              <td className="px-4 py-4 text-sm text-ink">
-                {locationLabel(job)}
-              </td>
-              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary">
-                {typeLabel(job) ?? "—"}
-              </td>
-              <td className="whitespace-nowrap px-4 py-4 pr-5 text-sm text-ink-secondary">
-                {postedLabel(job)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
 
 export default function SearchClient() {
   const router = useRouter();
@@ -129,6 +34,40 @@ export default function SearchClient() {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+
+  // Tracks which jobs were just favorited in this session so the button can
+  // flip to "Saved" — we don't know the user's existing favorites up front
+  // (no bulk "is this favorited" endpoint), so this resets on page reload.
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const handleAddFavorite = async (jobId: string) => {
+    setSavingId(jobId);
+    try {
+      await addFavorite(jobId);
+      setSavedIds((prev) => new Set(prev).add(jobId));
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login");
+      }
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const renderFavoriteAction = (job: JobListItem) => {
+    const saved = savedIds.has(job.job_id);
+    return (
+      <button
+        type="button"
+        disabled={saved || savingId === job.job_id}
+        onClick={() => handleAddFavorite(job.job_id)}
+        className="text-sm font-medium text-primary hover:text-primary-hover disabled:cursor-default disabled:text-ink-muted"
+      >
+        {saved ? "Saved" : "Add to favorites"}
+      </button>
+    );
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -277,11 +216,19 @@ export default function SearchClient() {
             <>
               <div className="mt-4">
                 {view === "table" ? (
-                  <JobsTable jobs={jobs} />
+                  <JobsTable
+                    jobs={jobs}
+                    renderAction={renderFavoriteAction}
+                    actionColumnLabel="Favorite"
+                  />
                 ) : (
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
                     {jobs.map((job) => (
-                      <JobRow key={job.job_id} job={job} />
+                      <JobRow
+                        key={job.job_id}
+                        job={job}
+                        action={renderFavoriteAction(job)}
+                      />
                     ))}
                   </div>
                 )}
