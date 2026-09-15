@@ -3,7 +3,12 @@ import logging
 
 import pytest
 import yaml
-from scrapers.utils.build_classification_handoff import DEFAULT_MAIN_TYPES_PATH, _load_main_types, build_handoff_records, main
+from scrapers.utils.build_classification_handoff import (
+    DEFAULT_MAIN_TYPES_PATH,
+    _load_main_types,
+    build_handoff_records,
+    main,
+)
 
 
 def _write_jsonl(path, rows):

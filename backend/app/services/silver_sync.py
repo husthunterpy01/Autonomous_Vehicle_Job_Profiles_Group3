@@ -6,7 +6,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models import Company, JobPosting, Location
-from app.services.category_sync import _collect_category_keys, _preload_categories, sync_categories
+from app.services.category_sync import (
+    _collect_category_keys,
+    _preload_categories,
+    sync_categories,
+)
 from app.services.skill_sync import _collect_skill_keys, _preload_skills, sync_skills
 from app.utils.normalization import normalized
 

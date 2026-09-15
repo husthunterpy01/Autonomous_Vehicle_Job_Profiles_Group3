@@ -4,7 +4,11 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from scrapers.service.llm.json_response import build_batch_prompt, parse_batch_response, parse_string_list
+from scrapers.service.llm.json_response import (
+    build_batch_prompt,
+    parse_batch_response,
+    parse_string_list,
+)
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "job_classification.txt"
 SIGNALS_PATH = Path(__file__).resolve().parents[2] / "prompts" / "av_relevance_signals.txt"
