@@ -40,12 +40,19 @@ describe("resolveSalaryRange", () => {
 
 describe("formatSalaryAmount", () => {
   it("adds the currency symbol and thousands separators", () => {
-    assert.equal(formatSalaryAmount(185000, "USD"), "$185,000");
+    assert.equal(formatSalaryAmount(185000, "USD"), "US$185,000");
+  });
+
+  it("keeps dollar currencies distinguishable", () => {
+    assert.equal(formatSalaryAmount(150000, "usd"), "US$150,000");
+    assert.equal(formatSalaryAmount(150000, "AUD"), "A$150,000");
+    assert.equal(formatSalaryAmount(150000, "CAD"), "CA$150,000");
+    assert.equal(formatSalaryAmount(150000, "EUR"), "€150,000");
   });
 
   it("shows decimals only for non-whole amounts", () => {
-    assert.equal(formatSalaryAmount(26.39, "USD"), "$26.39");
-    assert.equal(formatSalaryAmount(31, "USD"), "$31");
+    assert.equal(formatSalaryAmount(26.39, "USD"), "US$26.39");
+    assert.equal(formatSalaryAmount(31, "USD"), "US$31");
   });
 
   it("falls back to the raw code when the currency is malformed", () => {
@@ -68,7 +75,7 @@ describe("formatSalary", () => {
       source: "regex",
     });
     assert.deepEqual(display, {
-      amount: "$189,000 – $303,000",
+      amount: "US$189,000 – US$303,000",
       period: "/ year",
       estimated: false,
     });
@@ -82,7 +89,7 @@ describe("formatSalary", () => {
       period: "yearly",
       source: "api",
     });
-    assert.equal(display?.amount, "$180,923");
+    assert.equal(display?.amount, "US$180,923");
     assert.equal(display?.estimated, false);
   });
 
@@ -96,7 +103,7 @@ describe("formatSalary", () => {
       source: "levels_fyi_average",
     });
     assert.deepEqual(display, {
-      amount: "~$266,754",
+      amount: "~US$266,754",
       period: "/ year",
       estimated: true,
     });
@@ -107,7 +114,7 @@ describe("formatSalary", () => {
         period: "yearly",
         source: "levels_fyi_average",
       }),
-      "~$266,754 / year",
+      "~US$266,754 / year",
     );
   });
 
@@ -119,13 +126,13 @@ describe("formatSalary", () => {
       period: "yearly",
       source: "levels_fyi_average",
     });
-    assert.equal(display?.amount, "~$180,923");
+    assert.equal(display?.amount, "~US$180,923");
     assert.equal(display?.estimated, true);
   });
 
   it("supports hourly pay", () => {
     const input = { min: 26.39, max: 39.59, currency: "USD", period: "hourly" };
-    assert.equal(salaryLabel(input), "$26.39 – $39.59 / hour");
+    assert.equal(salaryLabel(input), "US$26.39 – US$39.59 / hour");
   });
 
   it("omits the period when it is unknown", () => {

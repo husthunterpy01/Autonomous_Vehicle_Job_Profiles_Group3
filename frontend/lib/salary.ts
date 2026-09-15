@@ -22,7 +22,8 @@ export type SalaryInput = {
 };
 
 export type SalaryDisplay = {
-  /** "$189,000 – $303,000", "$180,923", or "~$180,923" for an estimate. */
+  /** "US$189,000 – US$303,000", "US$180,923", or "~US$180,923" for an
+   *  estimate. */
   amount: string;
   /** "/ year", "/ hour", …, or null when the period is unknown. */
   period: string | null;
@@ -71,8 +72,13 @@ export function resolveSalaryRange(
   return null;
 }
 
-/** "$185,000", "CA$160,000", "EUR 90,000" for unknown symbols, "185,000"
- *  when no currency is known. Decimals appear only for non-whole amounts. */
+/* en-US renders USD as a bare "$", which Australian users read as AUD.
+   Spell US dollars out so every dollar currency is unambiguous (AUD is
+   already "A$", CAD "CA$"). */
+const EXPLICIT_SYMBOLS: Record<string, string> = { USD: "US$" };
+
+/** "US$185,000", "A$160,000", "€90,000", "EUR 90,000" for unknown symbols,
+ *  "185,000" when no currency is known. Decimals only for non-whole amounts. */
 export function formatSalaryAmount(
   amount: number,
   currency?: string | null,
@@ -86,11 +92,15 @@ export function formatSalaryAmount(
   const code = currency?.trim().toUpperCase();
   if (!code) return plain;
   try {
-    return new Intl.NumberFormat(LOCALE, {
+    const parts = new Intl.NumberFormat(LOCALE, {
       style: "currency",
       currency: code,
       ...fractionOptions,
-    }).format(amount);
+    }).formatToParts(amount);
+    const symbol = EXPLICIT_SYMBOLS[code];
+    return parts
+      .map((part) => (symbol && part.type === "currency" ? symbol : part.value))
+      .join("");
   } catch {
     // Malformed currency code: keep the figure readable rather than failing.
     return `${code} ${plain}`;
@@ -114,7 +124,7 @@ export function formatSalary(input: SalaryInput): SalaryDisplay | null {
   };
 }
 
-/** One-line text form, e.g. "$189,000 – $303,000 / year", or null. */
+/** One-line text form, e.g. "US$189,000 – US$303,000 / year", or null. */
 export function salaryLabel(input: SalaryInput): string | null {
   const display = formatSalary(input);
   if (!display) return null;
