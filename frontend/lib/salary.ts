@@ -1,8 +1,9 @@
 /* Salary display helpers (FE-14).
-   The backend returns pay as a min/max pair with a currency, a pay period,
-   and a source (posted by the employer, or estimated from levels.fyi level
-   averages). A single figure arrives as min === max. Nothing is inferred
-   here: when there is no usable pair, the salary line is simply not shown. */
+   The backend returns posted pay as a min/max pair (a single figure arrives
+   as min === max) and a company-wide levels.fyi estimate as `average` only,
+   each with a currency, a pay period and a source. Nothing is inferred
+   here: when neither a usable pair nor an average is present, the salary
+   line is simply not shown. */
 
 export type SalaryPeriod = "yearly" | "monthly" | "weekly" | "daily" | "hourly";
 export type SalarySource = "api" | "regex" | "levels_fyi_average";
@@ -10,6 +11,8 @@ export type SalarySource = "api" | "regex" | "levels_fyi_average";
 export type SalaryInput = {
   min?: number | null;
   max?: number | null;
+  /** Estimate with no posted range; only used when min/max are absent. */
+  average?: number | null;
   /** ISO 4217 code such as "USD". Leave unset when the source is unknown. */
   currency?: string | null;
   /** One of SalaryPeriod; anything else is shown without a period. */
@@ -59,14 +62,20 @@ function lookup<T extends string>(
   return normalized && normalized in labels ? labels[normalized as T] : null;
 }
 
-/** The pair to display, or null when either bound is missing or invalid. */
+/** The figures to display: the posted pair when both bounds are valid,
+ *  otherwise the average as a single figure, otherwise null. */
 export function resolveSalaryRange(
   input: SalaryInput,
 ): { min: number; max: number } | null {
-  if (!isAmount(input.min) || !isAmount(input.max)) return null;
-  return input.min <= input.max
-    ? { min: input.min, max: input.max }
-    : { min: input.max, max: input.min };
+  if (isAmount(input.min) && isAmount(input.max)) {
+    return input.min <= input.max
+      ? { min: input.min, max: input.max }
+      : { min: input.max, max: input.min };
+  }
+  if (isAmount(input.average)) {
+    return { min: input.average, max: input.average };
+  }
+  return null;
 }
 
 /** "$185,000", "CA$160,000", "EUR 90,000" for unknown symbols, "185,000"

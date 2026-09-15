@@ -19,6 +19,16 @@ describe("resolveSalaryRange", () => {
     assert.deepEqual(range, { min: 189000, max: 303000 });
   });
 
+  it("falls back to the average when no posted pair is present", () => {
+    const range = resolveSalaryRange({ min: null, max: null, average: 266754 });
+    assert.deepEqual(range, { min: 266754, max: 266754 });
+  });
+
+  it("prefers the posted pair over an average", () => {
+    const range = resolveSalaryRange({ min: 1, max: 2, average: 266754 });
+    assert.deepEqual(range, { min: 1, max: 2 });
+  });
+
   it("returns null for missing, partial, or non-positive data", () => {
     assert.equal(resolveSalaryRange({}), null);
     assert.equal(resolveSalaryRange({ min: null, max: null }), null);
@@ -75,6 +85,23 @@ describe("formatSalary", () => {
     });
     assert.equal(display?.amount, "$180,923");
     assert.equal(display?.estimated, false);
+  });
+
+  it("shows a levels.fyi average-only record as an estimate", () => {
+    const display = formatSalary({
+      min: null,
+      max: null,
+      average: 266754,
+      currency: "USD",
+      period: "yearly",
+      source: "levels_fyi_average",
+    });
+    assert.deepEqual(display, {
+      amount: "~$266,754",
+      period: "/ year",
+      sourceLabel: "Estimate (levels.fyi)",
+      estimated: true,
+    });
   });
 
   it("marks levels.fyi figures as estimates", () => {

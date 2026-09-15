@@ -22,11 +22,12 @@ export type JobListItem = {
   raw_description: string;
   source_url: string | null;
   posted_date: string | null;
-  /** Pay as posted or estimated; a single figure arrives as min === max.
-   *  Optional so the page keeps working against a backend that predates
-   *  the salary columns. */
+  /** Posted pay (a single figure arrives as min === max). Optional so the
+   *  page keeps working against a backend that predates the salary columns. */
   salary_min?: number | null;
   salary_max?: number | null;
+  /** Company-wide levels.fyi estimate, sent instead of min/max. */
+  salary_average?: number | null;
   salary_currency?: string | null;
   salary_period?: string | null;
   salary_source?: string | null;
@@ -37,6 +38,7 @@ export function jobSalary(job: JobListItem): SalaryInput {
   return {
     min: job.salary_min ?? null,
     max: job.salary_max ?? null,
+    average: job.salary_average ?? null,
     currency: job.salary_currency ?? null,
     period: job.salary_period ?? null,
     source: job.salary_source ?? null,
