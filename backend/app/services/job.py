@@ -18,6 +18,8 @@ def to_response(job):
                     for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
+        salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
+        salary_currency=job.salary_currency, salary_period=job.salary_period, salary_source=job.salary_source,
     )
 
 
@@ -28,7 +30,12 @@ def job_query(db):
     )
 
 
-def list_jobs(db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None, category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None, page: int = 1, page_size: int = 10):
+def list_jobs(
+    db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
+    category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
+    min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
+    has_salary: bool | None = None, page: int = 1, page_size: int = 10,
+):
     query = job_query(db)
     if q:
         query = query.filter(or_(JobPosting.title.icontains(q, autoescape=True), JobPosting.company.has(Company.name.icontains(q, autoescape=True))))
@@ -42,6 +49,19 @@ def list_jobs(db: Session, *, q: str | None = None, location: str | None = None,
         query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
         query = query.filter(JobPosting.employment_type == employment_type)
+    if min_salary is not None:
+        query = query.filter(JobPosting.salary_max >= min_salary)
+    if max_salary is not None:
+        query = query.filter(JobPosting.salary_min <= max_salary)
+    if salary_period:
+        query = query.filter(JobPosting.salary_period == salary_period)
+    if has_salary is not None:
+        # A job may only have salary_average set (a levels.fyi estimate, no
+        # real disclosed range) - that still counts as "has some salary
+        # info" for this flag, even though min_salary/max_salary above
+        # deliberately only compare real ranges.
+        condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
+        query = query.filter(condition if has_salary else ~condition)
     query = query.order_by(JobPosting.posted_date.desc().nullslast(), JobPosting.job_id)
     total = query.count()
     jobs = query.offset((page - 1) * page_size).limit(page_size).all()

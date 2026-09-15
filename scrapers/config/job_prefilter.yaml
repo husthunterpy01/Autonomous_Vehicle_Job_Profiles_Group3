@@ -96,12 +96,54 @@ excluded_title_keywords:
   - customer success
   - customer support
   - legal counsel
+  - product counsel
+  - employment counsel
+  - legal operations
   - attorney
   - paralegal
   - executive assistant
   - administrative assistant
   - office manager
   - facilities
+  - buyer
+  - procurement
+  - indirect procurement
+  - payments manager
+  - insurance risk
+  - export compliance
+  - government contracts manager
+  - stock administrator
+  - corporate control
+  - hris
+  - global benefits
+  - learning experience designer
+  - performance and development specialist
+  - brand designer
+  - social media manager
+  - social community engagement
+  - cross functional producer
+  - associate editor
+  - strategic consultant
+  - it operations
+  - systems administrator
+  - helpdesk
+  - data tagging operator
+  - data transcriber
+  - box truck driver
+  - cdl a
+  - class a driver
+  - class a safety driver
+  - safety driver
+  - fleet dispatcher
+  - fleet manager
+  - fleet operations
+  - fleet technician
+  - transportation manager
+  - truck operations
+  - autonomous truck operator
+  - autonomous truck test driver
+  - talent pool
+  - 인재풀
 
 # Excluded jobs are still categorized for the audit trail. Rules are evaluated
 # against the title first and then the description/department/team, in order.
@@ -175,5 +217,71 @@ excluded_category_rules:
       - demand signals
       - sales and operations planning
       - S&OP
+
+  - name: Legal / Corporate Counsel
+    keywords:
+      - product counsel
+      - employment counsel
+      - legal operations
+
+  - name: Finance / Procurement and Risk
+    keywords:
+      - buyer
+      - procurement
+      - indirect procurement
+      - payments manager
+      - insurance risk
+      - export compliance
+      - government contracts manager
+      - stock administrator
+      - corporate control
+
+  - name: People / Learning and Benefits
+    keywords:
+      - HRIS
+      - global benefits
+      - learning experience designer
+      - performance and development specialist
+
+  - name: Communications / Brand and Design
+    keywords:
+      - brand designer
+      - social media manager
+      - social community engagement
+      - cross functional producer
+      - associate editor
+      - strategic consultant
+
+  - name: IT / Corporate Support
+    keywords:
+      - IT operations
+      - systems administrator
+      - helpdesk
+
+  - name: Data Operations / Labeling
+    keywords:
+      - data tagging operator
+      - data transcriber
+
+  - name: Fleet / Trucking Operations
+    keywords:
+      - box truck driver
+      - CDL A
+      - class A driver
+      - class A safety driver
+      - safety driver
+      - fleet dispatcher
+      - fleet manager
+      - fleet operations
+      - fleet technician
+      - transportation manager
+      - truck operations
+      - autonomous truck operator
+      - autonomous truck test driver
+
+  - name: People / Talent Pool Placeholder
+    keywords:
+      - talent pool
+      - 인재풀
 
 default_excluded_category: Corporate / Support

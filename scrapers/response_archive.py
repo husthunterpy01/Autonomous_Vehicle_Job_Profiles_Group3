@@ -11,7 +11,6 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 from minio import Minio
 from minio.error import S3Error
-
 from scrapers.config import MinioConfig
 from scrapers.models.bronze.bronze_model import RawPayload
 

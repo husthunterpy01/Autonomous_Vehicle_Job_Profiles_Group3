@@ -3,12 +3,11 @@ from __future__ import annotations
 import logging
 import sys
 
+import psycopg2
 from scrapers.config.minio import MinioConfig
 from scrapers.service.bronze_storage.bronze_ingest import BronzeIngest
 from scrapers.utils.company_scraper import CompanyScraper
 from scrapers.utils.parser import ScraperParser
-
-import psycopg2
 
 logger = logging.getLogger(__name__)
 

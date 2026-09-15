@@ -1,4 +1,5 @@
-"""Manual Silver pipeline: sync jobs -> validate handoff -> import categories.
+"""Manual Silver pipeline: sync jobs -> validate handoff -> import categories
+-> import skills -> import salary.
 
 Commands delegate database lifecycle and transaction boundaries here.
 Source and destination engines remain caller-owned.
@@ -10,7 +11,9 @@ from sqlalchemy.orm import Session
 
 from app.services.category_sync import import_categories
 from app.services.handoff import validate_records
+from app.services.salary_sync import import_salary
 from app.services.silver_sync import SilverSync
+from app.services.skill_sync import import_skills
 
 
 class SilverPipeline:
@@ -40,3 +43,11 @@ class SilverPipeline:
     def import_categories(self, records):
         with self._writer() as db:
             return import_categories(db, records)
+
+    def import_skills(self, records):
+        with self._writer() as db:
+            return import_skills(db, records)
+
+    def import_salary(self, records):
+        with self._writer() as db:
+            return import_salary(db, records)

@@ -19,7 +19,13 @@ select
     ) as location,
     coalesce(nullif(job->>'shortlink', ''), job->>'url') as job_url,
     coalesce(nullif(job->>'published_on', ''), job->>'created_at') as job_uploaded_at,
-    job->>'employment_type' as employment_type
+    job->>'employment_type' as employment_type,
+    -- No structured salary field on this ATS; carried as null to keep the
+    -- column set matching across job_postings.sql's UNION ALL.
+    null::numeric as salary_min,
+    null::numeric as salary_max,
+    null::text as salary_currency,
+    null::text as salary_period
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
 where src.source = 'api'

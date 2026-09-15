@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Mapping
 
 import yaml
-
 from scrapers.service.llm.category import AuditCategoryRule
 
 CONFIG_ENV_VAR = "AV_JOB_PREFILTER_CONFIG"
@@ -35,7 +34,7 @@ class JobFilterConfig:
     field_aliases: Mapping[str, tuple[str, ...]]
 
     @classmethod
-    def load(cls, path: str | Path | None = None) -> "JobFilterConfig":
+    def load(cls, path: str | Path | None = None) -> JobFilterConfig:
         configured_path = path or os.getenv(CONFIG_ENV_VAR) or DEFAULT_CONFIG_PATH
         config_path = Path(configured_path).expanduser().resolve()
         if not config_path.is_file():
@@ -45,7 +44,7 @@ class JobFilterConfig:
             raw = yaml.safe_load(stream)
 
         if not isinstance(raw, dict):
-            raise ValueError("Job pre-filter config must be a YAML mapping")
+            raise ValueError("Job pre-filter config must be a YAML mapping")  # noqa: TRY004 - malformed YAML, not a Python type error
 
         minimum_score = raw.get("minimum_score")
         if not isinstance(minimum_score, int) or minimum_score < 1:
@@ -53,7 +52,7 @@ class JobFilterConfig:
 
         exclude_below_threshold = raw.get("exclude_below_threshold", False)
         if not isinstance(exclude_below_threshold, bool):
-            raise ValueError("exclude_below_threshold must be true or false")
+            raise ValueError("exclude_below_threshold must be true or false")  # noqa: TRY004 - malformed YAML, not a Python type error
 
         field_weights = cls._load_field_weights(raw.get("field_weights"))
         field_aliases = cls._load_field_aliases(raw.get("field_aliases"))
@@ -65,7 +64,7 @@ class JobFilterConfig:
             "default_excluded_category", "Corporate / Support"
         )
         if not isinstance(default_excluded_category, str):
-            raise ValueError("default_excluded_category must be a non-empty string")
+            raise ValueError("default_excluded_category must be a non-empty string")  # noqa: TRY004 - malformed YAML, not a Python type error
         default_excluded_category = default_excluded_category.strip()
         if not default_excluded_category:
             raise ValueError("default_excluded_category must be a non-empty string")
@@ -106,7 +105,7 @@ class JobFilterConfig:
     @staticmethod
     def _load_field_aliases(value: object) -> dict[str, tuple[str, ...]]:
         if not isinstance(value, dict):
-            raise ValueError("field_aliases must be a mapping")
+            raise ValueError("field_aliases must be a mapping")  # noqa: TRY004 - malformed YAML, not a Python type error
         field_aliases = {
             name: _as_tuple(aliases, f"field_aliases.{name}")
             for name, aliases in value.items()
@@ -119,12 +118,12 @@ class JobFilterConfig:
     @staticmethod
     def _load_category_rules(value: object) -> tuple[AuditCategoryRule, ...]:
         if not isinstance(value, list):
-            raise ValueError("excluded_category_rules must be a YAML list")
+            raise ValueError("excluded_category_rules must be a YAML list")  # noqa: TRY004 - malformed YAML, not a Python type error
 
         category_rules: list[AuditCategoryRule] = []
         for index, rule in enumerate(value):
             if not isinstance(rule, dict) or not isinstance(rule.get("name"), str):
-                raise ValueError(
+                raise ValueError(  # noqa: TRY004 - malformed YAML, not a Python type error
                     f"excluded_category_rules[{index}] must contain a name"
                 )
             category_rules.append(

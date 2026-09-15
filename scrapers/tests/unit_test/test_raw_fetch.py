@@ -1,10 +1,8 @@
 import json
-from io import BytesIO
 from unittest.mock import MagicMock, patch
 from urllib.error import HTTPError
 
 import pytest
-
 from scrapers.service.fetch.rawfetch import RawFetch
 
 
@@ -164,7 +162,14 @@ def test_fetch_and_archive_saves_raw_json(mock_urlopen, mock_archive, tmp_path, 
     )
     monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
     payload = {"jobs": [{"id": "1"}, {"id": "2"}], "meta": {"total": 2}}
-    mock_urlopen.return_value = _urlopen_body(payload)
+    # Greenhouse postings go through the pay_transparency detail expansion
+    # (see test_fetch_and_archive_expands_greenhouse_pay_transparency), so the
+    # list call is followed by one per-job detail GET each.
+    mock_urlopen.side_effect = [
+        _urlopen_body(payload),
+        _urlopen_body({"pay_input_ranges": []}),
+        _urlopen_body({"pay_input_ranges": []}),
+    ]
     mock_archive.return_value.save_raw_response.return_value = "api/stack_av/file.parquet"
 
     fetcher, url = RawFetch.from_company(
@@ -173,13 +178,19 @@ def test_fetch_and_archive_saves_raw_json(mock_urlopen, mock_archive, tmp_path, 
     object_key = fetcher.fetch_and_archive(url, timeout=5)
 
     assert object_key == "api/stack_av/file.parquet"
-    request = mock_urlopen.call_args[0][0]
+    request = mock_urlopen.call_args_list[0].args[0]
     user_agent = request.get_header("User-agent")
     assert user_agent.startswith("Mozilla/5.0") and "Chrome/" in user_agent
     saved = mock_archive.return_value.save_raw_response.call_args.kwargs
     assert saved["source"] == "api"
     assert saved["source_system"] == "greenhouse"
-    assert json.loads(saved["raw_response"]) == payload
+    assert saved["raw_response"] == {
+        "jobs": [
+            {"id": "1", "pay_input_ranges": []},
+            {"id": "2", "pay_input_ranges": []},
+        ],
+        "meta": {"total": 2},
+    }
 
 
 @patch("scrapers.service.fetch.rawfetch.ResponseArchive")
@@ -278,6 +289,129 @@ def test_smartrecruiters_keeps_list_item_when_detail_fails(
     archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
     assert archived["content"][0]["name"] == "Fallback Role"
     assert "jobAd" not in archived["content"][0]
+
+
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_fetch_and_archive_expands_greenhouse_pay_transparency(
+    mock_urlopen, mock_archive, mock_sleep
+):
+    list_payload = {
+        "jobs": [
+            {"id": 4163207009, "title": "Autonomous Vehicle Rideshare Drivers"},
+        ]
+    }
+    detail_payload = {
+        "id": 4163207009,
+        "title": "Autonomous Vehicle Rideshare Drivers",
+        "pay_input_ranges": [
+            {"min_cents": 13500000, "max_cents": 15500000, "currency_type": "USD", "title": "California Pay Range"}
+        ],
+    }
+    mock_urlopen.side_effect = [
+        _urlopen_body(list_payload),
+        _urlopen_body(detail_payload),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/kodiak/file.parquet"
+    fetcher = RawFetch("Kodiak", "api", "greenhouse")
+    list_url = "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs?content=true"
+
+    fetcher.fetch_and_archive(list_url, timeout=5)
+
+    urls = [call.args[0].full_url for call in mock_urlopen.call_args_list]
+    assert urls == [
+        list_url,
+        "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs/4163207009?pay_transparency=true",
+    ]
+    archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
+    assert archived["jobs"][0]["pay_input_ranges"] == [
+        {"min_cents": 13500000, "max_cents": 15500000, "currency_type": "USD", "title": "California Pay Range"}
+    ]
+
+
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_greenhouse_keeps_posting_when_pay_transparency_detail_fails(
+    mock_urlopen, mock_archive, mock_sleep
+):
+    list_payload = {"jobs": [{"id": 999, "title": "Fallback Role"}]}
+    mock_urlopen.side_effect = [
+        _urlopen_body(list_payload),
+        HTTPError(
+            url="https://boards-api.greenhouse.io/v1/boards/kodiak/jobs/999?pay_transparency=true",
+            code=404,
+            msg="Not Found",
+            hdrs=None,
+            fp=None,
+        ),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/kodiak/file.parquet"
+    fetcher = RawFetch("Kodiak", "api", "greenhouse")
+
+    fetcher.fetch_and_archive(
+        "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs?content=true"
+    )
+
+    archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
+    assert archived["jobs"][0]["title"] == "Fallback Role"
+    assert "pay_input_ranges" not in archived["jobs"][0]
+
+
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_greenhouse_socket_timeout_on_one_job_does_not_lose_the_board(
+    mock_urlopen, mock_archive, mock_sleep
+):
+    # Regression test: a read timeout raises a bare TimeoutError (an
+    # OSError, not RuntimeError) - previously uncaught here, so it
+    # propagated out of the whole board expansion and nothing got archived
+    # at all, even the list call that already succeeded.
+    list_payload = {"jobs": [{"id": 1}, {"id": 2}, {"id": 3}]}
+    mock_urlopen.side_effect = [
+        _urlopen_body(list_payload),
+        _urlopen_body({"pay_input_ranges": [{"min_cents": 1}]}),
+        TimeoutError("timed out"),
+        _urlopen_body({"pay_input_ranges": [{"min_cents": 2}]}),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/kodiak/file.parquet"
+    fetcher = RawFetch("Kodiak", "api", "greenhouse")
+
+    fetcher.fetch_and_archive(
+        "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs?content=true"
+    )
+
+    archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
+    assert archived["jobs"][0]["pay_input_ranges"] == [{"min_cents": 1}]
+    assert "pay_input_ranges" not in archived["jobs"][1]
+    assert archived["jobs"][2]["pay_input_ranges"] == [{"min_cents": 2}]
+
+
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_greenhouse_stops_detail_calls_after_consecutive_failures(
+    mock_urlopen, mock_archive, mock_sleep
+):
+    # Regression test: a dead connection would otherwise mean one full
+    # request timeout (up to 30s) per remaining job for the whole board -
+    # stop after GREENHOUSE_DETAIL_FAILURE_LIMIT consecutive failures
+    # instead, and still archive whatever was collected so far.
+    list_payload = {"jobs": [{"id": i} for i in range(1, 11)]}
+    mock_urlopen.side_effect = [_urlopen_body(list_payload)] + [TimeoutError("timed out")] * 9
+    mock_archive.return_value.save_raw_response.return_value = "api/kodiak/file.parquet"
+    fetcher = RawFetch("Kodiak", "api", "greenhouse")
+
+    fetcher.fetch_and_archive(
+        "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs?content=true"
+    )
+
+    # 1 list call + 3 failed detail attempts (the failure limit), not all 10.
+    assert mock_urlopen.call_count == 4
+    archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
+    assert len(archived["jobs"]) == 10  # the board itself is still archived intact
 
 
 def test_from_company_collects_lever_fallback_urls(tmp_path, monkeypatch):

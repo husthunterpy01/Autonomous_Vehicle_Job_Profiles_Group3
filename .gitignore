@@ -33,9 +33,13 @@ htmlcov/
 *.log
 logs/
 
-# Generated scraper output (BE-1)
-/data/*.json
-/data/job_prefilter/
+# Generated scraper/pipeline output, trained model artifacts, DB backups (BE-1)
+/data/
+
+# SetFit/HF Trainer checkpoints (scratch state, not the final saved model) -
+# unanchored since these can land at repo root or under notebooks/ depending
+# on the training tool's cwd
+checkpoints/
 
 # Legacy per-company scrapers (superseded by strategy + scraper_main)
 scrapers/base_scraper.py

@@ -3,6 +3,14 @@ name: autonomous-job-backend-ci
 on:
   pull_request:
     branches: [ main ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/ci-backend.yml"
+  push:
+    branches: [ main ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/ci-backend.yml"
 
 jobs:
   test:
@@ -29,9 +37,9 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
     - name: Generate ephemeral test signing key

@@ -1,21 +1,13 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
+from scrapers.service.llm.json_response import strip_code_fence
+from scrapers.service.llm.skill import ExtractedSkill, parse_skills
 
-ALLOWED_SKILL_TYPES = frozenset(
-    {"tool", "programming_language", "framework", "domain_concept", "certification"}
-)
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "skills_extraction.txt"
-
-
-@dataclass(frozen=True)
-class ExtractedSkill:
-    name: str
-    skill_type: str
 
 
 class SkillsExtractor:
@@ -37,27 +29,5 @@ class SkillsExtractor:
 
     @staticmethod
     def parse_response(response: str) -> tuple[ExtractedSkill, ...]:
-        text = response.strip()
-        if text.startswith("```"):
-            lines = text.splitlines()
-            text = "\n".join(lines[1:-1])
-            if text.lstrip().startswith("json"):
-                text = text.lstrip()[4:].lstrip()
-        payload = json.loads(text)
-        skills = payload.get("skills", [])
-        if not isinstance(skills, list):
-            raise ValueError("LLM response field 'skills' must be a list")
-
-        extracted: list[ExtractedSkill] = []
-        seen: set[str] = set()
-        for item in skills:
-            if not isinstance(item, dict):
-                continue
-            name = str(item.get("name") or "").strip()
-            skill_type = str(item.get("skill_type") or "").strip().casefold()
-            normalized_name = name.casefold()
-            if not name or skill_type not in ALLOWED_SKILL_TYPES or normalized_name in seen:
-                continue
-            extracted.append(ExtractedSkill(name=name, skill_type=skill_type))
-            seen.add(normalized_name)
-        return tuple(extracted)
+        payload = json.loads(strip_code_fence(response))
+        return parse_skills(payload.get("skills", []))

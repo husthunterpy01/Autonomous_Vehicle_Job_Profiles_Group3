@@ -5,7 +5,19 @@ from app.models import Category
 from app.services.job_identity import resolve_job
 
 
+def _normalize_text(value):
+    return " ".join(unicodedata.normalize("NFKC", value).split())
+
+
 def category_labels(row):
+    """Returns (version, {normalized_name: (display_sub_type, main_type_or_None)}).
+
+    Each entry in `functional_area` is either a plain string (sub_type only;
+    main_type is not touched) or an object {"sub_type": ..., "main_type": ...}
+    - main_type is a property of the category itself (one Category row per
+    (taxonomy_version, sub_type), not per job), so it's optional per label
+    rather than required on every record.
+    """
     version = row.get("taxonomy_version", 1)
     if type(version) is not int or version < 1:
         raise ValueError("taxonomy_version must be a positive integer")
@@ -13,15 +25,25 @@ def category_labels(row):
     if isinstance(labels, str):
         labels = [labels]
     if not isinstance(labels, list):
-        raise TypeError("functional_area must be a string or an array; use [] to clear")
+        raise TypeError("functional_area must be a string, an object, or an array; use [] to clear")
     canonical = {}
     for label in labels:
-        if not isinstance(label, str):
-            raise TypeError("Category labels must be non-empty strings")
-        display = " ".join(unicodedata.normalize("NFKC", label).split())
+        if isinstance(label, str):
+            sub_type, main_type = label, None
+        elif isinstance(label, dict):
+            sub_type = label.get("sub_type")
+            if not isinstance(sub_type, str):
+                raise TypeError("Category label objects require a string sub_type")
+            main_type = label.get("main_type")
+            if main_type is not None and not isinstance(main_type, str):
+                raise TypeError("main_type must be a string when provided")
+        else:
+            raise TypeError("Category labels must be strings or {sub_type, main_type} objects")
+        display = _normalize_text(sub_type)
         if not display:
             raise ValueError("Category labels must be non-empty strings")
-        canonical.setdefault(display.casefold(), display)
+        main_type = _normalize_text(main_type) or None if main_type else None
+        canonical.setdefault(display.casefold(), (display, main_type))
     return version, canonical
 
 
@@ -30,12 +52,14 @@ def sync_categories(db, job, row):
         return
     version, labels = category_labels(row)
     linked = []
-    for normalized, display in labels.items():
+    for normalized, (display, main_type) in labels.items():
         category = db.query(Category).filter_by(taxonomy_version=version, normalized_name=normalized).one_or_none()
         if category is None:
-            category = Category(sub_type=display, normalized_name=normalized, taxonomy_version=version)
+            category = Category(sub_type=display, normalized_name=normalized, taxonomy_version=version, main_type=main_type)
             db.add(category)
             db.flush()
+        elif main_type and category.main_type != main_type:
+            category.main_type = main_type
         linked.append(category)
     job.categories = linked
     db.flush()

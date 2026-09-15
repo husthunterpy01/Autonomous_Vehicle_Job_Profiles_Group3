@@ -1,0 +1,10 @@
+AV RELEVANCE SIGNALS
+Use these to decide whether a posting is AV-relevant (is_av_relevant). General
+automotive, corporate, or unrelated software roles are NOT AV relevant even if
+the employer builds AV products elsewhere.
+
+Cross-cutting signals (strong, not category-specific):
+Autoware, ApolloAuto, Apollo Cyber, Cyber RT, ROS 2, rclcpp, autonomous driving, autonomous vehicle, self-driving, autonomy, ADAS, LiDAR, radar, sensor fusion, perception, motion planning, path planning, localization, robotics, computer vision
+
+Dataset/benchmark names (secondary signal on their own):
+Waymo Open Dataset, nuScenes, Argoverse, Argoverse 2, KITTI, BDD100K

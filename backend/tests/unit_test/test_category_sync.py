@@ -47,3 +47,47 @@ def test_silver_inline_categories_and_missing_preserves(db_session):
     SilverSync(db_session).run([{**row, "functional_area": "Planning/Controls"}])
     SilverSync(db_session).run([row])
     assert [c.sub_type for c in db_session.query(JobPosting).one().categories] == ["Planning/Controls"]
+
+
+def test_object_labels_set_main_type_on_create(db_session):
+    seed(db_session)
+    row = {
+        "deduplication_key": "one",
+        "functional_area": [{"sub_type": "Perception", "main_type": "Sensing & Perception"}],
+    }
+    import_categories(db_session, [row])
+    job = db_session.query(JobPosting).one()
+    assert [(c.sub_type, c.main_type) for c in job.categories] == [("Perception", "Sensing & Perception")]
+
+
+def test_object_labels_backfill_main_type_on_existing_category(db_session):
+    seed(db_session)
+    import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Perception"}])
+    job = db_session.query(JobPosting).one()
+    assert job.categories[0].main_type is None
+
+    import_categories(
+        db_session,
+        [{"deduplication_key": "one", "functional_area": [{"sub_type": "Perception", "main_type": "Sensing & Perception"}]}],
+    )
+    assert job.categories[0].main_type == "Sensing & Perception"
+    assert db_session.query(Category).count() == 1
+
+
+def test_string_and_object_labels_can_mix_in_one_row(db_session):
+    seed(db_session)
+    row = {
+        "deduplication_key": "one",
+        "functional_area": ["Planning", {"sub_type": "Perception", "main_type": "Sensing & Perception"}],
+    }
+    import_categories(db_session, [row])
+    job = db_session.query(JobPosting).one()
+    by_sub_type = {c.sub_type: c.main_type for c in job.categories}
+    assert by_sub_type == {"Planning": None, "Perception": "Sensing & Perception"}
+
+
+@pytest.mark.parametrize("bad_label", [{"main_type": "Sensing"}, {"sub_type": "Perception", "main_type": 5}, {"sub_type": 5}])
+def test_object_label_validation_errors(db_session, bad_label):
+    seed(db_session)
+    with pytest.raises(ValueError):
+        import_categories(db_session, [{"deduplication_key": "one", "functional_area": [bad_label]}])

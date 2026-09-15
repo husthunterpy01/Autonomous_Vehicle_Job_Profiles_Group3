@@ -3,7 +3,6 @@ from io import BytesIO
 from unittest.mock import MagicMock, patch
 
 import pyarrow.parquet as pq
-
 from scrapers.config.minio import MinioConfig
 from scrapers.response_archive import ResponseArchive
 
