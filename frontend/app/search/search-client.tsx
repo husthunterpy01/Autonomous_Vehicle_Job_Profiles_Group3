@@ -46,7 +46,9 @@ function typeLabel(job: JobListItem): string | null {
 
 function postedLabel(job: JobListItem): string {
   if (!job.posted_date) return "Date unknown";
-  return new Date(job.posted_date).toLocaleDateString(undefined, {
+  // Fixed locale so dates read the same for every visitor ("Sep 6, 2026")
+  // instead of following the browser language, matching the job detail page.
+  return new Date(job.posted_date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
