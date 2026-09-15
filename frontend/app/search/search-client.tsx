@@ -6,9 +6,13 @@ import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
-import { JobRow, JobsTable } from "@/components/ui/JobResultsList";
+import {
+  FavoriteHeartButton,
+  JobRow,
+  JobsTable,
+} from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
-import { addFavorite } from "@/lib/services/favorite";
+import { addFavorite, removeFavorite } from "@/lib/services/favorite";
 import { getJobs, type JobListItem } from "@/lib/services/job";
 
 const DEFAULT_PER_PAGE = 6;
@@ -35,17 +39,27 @@ export default function SearchClient() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
-  // Tracks which jobs were just favorited in this session so the button can
-  // flip to "Saved" — we don't know the user's existing favorites up front
-  // (no bulk "is this favorited" endpoint), so this resets on page reload.
+  // Tracks which jobs were favorited/unfavorited in this session so the
+  // heart can fill in — we don't know the user's existing favorites up
+  // front (no bulk "is this favorited" endpoint), so this resets on reload.
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingId, setSavingId] = useState<string | null>(null);
 
-  const handleAddFavorite = async (jobId: string) => {
+  const handleToggleFavorite = async (jobId: string) => {
+    const alreadySaved = savedIds.has(jobId);
     setSavingId(jobId);
     try {
-      await addFavorite(jobId);
-      setSavedIds((prev) => new Set(prev).add(jobId));
+      if (alreadySaved) {
+        await removeFavorite(jobId);
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(jobId);
+          return next;
+        });
+      } else {
+        await addFavorite(jobId);
+        setSavedIds((prev) => new Set(prev).add(jobId));
+      }
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
         router.push("/login");
@@ -55,19 +69,13 @@ export default function SearchClient() {
     }
   };
 
-  const renderFavoriteAction = (job: JobListItem) => {
-    const saved = savedIds.has(job.job_id);
-    return (
-      <button
-        type="button"
-        disabled={saved || savingId === job.job_id}
-        onClick={() => handleAddFavorite(job.job_id)}
-        className="text-sm font-medium text-primary hover:text-primary-hover disabled:cursor-default disabled:text-ink-muted"
-      >
-        {saved ? "Saved" : "Add to favorites"}
-      </button>
-    );
-  };
+  const renderFavoriteAction = (job: JobListItem) => (
+    <FavoriteHeartButton
+      filled={savedIds.has(job.job_id)}
+      disabled={savingId === job.job_id}
+      onClick={() => handleToggleFavorite(job.job_id)}
+    />
+  );
 
   useEffect(() => {
     let cancelled = false;

@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageHeader from "@/components/ui/PageHeader";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
-import { JobRow, JobsTable } from "@/components/ui/JobResultsList";
+import {
+  FavoriteHeartButton,
+  JobRow,
+  JobsTable,
+} from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
 import { getFavorites, removeFavorite } from "@/lib/services/favorite";
 import type { JobListItem } from "@/lib/services/job";
@@ -61,14 +65,11 @@ export default function FavoritesClient() {
   };
 
   const renderRemoveAction = (job: JobListItem) => (
-    <button
-      type="button"
+    <FavoriteHeartButton
+      filled
       disabled={removingId === job.job_id}
       onClick={() => handleRemove(job.job_id)}
-      className="text-sm font-medium text-warning hover:opacity-80 disabled:cursor-default disabled:opacity-50"
-    >
-      Remove
-    </button>
+    />
   );
 
   return (
@@ -127,7 +128,7 @@ export default function FavoritesClient() {
               <JobsTable
                 jobs={jobs}
                 renderAction={renderRemoveAction}
-                actionColumnLabel="Remove"
+                actionColumnLabel="Favorite"
               />
             ) : (
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

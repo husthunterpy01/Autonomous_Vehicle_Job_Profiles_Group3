@@ -30,6 +30,46 @@ export function postedLabel(job: JobListItem): string {
   });
 }
 
+export function FavoriteHeartButton({
+  filled,
+  onClick,
+  disabled,
+}: {
+  filled: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={filled}
+      aria-label={filled ? "Remove from favorites" : "Add to favorites"}
+      title={filled ? "Remove from favorites" : "Add to favorites"}
+      className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-default disabled:opacity-50 ${
+        filled
+          ? "text-primary hover:text-primary-hover"
+          : "text-ink-muted hover:text-primary"
+      }`}
+    >
+      <svg
+        viewBox="0 0 24 24"
+        className="h-5 w-5"
+        fill={filled ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth={1.8}
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M12 20.25c-.318 0-.635-.088-.912-.263C7.71 17.72 3 14.24 3 9.75 3 7.09 5.09 5 7.75 5c1.44 0 2.79.65 3.68 1.76a.75.75 0 0 0 1.14 0C13.46 5.65 14.81 5 16.25 5 18.91 5 21 7.09 21 9.75c0 4.49-4.71 7.97-8.088 10.237-.277.175-.594.263-.912.263Z"
+        />
+      </svg>
+    </button>
+  );
+}
+
 export function JobRow({
   job,
   action,
