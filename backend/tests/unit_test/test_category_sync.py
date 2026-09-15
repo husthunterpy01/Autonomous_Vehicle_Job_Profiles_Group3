@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import event
 
 from app.models import Category, JobPosting
 from app.services.category_sync import import_categories
@@ -49,45 +50,73 @@ def test_silver_inline_categories_and_missing_preserves(db_session):
     assert [c.sub_type for c in db_session.query(JobPosting).one().categories] == ["Planning/Controls"]
 
 
-def test_object_labels_set_main_type_on_create(db_session):
-    seed(db_session)
-    row = {
-        "deduplication_key": "one",
-        "functional_area": [{"sub_type": "Perception", "main_type": "Sensing & Perception"}],
-    }
-    import_categories(db_session, [row])
-    job = db_session.query(JobPosting).one()
-    assert [(c.sub_type, c.main_type) for c in job.categories] == [("Perception", "Sensing & Perception")]
-
-
-def test_object_labels_backfill_main_type_on_existing_category(db_session):
+def test_main_type_assigned_from_static_mapping_on_create(db_session):
+    # "Perception" -> "Perception" comes from the real
+    # backend/app/config/category_main_types.yaml, not from the record.
     seed(db_session)
     import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Perception"}])
     job = db_session.query(JobPosting).one()
+    assert [(c.sub_type, c.main_type) for c in job.categories] == [("Perception", "Perception")]
+
+
+def test_main_type_self_heals_to_static_mapping_on_existing_category(db_session):
+    seed(db_session)
+    import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Perception"}])
+    category = db_session.query(Category).one()
+    category.main_type = "some stale or hand-edited value"
+    db_session.commit()
+
+    import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Perception"}])
+
+    assert db_session.query(Category).one().main_type == "Perception"
+
+
+def test_unmapped_category_main_type_stays_none(db_session):
+    seed(db_session)
+    import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Not A Real Category"}])
+    job = db_session.query(JobPosting).one()
     assert job.categories[0].main_type is None
 
-    import_categories(
-        db_session,
-        [{"deduplication_key": "one", "functional_area": [{"sub_type": "Perception", "main_type": "Sensing & Perception"}]}],
-    )
-    assert job.categories[0].main_type == "Sensing & Perception"
-    assert db_session.query(Category).count() == 1
 
-
-def test_string_and_object_labels_can_mix_in_one_row(db_session):
-    seed(db_session)
-    row = {
-        "deduplication_key": "one",
-        "functional_area": ["Planning", {"sub_type": "Perception", "main_type": "Sensing & Perception"}],
-    }
-    import_categories(db_session, [row])
-    job = db_session.query(JobPosting).one()
-    by_sub_type = {c.sub_type: c.main_type for c in job.categories}
-    assert by_sub_type == {"Planning": None, "Perception": "Sensing & Perception"}
-
-
-@pytest.mark.parametrize("bad_label", [{"main_type": "Sensing"}, {"sub_type": "Perception", "main_type": 5}, {"sub_type": 5}])
-def test_object_label_validation_errors(db_session, bad_label):
+@pytest.mark.parametrize("bad_functional_area", [
+    {"sub_type": "Perception", "main_type": "Perception"}, [{"sub_type": "Perception"}], [None], [3],
+])
+def test_object_labels_are_rejected(db_session, bad_functional_area):
+    # functional_area is plain strings only - main_type per record was the
+    # source of the last-writer-wins bug this replaced.
     seed(db_session)
     with pytest.raises(ValueError):
-        import_categories(db_session, [{"deduplication_key": "one", "functional_area": [bad_label]}])
+        import_categories(db_session, [{"deduplication_key": "one", "functional_area": bad_functional_area}])
+
+
+def test_import_preloads_categories_in_one_query_instead_of_one_per_label_per_job(db_session):
+    # Regression test: category lookups must not be one SELECT per label
+    # per job - that was ~15-40k round-trips on a real import. 20 jobs x 5
+    # of the 9 real categories each (100 label-instances) should still need
+    # only ~1 SELECT for categories overall, not 100.
+    categories = ["Perception", "Planning", "Mapping", "Control", "Sensing"]
+    for i in range(20):
+        SilverSync(db_session).run(
+            [{"deduplication_key": f"job-{i}", "company_name": "AV", "job_name": "Engineer", "job_description": "Autonomy"}]
+        )
+    db_session.commit()
+
+    rows = [{"deduplication_key": f"job-{i}", "functional_area": categories} for i in range(20)]
+
+    select_count = 0
+
+    def _count_selects(_conn, _cursor, statement, *_args, **_kwargs):
+        nonlocal select_count
+        if statement.strip().upper().startswith("SELECT"):
+            select_count += 1
+
+    event.listen(db_session.bind, "before_cursor_execute", _count_selects)
+    try:
+        import_categories(db_session, rows)
+    finally:
+        event.remove(db_session.bind, "before_cursor_execute", _count_selects)
+
+    assert db_session.query(Category).count() == len(categories)
+    # Well below the ~140 a one-SELECT-per-label-per-job pattern would need
+    # for 100 label-instances, and doesn't grow with categories-per-job.
+    assert select_count < 60

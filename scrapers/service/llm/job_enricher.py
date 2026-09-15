@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from scrapers.service.llm.json_response import parse_string_list, strip_code_fence
+from scrapers.service.llm.json_response import (
+    build_batch_prompt,
+    parse_batch_response,
+    parse_string_list,
+)
 from scrapers.service.llm.skill import ExtractedSkill, parse_skills
-from scrapers.service.llm.text import normalize_text
 
 PROMPT_PATH = Path(__file__).resolve().parents[2] / "prompts" / "job_enrichment.txt"
 CATEGORIES_PATH = Path(__file__).resolve().parents[2] / "prompts" / "categories_definition.txt"
@@ -59,43 +61,15 @@ class JobEnricher:
 
     @staticmethod
     def build_prompt(jobs: Sequence[Mapping[str, str]]) -> str:
-        template = PROMPT_PATH.read_text(encoding="utf-8")
         categories_definition = CATEGORIES_PATH.read_text(encoding="utf-8")
-        jobs_payload = [
-            {
-                "id": str(job["id"]),
-                "title": normalize_text(job.get("title", "")),
-                "description": normalize_text(job.get("description", "")),
-            }
-            for job in jobs
-        ]
-        jobs_json = json.dumps(jobs_payload, ensure_ascii=False)
-        return template.replace("{{categories_definition}}", categories_definition).replace(
-            "{{jobs_json}}", jobs_json
-        )
+        return build_batch_prompt(PROMPT_PATH, "{{categories_definition}}", categories_definition, jobs)
 
     @staticmethod
     def parse_response(response: str, expected_ids: Sequence[str]) -> dict[str, JobEnrichment]:
         """Parse whatever the batch response contains; a truncated tail (missing or
         malformed entries) is reported by omission rather than failing the whole
         batch, so the caller can retry just those job ids."""
-        payload = json.loads(strip_code_fence(response))
-        if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
-            raise ValueError("LLM enrichment response must be a JSON object with a 'results' array")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
-
-        expected = set(expected_ids)
-        results: dict[str, JobEnrichment] = {}
-        for item in payload["results"]:
-            if not isinstance(item, dict):
-                continue
-            job_id = str(item.get("id") or "").strip()
-            if job_id not in expected or job_id in results:
-                continue
-            try:
-                results[job_id] = JobEnricher._parse_one(item)
-            except ValueError:
-                continue
-        return results
+        return parse_batch_response(response, expected_ids, JobEnricher._parse_one, "enrichment")
 
     @staticmethod
     def _parse_one(payload: Mapping[str, object]) -> JobEnrichment:

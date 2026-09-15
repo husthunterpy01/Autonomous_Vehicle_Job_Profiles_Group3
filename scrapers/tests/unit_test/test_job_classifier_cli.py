@@ -1,6 +1,7 @@
 from scrapers.utils.job_classifier import (
     JobClassifierMain,
     _group_by_company_title,
+    _job_key,
     _relevance_input,
 )
 
@@ -8,7 +9,38 @@ ALIASES = {
     "company": ("company_name",),
     "title": ("job_name",),
     "description": ("job_description", "description"),
+    "id": ("source_job_id", "deduplication_key", "id"),
 }
+
+
+def test_job_key_prefers_deduplication_key_over_the_audit_id_alias_chain():
+    # source_job_id (a Greenhouse/SmartRecruiters numeric id or Workday
+    # requisition number) is not unique across companies - deduplication_key
+    # (the Silver MD5 natural-key hash) is the real identity.
+    posting = {"source_job_id": "42", "deduplication_key": "abc123"}
+
+    assert _job_key(posting, ALIASES) == "abc123"
+
+
+def test_job_key_falls_back_to_audit_id_alias_chain_when_no_deduplication_key():
+    posting = {"source_job_id": "42"}
+
+    assert _job_key(posting, ALIASES) == "42"
+
+
+def test_job_key_prevents_cross_company_source_job_id_collision():
+    # Two unrelated jobs at different companies sharing a small numeric
+    # source_job_id must not collide when used as a dict key.
+    posting_a = {"source_job_id": "42", "deduplication_key": "dedupA", "company_name": "Company A"}
+    posting_b = {"source_job_id": "42", "deduplication_key": "dedupB", "company_name": "Company B"}
+
+    postings_by_id = {}
+    for posting in (posting_a, posting_b):
+        postings_by_id[_job_key(posting, ALIASES)] = posting
+
+    assert len(postings_by_id) == 2
+    assert postings_by_id["dedupA"]["company_name"] == "Company A"
+    assert postings_by_id["dedupB"]["company_name"] == "Company B"
 
 
 def test_relevance_input_combines_prefilter_keywords_and_short_excerpt():
@@ -156,6 +188,38 @@ def test_retry_skips_group_retry_and_goes_straight_to_individual_on_total_failur
     call_sets = [set(call) for call in classifier.calls]
     assert call_sets[0] == {"a", "b"}
     assert {frozenset(c) for c in call_sets[1:]} == {frozenset({"a"}), frozenset({"b"})}
+
+
+class _RaisingThenWorkingClassifier:
+    """Raises on the first call (simulating a 5xx / connection error /
+    empty completion / truncated JSON the parser gave up on) and returns
+    a real per-job result on every call after that."""
+
+    def __init__(self):
+        self.calls: list[list[str]] = []
+
+    def classify_batch(self, jobs):
+        from scrapers.service.llm import RelevanceDecision
+
+        ids = [j["id"] for j in jobs]
+        self.calls.append(ids)
+        if len(self.calls) == 1:
+            raise ConnectionError("simulated transient failure")
+        return {jid: RelevanceDecision(True, "High", ()) for jid in ids}
+
+
+def test_retry_falls_through_to_individual_calls_when_the_whole_batch_raises():
+    # A batch-level exception must not mark every job in it permanently
+    # failed after zero real per-job attempts - it should be treated like a
+    # 100%-missing response and retried individually, same as a truncation.
+    classifier = _RaisingThenWorkingClassifier()
+
+    results = JobClassifierMain._classify_with_retry(classifier, _jobs_by_id("a", "b"), 1, 1)
+
+    assert set(results) == {"a", "b"}
+    # First call is the batch that raised; the rest are individual retries.
+    assert classifier.calls[0] == ["a", "b"] or set(classifier.calls[0]) == {"a", "b"}
+    assert {frozenset(c) for c in classifier.calls[1:]} == {frozenset({"a"}), frozenset({"b"})}
 
 
 def test_group_by_company_title_no_duplicates_is_a_noop():

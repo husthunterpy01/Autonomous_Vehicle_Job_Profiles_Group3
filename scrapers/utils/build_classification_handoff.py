@@ -11,12 +11,30 @@ from scrapers.service.silver_cleaning.salary_extractor import extract_salary_fro
 logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_PATH = Path("data") / "job_classification" / "handoff.json"
-DEFAULT_MAIN_TYPES_PATH = Path("scrapers") / "config" / "category_main_types.yaml"
+# Resolved relative to this module, not the caller's cwd - a cwd-relative
+# default here would resolve to a different (usually missing) path whenever
+# this is run from anywhere but the repo root (e.g. from scrapers/ or
+# backend/), and _load_main_types below used to treat a missing file the
+# same as an explicit opt-out: every category came back unmapped with no
+# error and exit 0.
+DEFAULT_MAIN_TYPES_PATH = Path(__file__).resolve().parent.parent / "config" / "category_main_types.yaml"
 DEFAULT_COMPANY_SALARY_CACHE_PATH = Path("scrapers") / "data" / "company_salary.yaml"
 
 
 def _load_main_types(path: Path | None) -> dict[str, str]:
-    if path is None or not path.is_file():
+    if path is None:
+        return {}
+    if not path.is_file():
+        if path == DEFAULT_MAIN_TYPES_PATH:
+            # The default is a real, checked-in repo file - if it's not
+            # there, something's actually wrong (bad cwd, moved/renamed
+            # file), not an intentional opt-out. Fail loudly instead of
+            # silently treating every category as unmapped.
+            raise FileNotFoundError(
+                f"Default category main-types file not found at {path} (resolved relative to "
+                "this module, not cwd). Pass an explicit --main-types pointing at a missing "
+                "path if you actually intend to skip the unmapped-category check."
+            )
         return {}
     with path.open("r", encoding="utf-8") as stream:
         mapping = yaml.safe_load(stream) or {}
@@ -103,12 +121,17 @@ def build_handoff_records(
 ) -> list[dict]:
     """Reshape av_jobs*.jsonl rows into the backend's classification handoff
     contract (see backend/SILVER_SYNC.md): `deduplication_key` +
-    `functional_area` (our `categories`, each tagged with its static
-    `main_type` from category_main_types.yaml - see
-    scrapers/service/llm/category_taxonomy.py for how that mapping was
-    derived) + `skills` (already in the `{name, skill_type}` shape
+    `functional_area` (our `categories`, as plain sub_type strings - the
+    backend owns the static sub_type -> main_type mapping itself, in
+    app/config/category_main_types.yaml, since main_type is a property of
+    the category and not something a per-job record should be able to set)
+    + `skills` (already in the `{name, skill_type}` shape
     SilverSync/import_categories expect) + salary fields (see
     `_salary_fields` for the source priority).
+
+    main_types_path is used only to warn about categories with no known
+    main_type mapping (see scrapers/service/llm/category_taxonomy.py for how
+    that mapping was derived) - it does not affect the emitted records.
 
     Later files win on a duplicate deduplication_key, so passing the LLM
     enrichment output after the keyword-resolved one lets a job re-classified
@@ -130,12 +153,9 @@ def build_handoff_records(
             if not categories:
                 skipped_uncategorized += 1
                 continue
-            functional_area = []
             for category in categories:
-                main_type = main_types.get(category)
-                if main_type is None:
+                if main_types.get(category) is None:
                     unmapped_categories.add(category)
-                functional_area.append({"sub_type": category, "main_type": main_type})
             salary_fields = _salary_fields(row, company_salary_cache)
             if salary_fields:
                 salary_source_counts[salary_fields["salary_source"]] = (
@@ -143,7 +163,7 @@ def build_handoff_records(
                 )
             records[key] = {
                 "deduplication_key": key,
-                "functional_area": functional_area,
+                "functional_area": list(categories),
                 "skills": classification.get("skills") or [],
                 **salary_fields,
             }
@@ -151,7 +171,7 @@ def build_handoff_records(
         logger.info("Skipped %d rows with no categories assigned.", skipped_uncategorized)
     if unmapped_categories:
         logger.warning(
-            "No main_type mapping for categories %s; leaving main_type unset for those.",
+            "No main_type mapping for categories %s; the backend's category_main_types.yaml may need updating.",
             sorted(unmapped_categories),
         )
     logger.info(

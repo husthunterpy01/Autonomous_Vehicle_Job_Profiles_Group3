@@ -32,3 +32,19 @@ def test_compress_ignores_boilerplate_marker_appearing_too_early():
     _, compressed = compress_job_text("Engineer", description, max_chars=1000)
 
     assert "LiDAR" in compressed
+
+
+def test_compress_ignores_boilerplate_word_used_mid_sentence():
+    # "compensation" used as a technical term (not a "Compensation:" heading)
+    # must not truncate the Requirements section that follows it.
+    filler = "We are building the future of autonomous trucking with a world class robotics team. "
+    description = (
+        filler * 3
+        + "The role covers sensor fusion, IMU integration, and ego-motion compensation for the lidar stack. "
+        + "Requirements: strong C++ experience, ROS 2, and real-time systems background."
+    )
+
+    _, compressed = compress_job_text("Perception Engineer", description, max_chars=1000)
+
+    assert "C++" in compressed
+    assert "ROS 2" in compressed
