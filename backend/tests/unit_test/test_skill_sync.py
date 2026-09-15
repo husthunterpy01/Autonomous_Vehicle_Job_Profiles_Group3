@@ -1,4 +1,5 @@
 import pytest
+from sqlalchemy import event
 
 from app.models import JobPosting, Location, Skill
 from app.services.silver_sync import SilverSync
@@ -94,6 +95,49 @@ def test_empty_array_clears_skills(db_session):
     )
     import_skills(db_session, [{"deduplication_key": "one", "skills": []}])
     assert db_session.query(JobPosting).one().skills == []
+
+
+def test_import_preloads_skills_in_one_query_instead_of_one_per_label_per_job(db_session):
+    # Regression test: skill lookups must not be one SELECT per label per
+    # job - that was ~15-40k round-trips on a real import. 20 jobs x 5
+    # skills each (100 label-instances) should still need only ~1 SELECT for
+    # skills overall, not 100 - a one-SELECT-per-label-per-job pattern would
+    # need ~140 total (100 skill lookups + resolve_job + the ORM's own
+    # lazy-load of each job's existing skills collection before replacing
+    # it); the fix should stay close to the ~41 that resolve_job/lazy-load
+    # alone cost, regardless of how many skills each job has.
+    skill_names = ["Python", "ROS 2", "C++", "Docker", "PyTorch"]
+    for i in range(20):
+        SilverSync(db_session).run(
+            [{"deduplication_key": f"job-{i}", "company_name": "AV", "job_name": "Engineer", "job_description": "Autonomy"}]
+        )
+    db_session.commit()
+
+    rows = [
+        {
+            "deduplication_key": f"job-{i}",
+            "skills": [{"name": name, "skill_type": "framework"} for name in skill_names],
+        }
+        for i in range(20)
+    ]
+
+    select_count = 0
+
+    def _count_selects(_conn, _cursor, statement, *_args, **_kwargs):
+        nonlocal select_count
+        if statement.strip().upper().startswith("SELECT"):
+            select_count += 1
+
+    event.listen(db_session.bind, "before_cursor_execute", _count_selects)
+    try:
+        import_skills(db_session, rows)
+    finally:
+        event.remove(db_session.bind, "before_cursor_execute", _count_selects)
+
+    assert db_session.query(Skill).count() == len(skill_names)
+    # Well below the ~140 a one-SELECT-per-label-per-job pattern would need
+    # for 100 label-instances, and doesn't grow with skills-per-job.
+    assert select_count < 60
 
 
 @pytest.mark.parametrize(

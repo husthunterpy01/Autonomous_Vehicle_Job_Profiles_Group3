@@ -114,12 +114,16 @@ advisory lock as Silver sync. Library callers must supply a transaction and
 serialize writers. SilverSync also accepts the same inline classification fields.
 
 `functional_area` is one label string or an array of strings. Each label becomes
-Category.sub_type; main_type stays null because no parent taxonomy has been
-provided. Labels are NFKC-normalized, whitespace-collapsed and casefolded for
-uniqueness within taxonomy_version (positive integer, default 1). The first
-cleaned spelling is kept for display. Synonyms are not guessed; commas, slashes
-and other punctuation do not split a label. Use an array for multiple categories.
-Labels from the producer are provisional categories, not a curated allowlist.
+Category.sub_type. main_type is never accepted from a record - it's a property
+of the category, not of any individual job, so it comes only from the backend's
+own static mapping at `app/config/category_main_types.yaml` (a hand-kept copy of
+`scrapers/config/category_main_types.yaml`) and is looked up by normalized label
+on every sync; a label with no entry there keeps main_type null. Labels are
+NFKC-normalized, whitespace-collapsed and casefolded for uniqueness within
+taxonomy_version (positive integer, default 1). The first cleaned spelling is
+kept for display. Synonyms are not guessed; commas, slashes and other punctuation
+do not split a label. Use an array for multiple categories. Labels from the
+producer are provisional categories, not a curated allowlist.
 
 JobCategory stores the many-to-many foreign-key association. An explicit value
 replaces all current associations for that job, including older taxonomy versions;

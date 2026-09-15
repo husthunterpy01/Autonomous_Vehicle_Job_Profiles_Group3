@@ -5,12 +5,12 @@ from datetime import datetime
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Company, JobPosting, Location, Skill
-from app.services.category_sync import sync_categories
+from app.models import Company, JobPosting, Location
+from app.services.category_sync import _collect_category_keys, _preload_categories, sync_categories
+from app.services.skill_sync import _collect_skill_keys, _preload_skills, sync_skills
 from app.utils.normalization import normalized
 
 EMPLOYMENT_TYPES = {"full-time": 1, "part-time": 2, "contract": 3, "temporary": 4, "internship": 5}
-SKILL_TYPES = {"tool", "programming_language", "framework", "domain_concept", "certification"}
 
 
 class SilverSync:
@@ -18,7 +18,16 @@ class SilverSync:
         self.db = db
 
     def run(self, records: Iterable[Mapping]) -> dict[str, int]:
+        # Materialized once so both the preload scan below and the main loop
+        # can see every row - the caller may pass a one-shot streaming
+        # cursor (see SilverPipeline.sync). Trading that streaming memory
+        # profile for one preload query instead of one SELECT per label per
+        # job is worth it at the scale this runs at (~15-40k round-trips
+        # otherwise on a full import).
+        records = list(records)
         counts = {"read": 0, "created": 0, "updated": 0}
+        category_cache = _preload_categories(self.db, _collect_category_keys(records))
+        skill_cache = _preload_skills(self.db, _collect_skill_keys(records))
         seen = set()
         for row in records:
             counts["read"] += 1
@@ -83,21 +92,7 @@ class SilverSync:
             # Compatibility display field only; normalized associations are authoritative.
             job.job_location = " | ".join(item.name for item in job.locations) or None
             # No skills field means extraction has not run: preserve existing skills.
-            if "skills" in row:
-                if not isinstance(row["skills"], (list, tuple)):
-                    raise ValueError("skills must be an array")
-                skills = {}
-                for item in row["skills"]:
-                    if not isinstance(item, Mapping) or not isinstance(item.get("name"), str) or not item["name"].strip() or item.get("skill_type") not in SKILL_TYPES:
-                        raise ValueError("Invalid extracted skill")
-                    skill_key = (normalized(item["name"]), item["skill_type"])
-                    skill = self.db.query(Skill).filter_by(normalized_name=skill_key[0], skill_type=skill_key[1]).one_or_none()
-                    if skill is None:
-                        skill = Skill(skill_name=item["name"].strip(), normalized_name=skill_key[0], skill_type=skill_key[1])
-                        self.db.add(skill)
-                        self.db.flush()
-                    skills[skill_key] = skill
-                job.skills = list(skills.values())
+            sync_skills(self.db, job, row, cache=skill_cache)
             self.db.flush()
-            sync_categories(self.db, job, row)
+            sync_categories(self.db, job, row, cache=category_cache)
         return counts

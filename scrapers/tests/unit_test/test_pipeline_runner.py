@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import patch
 
 from scrapers.utils.pipeline_runner import PipelineRunner
@@ -39,11 +40,12 @@ def test_runs_every_stage_in_order_on_success(
     prefilter_output_dir = prefilter_argv[prefilter_argv.index("--output-dir") + 1]
 
     classifier_argv = mock_classifier.main.call_args.args[0]
-    assert classifier_argv[1] == f"{prefilter_output_dir}/llm_candidates.jsonl"
+    # Path-joined with pathlib (not a literal "/") so this matches on Windows too.
+    assert classifier_argv[1] == str(Path(prefilter_output_dir) / "llm_candidates.jsonl")
     classifier_output_dir = classifier_argv[classifier_argv.index("--output-dir") + 1]
 
     enricher_argv = mock_enricher.main.call_args.args[0]
-    assert enricher_argv[1] == f"{classifier_output_dir}/av_candidates.jsonl"
+    assert enricher_argv[1] == str(Path(classifier_output_dir) / "av_candidates.jsonl")
 
 
 @_patch_stage("JobEnricherMain")

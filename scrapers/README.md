@@ -63,7 +63,7 @@ python3 -m scrapers.utils.job_classifier \
 
 Batches jobs (default 20/request) through Groq to screen for AV relevance
 only - cheap, no category taxonomy in the prompt. Writes
-`av_candidates.jsonl` (AV-relevant), `non_av_jobs.jsonl`, `failed_jobs.jsonl`,
+`av_candidates.jsonl` (AV-relevant), `non_av_jobs.jsonl`, `relevance_failed_jobs.jsonl`,
 and `relevance_metrics.json`. Resumable: rerunning the same command skips job
 IDs already present in those output files. Key flags: `--relevance-batch-size`
 (default `20`), `--sample-size` (label a random subset instead of everything,
@@ -77,14 +77,18 @@ python3 -m scrapers.utils.job_enricher \
   --output-dir data/job_classification
 ```
 
-Batches AV-confirmed jobs (default 10/request) through Groq against the
-9-category taxonomy in `scrapers/prompts/categories_definition.txt`, extracting
-categories and skills. Writes `av_jobs.jsonl` - **the final, complete
-Silver-layer output** with `categories` and `skills` per job - plus
-`failed_jobs.jsonl` and `enrichment_metrics.json`. Also resumable across
-interrupted runs. Key flag: `--batch-size` (default `10`; larger batches
-amortize the ~850-token taxonomy prompt further but risk nearing Groq's
-per-request token ceiling).
+Each job is first run through `KeywordCategoryClassifier` - deterministic,
+zero-LLM category matching against the same curated vocabulary in
+`categories_definition.txt`. Only jobs its vocabulary doesn't cover (an empty
+result) fall back to Groq (default 10/request) against the 9-category
+taxonomy, extracting categories and skills. Writes `av_jobs.jsonl` - **the
+final, complete Silver-layer output** with `categories` and `skills` per job,
+each tagged `category_source: "keyword_resolved"` or `"llm_enriched"` - plus
+`enrichment_failed_jobs.jsonl` and `enrichment_metrics.json` (which reports
+the `keyword_resolved`/`llm_enriched` split for the current run). Also
+resumable across interrupted runs. Key flag: `--batch-size` (default `10`;
+larger batches amortize the ~850-token taxonomy prompt further but risk
+nearing Groq's per-request token ceiling).
 
 **Groq setup for steps 3-4:** set `GROQ_API_KEY` in `scrapers/.env`. It accepts
 one key or a comma-separated pool (`key1,key2,key3`); if the active key gets

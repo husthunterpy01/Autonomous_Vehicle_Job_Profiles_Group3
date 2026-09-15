@@ -20,8 +20,15 @@ def normalize_text(value: object) -> str:
 # AV-relevance/category/skill signal. Cutting here before a hard length cap
 # means truncation drops filler first instead of slicing off requirements
 # text that happened to land past the character limit.
+#
+# normalize_text() collapses all whitespace (including newlines) before this
+# runs, so there are no line boundaries left to anchor a heading to. Instead,
+# the marker must open a new sentence/clause (start of string, or right after
+# ".", "!" or "?") rather than appear as a bare word anywhere - otherwise a
+# technical mid-sentence use (e.g. "ego-motion compensation") would match and
+# truncate everything after it, including a later Requirements section.
 _BOILERPLATE_MARKERS = re.compile(
-    r"\b("
+    r"(?:^|(?<=[.!?])\s+)("
     r"benefits|compensation|salary range|pay range|pay transparency|"
     r"what we offer|perks|equal opportunity|eeo statement|"
     r"accommodations?|how to apply|about the company|about us"
