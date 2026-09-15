@@ -185,7 +185,7 @@ SEED_ON_STARTUP=false
 
 Use the same password you set when creating the Postgres user. If you used the Docker option above, use port `5433` instead.
 
-**Leave `SEED_ON_STARTUP=false` once you have real data.** `app/sql/seed_companies.sql` opens with `TRUNCATE TABLE company CASCADE`, which wipes `jobposting` and every junction table (`job_category`/`job_skill`/`job_location`) along with it — not just company rows. `true` means **every single API start** silently destroys any Silver-synced data back down to the 12 hardcoded demo postings. Only set it `true` for a genuine from-scratch reseed on a database you don't mind emptying.
+Keep `SEED_ON_STARTUP=false` (see `backend/.env.sample`): `true` reseeds companies on *every* API start via `app/sql/seed_companies.sql`, which opens with `TRUNCATE TABLE company CASCADE` - that cascades through the FK graph and wipes every jobposting (Silver-synced categories, skills, and salary data included) down to the 12 hardcoded demo postings. Only set it `true` for a genuine from-scratch reseed on a database you don't mind emptying.
 
 Backend CI starts an ephemeral Postgres service with `POSTGRES_HOST_AUTH_METHOD=trust` (no password). That is for GitHub Actions only — local Postgres should still use a password in `.env`.
 
@@ -246,6 +246,30 @@ curl -X POST http://127.0.0.1:8000/api/v1/companies \
 ```
 
 When `SEED_ON_STARTUP=true`, created rows are replaced on restart because startup reseeds from the SQL file.
+
+</details>
+
+<details>
+<summary>Supabase mirror (optional)</summary>
+
+Mirrors the backend's public schema - `company`, `jobposting`, `category`,
+`skill`, `location`, and their join tables, **never `user_account`** - to a
+hosted Supabase Postgres instance, so Supabase's auto-generated Data API can
+serve it read-only. Off by default.
+
+Set `SUPABASE_DATABASE_URL` in `.env` (see `backend/.env.sample` for the
+connection-pooler string format) and it runs automatically after every
+successful `sync_silver`/`import_categories`/`import_skills`/`import_salary`.
+To run it manually instead:
+
+```bash
+python -m scripts.sync_to_supabase
+```
+
+Each run is a full `pg_dump`/`pg_restore --clean` of those tables (not an
+incremental sync), followed by `GRANT SELECT` on them for Supabase's
+`anon`/`authenticated` roles. Leave `SUPABASE_DATABASE_URL` unset to disable
+mirroring entirely.
 
 </details>
 

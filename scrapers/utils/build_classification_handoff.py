@@ -6,6 +6,7 @@ from pathlib import Path
 
 import yaml
 from scrapers.service.llm.io import JobPostingIO
+from scrapers.service.silver_cleaning.salary_extractor import extract_salary_from_text
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +18,7 @@ DEFAULT_OUTPUT_PATH = Path("data") / "job_classification" / "handoff.json"
 # same as an explicit opt-out: every category came back unmapped with no
 # error and exit 0.
 DEFAULT_MAIN_TYPES_PATH = Path(__file__).resolve().parent.parent / "config" / "category_main_types.yaml"
+DEFAULT_COMPANY_SALARY_CACHE_PATH = Path("scrapers") / "data" / "company_salary.yaml"
 
 
 def _load_main_types(path: Path | None) -> dict[str, str]:
@@ -41,7 +43,82 @@ def _load_main_types(path: Path | None) -> dict[str, str]:
     return mapping
 
 
-def build_handoff_records(paths: list[Path], main_types_path: Path | None = DEFAULT_MAIN_TYPES_PATH) -> list[dict]:
+def _load_company_salary_cache(path: Path | None) -> dict[str, dict]:
+    if path is None or not path.is_file():
+        return {}
+    with path.open("r", encoding="utf-8") as stream:
+        cache = yaml.safe_load(stream) or {}
+    if not isinstance(cache, dict):
+        raise ValueError(f"{path} must be a YAML mapping of company_name -> cache entry")  # noqa: TRY004 - malformed YAML, not a Python type error
+    return cache
+
+
+def _salary_fields(row: dict, company_salary_cache: dict[str, dict]) -> dict:
+    """Priority order: Phase 1 (structured API field, survived from Silver)
+    -> Phase 2a (regex on the original description) -> Phase 2b (levels.fyi
+    company average, tagged as such) -> nothing (no keys added; the backend
+    leaves salary null, same as today - never invents a number).
+
+    Phase 1/2a produce a real disclosed min-max range for *this* posting, so
+    they fill salary_min/salary_max. Phase 2b is a single company-wide
+    median across all roles and levels (see LevelsFyiAverage) with no real
+    range at all - it fills the separate salary_average column instead of
+    duplicating that one number into both salary_min and salary_max, which
+    previously made an estimate look like a precise (and suspiciously exact,
+    min == max) disclosed range.
+
+    Phase 1 also requires salary_currency and salary_period, not just the
+    two numbers - salary_sync.sync_salary rejects a row missing either (the
+    Greenhouse bronze model can produce a real salary_min/salary_max with a
+    null salary_currency when the source posting's pay_input_ranges entry
+    has no currency_type), and import_salary rolls back its *entire* batch
+    on one row's ValueError. Falling through to regex/levels.fyi here keeps
+    an incomplete Phase 1 row from taking down every other job's salary
+    import in the same run.
+    """
+    if (
+        row.get("salary_min") is not None
+        and row.get("salary_max") is not None
+        and row.get("salary_currency")
+        and row.get("salary_period")
+    ):
+        return {
+            "salary_min": row["salary_min"],
+            "salary_max": row["salary_max"],
+            "salary_currency": row.get("salary_currency"),
+            "salary_period": row.get("salary_period"),
+            "salary_source": "api",
+        }
+
+    estimate = extract_salary_from_text(row.get("job_description") or "")
+    if estimate is not None:
+        return {
+            "salary_min": estimate.min,
+            "salary_max": estimate.max,
+            "salary_currency": estimate.currency,
+            "salary_period": estimate.period,
+            "salary_source": "regex",
+        }
+
+    cached = company_salary_cache.get(row.get("company_name") or "")
+    if cached is not None:
+        average = cached.get("avg_total_comp")
+        if average is not None:
+            return {
+                "salary_average": average,
+                "salary_currency": cached.get("currency"),
+                "salary_period": "yearly",
+                "salary_source": "levels_fyi_average",
+            }
+
+    return {}
+
+
+def build_handoff_records(
+    paths: list[Path],
+    main_types_path: Path | None = DEFAULT_MAIN_TYPES_PATH,
+    company_salary_cache_path: Path | None = DEFAULT_COMPANY_SALARY_CACHE_PATH,
+) -> list[dict]:
     """Reshape av_jobs*.jsonl rows into the backend's classification handoff
     contract (see backend/SILVER_SYNC.md): `deduplication_key` +
     `functional_area` (our `categories`, as plain sub_type strings - the
@@ -49,7 +126,8 @@ def build_handoff_records(paths: list[Path], main_types_path: Path | None = DEFA
     app/config/category_main_types.yaml, since main_type is a property of
     the category and not something a per-job record should be able to set)
     + `skills` (already in the `{name, skill_type}` shape
-    SilverSync/import_categories expect).
+    SilverSync/import_categories expect) + salary fields (see
+    `_salary_fields` for the source priority).
 
     main_types_path is used only to warn about categories with no known
     main_type mapping (see scrapers/service/llm/category_taxonomy.py for how
@@ -60,9 +138,11 @@ def build_handoff_records(paths: list[Path], main_types_path: Path | None = DEFA
     by the LLM override its keyword-only categories.
     """
     main_types = _load_main_types(main_types_path)
+    company_salary_cache = _load_company_salary_cache(company_salary_cache_path)
     records: dict[str, dict] = {}
     skipped_uncategorized = 0
     unmapped_categories: set[str] = set()
+    salary_source_counts: dict[str, int] = {}
     for path in paths:
         for row in JobPostingIO.load(path):
             key = row.get("deduplication_key")
@@ -76,10 +156,16 @@ def build_handoff_records(paths: list[Path], main_types_path: Path | None = DEFA
             for category in categories:
                 if main_types.get(category) is None:
                     unmapped_categories.add(category)
+            salary_fields = _salary_fields(row, company_salary_cache)
+            if salary_fields:
+                salary_source_counts[salary_fields["salary_source"]] = (
+                    salary_source_counts.get(salary_fields["salary_source"], 0) + 1
+                )
             records[key] = {
                 "deduplication_key": key,
                 "functional_area": list(categories),
                 "skills": classification.get("skills") or [],
+                **salary_fields,
             }
     if skipped_uncategorized:
         logger.info("Skipped %d rows with no categories assigned.", skipped_uncategorized)
@@ -88,6 +174,10 @@ def build_handoff_records(paths: list[Path], main_types_path: Path | None = DEFA
             "No main_type mapping for categories %s; the backend's category_main_types.yaml may need updating.",
             sorted(unmapped_categories),
         )
+    logger.info(
+        "Salary resolved for %d/%d records (%s).",
+        sum(salary_source_counts.values()), len(records), salary_source_counts,
+    )
     return list(records.values())
 
 
@@ -117,9 +207,15 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_MAIN_TYPES_PATH,
         help="YAML mapping of sub_type -> main_type; pass a missing/empty path to skip",
     )
+    parser.add_argument(
+        "--company-salary-cache",
+        type=Path,
+        default=DEFAULT_COMPANY_SALARY_CACHE_PATH,
+        help="YAML cache from refresh_company_salary_cache.py; pass a missing/empty path to skip",
+    )
     args = parser.parse_args(argv)
 
-    records = build_handoff_records(args.input, args.main_types)
+    records = build_handoff_records(args.input, args.main_types, args.company_salary_cache)
     JobPostingIO.write_json(args.output, records)
     logger.info("Wrote %d handoff records to %s.", len(records), args.output)
     return 0

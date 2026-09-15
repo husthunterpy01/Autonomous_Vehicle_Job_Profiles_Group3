@@ -29,9 +29,18 @@ USER_AGENT = (
 )
 SMARTRECRUITERS_ATS = frozenset({"smartrecruiters", "smartrecruiter"})
 WORKDAY_ATS = "workday"
+GREENHOUSE_ATS = "greenhouse"
 # Randomised gap between per-job detail calls so bursts of hundreds of requests
 # do not trip Workday's rate/burst detection.
 DETAIL_PAUSE_RANGE = (0.5, 1.5)
+# Greenhouse pay_transparency detail calls: stop attempting further jobs in
+# the same board after this many consecutive failures. A run of failures in
+# a row is much more likely to be a dead connection/hard block than several
+# unrelated jobs each independently breaking, and each failure can cost a
+# full request timeout (up to 30s) - continuing through an outage for a
+# board of hundreds of jobs would mean hours of near-guaranteed timeouts
+# before anything gets saved.
+GREENHOUSE_DETAIL_FAILURE_LIMIT = 3
 # HTTP codes worth retrying with back-off: rate limiting, transient soft-blocks
 # (Workday CXS often answers a soft-block with 403), and 5xx.
 RETRYABLE_STATUS = frozenset({403, 429})
@@ -377,6 +386,8 @@ class RawFetch:
             body = self._expand_smartrecruiters_postings(url, body, timeout=timeout)
         elif self.source_system == WORKDAY_ATS:
             body = self._expand_workday_postings(url, body, timeout=timeout)
+        elif self.source_system == GREENHOUSE_ATS:
+            body = self._expand_greenhouse_postings(url, body, timeout=timeout)
         archive = ResponseArchive(MinioConfig())
         return archive.save_raw_response(
             company_name=self.company_name,
@@ -419,6 +430,67 @@ class RawFetch:
 
     @staticmethod
     def _smartrecruiters_detail_root(list_url: str) -> str:
+        parts = urlsplit(list_url)
+        return urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
+
+    def _expand_greenhouse_postings(self, list_url: str, body: bytes, timeout: float) -> dict[str, Any] | bytes:
+        """Attach ``pay_input_ranges`` to each posting via a per-job detail GET.
+
+        The list endpoint (even with ``?content=true``) never includes pay
+        transparency data - that only appears on the per-job detail endpoint
+        when called with ``?pay_transparency=true``, and is usually an empty
+        array (most companies don't disclose it), so this is a low-cost
+        addition to try on every job rather than something worth gating.
+
+        A per-job failure (including a socket-level OSError - e.g. a read
+        timeout, which isn't wrapped into RuntimeError the way HTTPError/
+        URLError are inside _http_get) is caught and skipped rather than
+        raised, so it can't take down the whole board - before pay
+        transparency detail calls existed, a successful list call alone was
+        enough to archive a company; one bad job's timeout must not regress
+        that. GREENHOUSE_DETAIL_FAILURE_LIMIT consecutive failures stops
+        further attempts for this board (almost certainly a dead connection,
+        not several unrelated single-job problems) while still keeping and
+        returning whatever was already collected.
+        """
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            return body
+        if not isinstance(payload, dict):
+            return body
+        postings = payload.get("jobs")
+        if not isinstance(postings, list):
+            return payload
+
+        detail_root = self._greenhouse_detail_root(list_url)
+        consecutive_failures = 0
+        for posting in postings:
+            job_id = posting.get("id") if isinstance(posting, dict) else None
+            if not job_id:
+                continue
+            detail_url = f"{detail_root}/{job_id}?pay_transparency=true"
+            try:
+                detail_body, _, _ = self._http_get(detail_url, timeout=timeout)
+                detail = json.loads(detail_body)
+                if isinstance(detail, dict):
+                    posting["pay_input_ranges"] = detail.get("pay_input_ranges") or []
+                consecutive_failures = 0
+            except (RuntimeError, OSError, json.JSONDecodeError) as exc:
+                logger.warning("Greenhouse pay_transparency detail failed for %s: %s", job_id, exc)
+                consecutive_failures += 1
+                if consecutive_failures >= GREENHOUSE_DETAIL_FAILURE_LIMIT:
+                    logger.warning(
+                        "Stopping Greenhouse pay_transparency detail calls early after %d consecutive failures.",
+                        consecutive_failures,
+                    )
+                    break
+            self._pause_between_details()
+        payload["jobs"] = postings
+        return payload
+
+    @staticmethod
+    def _greenhouse_detail_root(list_url: str) -> str:
         parts = urlsplit(list_url)
         return urlunsplit((parts.scheme, parts.netloc, parts.path.rstrip("/"), "", ""))
 

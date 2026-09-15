@@ -29,6 +29,10 @@ def _load_main_types_by_normalized_name(path):
 _MAIN_TYPES_BY_NORMALIZED_NAME = _load_main_types_by_normalized_name(_MAIN_TYPES_PATH)
 
 
+def _normalize_text(value):
+    return " ".join(unicodedata.normalize("NFKC", value).split())
+
+
 def category_labels(row):
     """Returns (version, {normalized_name: display_sub_type}).
 
