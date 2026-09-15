@@ -17,7 +17,7 @@ export type SalaryInput = {
   currency?: string | null;
   /** One of SalaryPeriod; anything else is shown without a period. */
   period?: string | null;
-  /** One of SalarySource; anything else is shown without a provenance. */
+  /** One of SalarySource; only used to mark estimates with "~". */
   source?: string | null;
 };
 
@@ -26,8 +26,6 @@ export type SalaryDisplay = {
   amount: string;
   /** "/ year", "/ hour", …, or null when the period is unknown. */
   period: string | null;
-  /** Short provenance label, or null when the source is unknown. */
-  sourceLabel: string | null;
   /** True when the figure is an estimate rather than posted pay. */
   estimated: boolean;
 };
@@ -42,24 +40,19 @@ const PERIOD_LABELS: Record<SalaryPeriod, string> = {
   hourly: "hour",
 };
 
-const SOURCE_LABELS: Record<SalarySource, string> = {
-  api: "Posted by employer",
-  regex: "Posted by employer",
-  levels_fyi_average: "Estimate (levels.fyi)",
-};
-
-const ESTIMATED_SOURCES: ReadonlySet<string> = new Set(["levels_fyi_average"]);
+const ESTIMATED_SOURCES: ReadonlySet<string> = new Set<SalarySource>([
+  "levels_fyi_average",
+]);
 
 function isAmount(value: number | null | undefined): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
-function lookup<T extends string>(
-  labels: Record<T, string>,
-  key: string | null | undefined,
-): string | null {
-  const normalized = key?.trim().toLowerCase();
-  return normalized && normalized in labels ? labels[normalized as T] : null;
+function periodLabel(period: string | null | undefined): string | null {
+  const normalized = period?.trim().toLowerCase();
+  return normalized && normalized in PERIOD_LABELS
+    ? PERIOD_LABELS[normalized as SalaryPeriod]
+    : null;
 }
 
 /** The figures to display: the posted pair when both bounds are valid,
@@ -113,11 +106,10 @@ export function formatSalary(input: SalaryInput): SalaryDisplay | null {
   const low = formatSalaryAmount(range.min, input.currency);
   const high = formatSalaryAmount(range.max, input.currency);
   const figure = range.min === range.max ? low : `${low} – ${high}`;
-  const period = lookup(PERIOD_LABELS, input.period);
+  const period = periodLabel(input.period);
   return {
     amount: estimated ? `~${figure}` : figure,
     period: period ? `/ ${period}` : null,
-    sourceLabel: lookup(SOURCE_LABELS, source),
     estimated,
   };
 }

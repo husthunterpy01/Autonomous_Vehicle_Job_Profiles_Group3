@@ -59,7 +59,7 @@ describe("formatSalaryAmount", () => {
 });
 
 describe("formatSalary", () => {
-  it("shows a posted range with its period and provenance", () => {
+  it("shows a posted range with its period", () => {
     const display = formatSalary({
       min: 189000,
       max: 303000,
@@ -70,7 +70,6 @@ describe("formatSalary", () => {
     assert.deepEqual(display, {
       amount: "$189,000 – $303,000",
       period: "/ year",
-      sourceLabel: "Posted by employer",
       estimated: false,
     });
   });
@@ -99,9 +98,17 @@ describe("formatSalary", () => {
     assert.deepEqual(display, {
       amount: "~$266,754",
       period: "/ year",
-      sourceLabel: "Estimate (levels.fyi)",
       estimated: true,
     });
+    assert.equal(
+      salaryLabel({
+        average: 266754,
+        currency: "USD",
+        period: "yearly",
+        source: "levels_fyi_average",
+      }),
+      "~$266,754 / year",
+    );
   });
 
   it("marks levels.fyi figures as estimates", () => {
@@ -113,7 +120,6 @@ describe("formatSalary", () => {
       source: "levels_fyi_average",
     });
     assert.equal(display?.amount, "~$180,923");
-    assert.equal(display?.sourceLabel, "Estimate (levels.fyi)");
     assert.equal(display?.estimated, true);
   });
 
@@ -122,10 +128,10 @@ describe("formatSalary", () => {
     assert.equal(salaryLabel(input), "$26.39 – $39.59 / hour");
   });
 
-  it("omits period and provenance when they are unknown", () => {
+  it("omits the period when it is unknown", () => {
     const display = formatSalary({ min: 50, max: 60, currency: "EUR" });
     assert.equal(display?.period, null);
-    assert.equal(display?.sourceLabel, null);
+    assert.equal(display?.estimated, false);
     assert.equal(
       salaryLabel({ min: 50, max: 60, currency: "EUR" }),
       "€50 – €60",
