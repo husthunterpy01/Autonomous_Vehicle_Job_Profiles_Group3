@@ -102,3 +102,46 @@ def test_prefers_closer_period_word_over_farther_unrelated_one():
 def test_daily_is_recognized_not_just_day():
     text = "Contractor rate: $200 - $400 daily depending on project."
     assert extract_salary_from_text(text) == SalaryEstimate(200.0, 400.0, "USD", "daily")
+
+
+def test_skips_sign_on_bonus_range_in_favor_of_base_salary():
+    # Regression test: the first range in the text used to win outright, so
+    # a one-time bonus mentioned before the base salary - with a single
+    # "annual" reachable from both ranges - was returned instead of the
+    # actual base pay.
+    text = (
+        "This role offers a competitive annual compensation package. "
+        "Sign-on bonus of $5,000 - $10,000. Base salary $180,000 - $220,000."
+    )
+    assert extract_salary_from_text(text) == SalaryEstimate(180000.0, 220000.0, "USD", "yearly")
+
+
+def test_recognizes_k_thousands_shorthand():
+    text = "Compensation $150K - $200K per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(150000.0, 200000.0, "USD", "yearly")
+
+
+def test_recognizes_between_x_and_y_phrasing():
+    text = "Salary is between $100,000 and $150,000 per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(100000.0, 150000.0, "USD", "yearly")
+
+
+def test_years_of_experience_is_not_read_as_a_yearly_pay_period():
+    # Regression test: a bare digit immediately before "year(s)" almost
+    # always states required experience, not pay frequency - it must not
+    # be treated as the closest period word for a nearby, unrelated range.
+    text = "5+ years of experience required. $30 - $40 per hour."
+    assert extract_salary_from_text(text) == SalaryEstimate(30.0, 40.0, "USD", "hourly")
+
+
+def test_after_n_months_is_not_read_as_a_monthly_pay_period():
+    text = "After 6 months of employment, salary becomes $100,000 - $130,000 per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(100000.0, 130000.0, "USD", "yearly")
+
+
+def test_full_european_decimal_comma_format_is_not_collapsed():
+    # Regression test: "50.000,00" (European "." thousands + "," decimal)
+    # was read as if "," were a US-style thousands separator to strip,
+    # silently collapsing it to 50.0 instead of 50000.0.
+    text = "Gross annual salary range €50.000,00 - €60.000,00 per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(50000.0, 60000.0, "EUR", "yearly")

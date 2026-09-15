@@ -21,8 +21,19 @@ select
     gh_pay.salary_max,
     gh_pay.salary_currency,
     -- pay_input_ranges is documented/observed as annualized base pay only;
-    -- there's no interval field to normalize the way Lever/Ashby have.
-    case when gh_pay.salary_min is not null then 'yearly' else null end as salary_period
+    -- there's no interval field to normalize the way Lever/Ashby have. As a
+    -- safety net in case an hourly/daily rate ever slips through unlabeled
+    -- (an intern or contractor role, say), only assert "yearly" when the
+    -- magnitude is even plausible for one: no real annual salary is under
+    -- $1,000, but an unlabeled hourly/daily rate often is. Below that,
+    -- leave salary_period null - build_classification_handoff's Phase 1
+    -- gate then requires salary_period to be present and falls through to
+    -- the regex extractor, which reads the real period from the posting
+    -- text, instead of confidently asserting the wrong one.
+    case
+        when gh_pay.salary_min is not null and gh_pay.salary_min >= 1000 then 'yearly'
+        else null
+    end as salary_period
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
 cross join lateral (

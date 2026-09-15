@@ -72,40 +72,54 @@ def refresh(
     pause_seconds: float = 1.0,
 ) -> dict:
     cache = _load_cache(cache_path)
-    fetched = skipped = missing = 0
+    fetched = skipped = missing = errored = 0
 
-    for company_name in company_names:
-        entry = cache.get(company_name)
-        if entry and not force and _is_fresh(entry, max_age_days):
-            skipped += 1
-            continue
+    try:
+        for company_name in company_names:
+            entry = cache.get(company_name)
+            if entry and not force and _is_fresh(entry, max_age_days):
+                skipped += 1
+                continue
 
-        slug = _slugify(company_name)
-        average = fetch_company_average(slug)
-        if average is None:
-            logger.info("No levels.fyi data for %s (slug=%s).", company_name, slug)
-            missing += 1
+            slug = _slugify(company_name)
+            try:
+                average = fetch_company_average(slug)
+            except Exception as exc:  # noqa: BLE001 - best-effort fallback; a single company's fetch
+                # failure (429/403/5xx/timeout - fetch_company_average only
+                # swallows 404s and connection errors itself) must not lose
+                # every company already fetched earlier in this run.
+                logger.warning("Failed to fetch levels.fyi data for %s (slug=%s): %s", company_name, slug, exc)
+                errored += 1
+                time.sleep(pause_seconds)
+                continue
+            if average is None:
+                logger.info("No levels.fyi data for %s (slug=%s).", company_name, slug)
+                missing += 1
+                time.sleep(pause_seconds)
+                continue
+
+            cache[company_name] = {
+                "avg_total_comp": average.median_total_compensation,
+                "currency": average.currency,
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+                "levels_fyi_url": average.source_url,
+            }
+            fetched += 1
+            logger.info(
+                "%s -> %s %s (levels.fyi median total comp)",
+                company_name, average.median_total_compensation, average.currency,
+            )
             time.sleep(pause_seconds)
-            continue
+    finally:
+        # Write whatever was fetched even if the loop above raised something
+        # unanticipated (the per-company try/except covers known failure
+        # modes; this is the last line of defense for the rest) - a run
+        # that gets 90% through must not throw away that 90%.
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        with cache_path.open("w", encoding="utf-8") as stream:
+            yaml.safe_dump(cache, stream, sort_keys=True, allow_unicode=True)
 
-        cache[company_name] = {
-            "avg_total_comp": average.median_total_compensation,
-            "currency": average.currency,
-            "fetched_at": datetime.now(timezone.utc).isoformat(),
-            "levels_fyi_url": average.source_url,
-        }
-        fetched += 1
-        logger.info(
-            "%s -> %s %s (levels.fyi median total comp)",
-            company_name, average.median_total_compensation, average.currency,
-        )
-        time.sleep(pause_seconds)
-
-    cache_path.parent.mkdir(parents=True, exist_ok=True)
-    with cache_path.open("w", encoding="utf-8") as stream:
-        yaml.safe_dump(cache, stream, sort_keys=True, allow_unicode=True)
-
-    logger.info("Fetched %d, skipped %d (fresh), missing %d.", fetched, skipped, missing)
+    logger.info("Fetched %d, skipped %d (fresh), missing %d, errored %d.", fetched, skipped, missing, errored)
     return cache
 
 

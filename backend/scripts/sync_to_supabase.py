@@ -12,15 +12,32 @@ SCHEMA = "public"
 
 _API_ROLES = ("anon", "authenticated")
 
+_PUBLIC_TABLES = (
+    "company",
+    "company_location",
+    "jobposting",
+    "job_location",
+    "job_skill",
+    "job_category",
+    "skill",
+    "category",
+    "location",
+)
+_EXCLUDED_FROM_DUMP = ("user_account",)
+
 
 def _grant_api_read_access(target_dsn: str) -> None:
     import psycopg2
 
     grants = ", ".join(_API_ROLES)
+    tables = ", ".join(f"{SCHEMA}.{table}" for table in _PUBLIC_TABLES)
+    # No ALTER DEFAULT PRIVILEGES here on purpose: that would auto-grant
+    # access to any *future* table too, including one that isn't safe to
+    # expose - a newly added table must be added to _PUBLIC_TABLES above
+    # explicitly before this script can grant access to it.
     statements = (
         f"GRANT USAGE ON SCHEMA {SCHEMA} TO {grants};",
-        f"GRANT SELECT ON ALL TABLES IN SCHEMA {SCHEMA} TO {grants};",
-        f"ALTER DEFAULT PRIVILEGES IN SCHEMA {SCHEMA} GRANT SELECT ON TABLES TO {grants};",
+        f"GRANT SELECT ON {tables} TO {grants};",
     )
     conn = psycopg2.connect(target_dsn)
     try:
@@ -36,12 +53,17 @@ def sync_to_supabase(source_dsn: str, target_dsn: str) -> None:
     with tempfile.NamedTemporaryFile(suffix=".dump", delete=False) as tmp:
         dump_path = Path(tmp.name)
     try:
+        exclude_args = [arg for table in _EXCLUDED_FROM_DUMP for arg in ("-T", f"{SCHEMA}.{table}")]
         subprocess.run(
-            ["pg_dump", source_dsn, "--schema", SCHEMA, "--no-owner", "--no-privileges", "-Fc", "-f", str(dump_path)],
+            ["pg_dump", source_dsn, "--schema", SCHEMA, *exclude_args, "--no-owner", "--no-privileges", "-Fc", "-f", str(dump_path)],
             check=True, capture_output=True, text=True,
         )
+        # --single-transaction: a restore that fails partway through must
+        # roll back entirely rather than leave Supabase with some tables
+        # updated and others stale/missing - this mirror is supposed to be
+        # atomically consistent, not a table-by-table best-effort.
         subprocess.run(
-            ["pg_restore", "-d", target_dsn, "--no-owner", "--no-privileges", "--clean", "--if-exists", str(dump_path)],
+            ["pg_restore", "-d", target_dsn, "--no-owner", "--no-privileges", "--clean", "--if-exists", "--single-transaction", str(dump_path)],
             check=True, capture_output=True, text=True,
         )
         try:
@@ -69,8 +91,15 @@ def sync_if_configured(*, required: bool = False) -> bool:
     logger.info("Mirroring backend public schema to Supabase...")
     try:
         sync_to_supabase(source, target)
-    except subprocess.CalledProcessError as exc:
-        message = f"Supabase mirror sync failed: {(exc.stderr or str(exc)).strip()}"
+    except (subprocess.CalledProcessError, OSError) as exc:
+        # OSError (FileNotFoundError included) covers pg_dump/pg_restore not
+        # being on PATH - previously only CalledProcessError was caught, so
+        # a missing binary raised straight out of here and crashed whatever
+        # already-committed import called this, breaking the "best-effort,
+        # a Supabase hiccup shouldn't fail an import" contract this
+        # function documents.
+        detail = exc.stderr.strip() if isinstance(exc, subprocess.CalledProcessError) and exc.stderr else str(exc)
+        message = f"Supabase mirror sync failed: {detail}"
         if required:
             raise RuntimeError(message) from exc
         logger.error(message)

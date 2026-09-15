@@ -99,3 +99,58 @@ def test_valid_salary_periods_and_sources_all_accepted(db_session):
             job = db_session.query(JobPosting).one()
             assert job.salary_period == period
             assert job.salary_source == source
+
+
+def _average_row(**overrides):
+    row = {
+        "deduplication_key": "one",
+        "salary_average": 251250,
+        "salary_currency": "usd",
+        "salary_period": "yearly",
+        "salary_source": "levels_fyi_average",
+    }
+    row.update(overrides)
+    return row
+
+
+def test_salary_average_is_stored_separately_from_a_real_range(db_session):
+    # Regression test: a single company-wide estimate (levels_fyi_average)
+    # must not be duplicated into salary_min/salary_max, where it looks like
+    # a suspiciously exact (min == max) real disclosed range.
+    seed(db_session)
+    import_salary(db_session, [_average_row()])
+    job = db_session.query(JobPosting).one()
+    assert job.salary_average == 251250.0
+    assert job.salary_min is None
+    assert job.salary_max is None
+    assert job.salary_currency == "USD"
+    assert job.salary_source == "levels_fyi_average"
+
+
+def test_a_later_real_range_clears_a_previous_average_and_vice_versa(db_session):
+    seed(db_session)
+    import_salary(db_session, [_average_row()])
+    job = db_session.query(JobPosting).one()
+    assert job.salary_average == 251250.0
+
+    import_salary(db_session, [_row()])  # a real range supersedes it
+    assert job.salary_average is None
+    assert job.salary_min == 150000.0
+
+    import_salary(db_session, [_average_row()])  # and vice versa
+    assert job.salary_min is None
+    assert job.salary_average == 251250.0
+
+
+def test_salary_average_and_range_together_is_rejected(db_session):
+    seed(db_session)
+    with pytest.raises(ValueError, match="mutually exclusive"), db_session.begin():
+        import_salary(db_session, [_average_row(salary_min=150000, salary_max=200000)])
+    assert db_session.query(JobPosting).one().salary_average is None
+
+
+def test_salary_average_must_be_a_positive_number(db_session):
+    seed(db_session)
+    with pytest.raises(ValueError), db_session.begin():
+        import_salary(db_session, [_average_row(salary_average=0)])
+    assert db_session.query(JobPosting).one().salary_average is None

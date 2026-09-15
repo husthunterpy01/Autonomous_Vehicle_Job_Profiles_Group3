@@ -49,6 +49,7 @@ def test_salary_filters_and_response_fields(db_session):
         {"deduplication_key": "yearly-2", "company_name": "Example AV", "job_name": "Yearly High", "job_description": "d"},
         {"deduplication_key": "hourly-1", "company_name": "Example AV", "job_name": "Hourly", "job_description": "d"},
         {"deduplication_key": "no-salary", "company_name": "Example AV", "job_name": "No Salary", "job_description": "d"},
+        {"deduplication_key": "estimate-1", "company_name": "Example AV", "job_name": "Estimated Only", "job_description": "d"},
     ]
     SilverSync(db_session).run(rows)
     db_session.commit()
@@ -58,6 +59,7 @@ def test_salary_filters_and_response_fields(db_session):
             {"deduplication_key": "yearly-1", "salary_min": 80000, "salary_max": 100000, "salary_currency": "usd", "salary_period": "yearly", "salary_source": "api"},
             {"deduplication_key": "yearly-2", "salary_min": 150000, "salary_max": 200000, "salary_currency": "usd", "salary_period": "yearly", "salary_source": "regex"},
             {"deduplication_key": "hourly-1", "salary_min": 20, "salary_max": 40, "salary_currency": "usd", "salary_period": "hourly", "salary_source": "regex"},
+            {"deduplication_key": "estimate-1", "salary_average": 251250, "salary_currency": "usd", "salary_period": "yearly", "salary_source": "levels_fyi_average"},
         ],
     )
     db_session.commit()
@@ -77,21 +79,48 @@ def test_salary_filters_and_response_fields(db_session):
         assert no_salary["salary_min"] is None
         assert no_salary["salary_source"] is None
 
-        # min_salary/max_salary compare raw magnitudes (not currency/period
-        # normalized) - overlap semantics: job's range must reach the floor
-        # and/or stay under the ceiling.
-        above_120k = client.get("/jobs", params={"min_salary": 120000}).json()
+        # A levels.fyi company-wide estimate has no real range - it's on
+        # salary_average, with salary_min/salary_max left null, not
+        # duplicated into a suspiciously exact min == max range.
+        estimated = client.get("/jobs/" + str(db_session.query(JobPosting).filter_by(title="Estimated Only").one().job_id)).json()
+        assert estimated["salary_average"] == 251250.0
+        assert estimated["salary_min"] is None
+        assert estimated["salary_max"] is None
+        assert estimated["salary_source"] == "levels_fyi_average"
+
+        # min_salary/max_salary require salary_period: comparing raw
+        # magnitudes across periods/currencies is meaningless (a $30/hour
+        # rate vs a $150,000/year salary), so the API rejects the ambiguous
+        # combination instead of silently mixing them.
+        assert client.get("/jobs", params={"min_salary": 120000}).status_code == 422
+        assert client.get("/jobs", params={"max_salary": 120000}).status_code == 422
+
+        # With salary_period given, the magnitude comparison stays within
+        # that one bucket - overlap semantics: job's range must reach the
+        # floor and/or stay under the ceiling, among yearly rows only. The
+        # "Estimated Only" job (salary_average, no real range) never
+        # qualifies for either, even though its estimate is >120k - it has
+        # no salary_min/salary_max to compare at all.
+        above_120k = client.get("/jobs", params={"min_salary": 120000, "salary_period": "yearly"}).json()
         assert {item["title"] for item in above_120k["items"]} == {"Yearly High"}
 
-        under_120k = client.get("/jobs", params={"max_salary": 120000}).json()
-        assert {item["title"] for item in under_120k["items"]} == {"Yearly Low", "Hourly"}
+        under_120k = client.get("/jobs", params={"max_salary": 120000, "salary_period": "yearly"}).json()
+        assert {item["title"] for item in under_120k["items"]} == {"Yearly Low"}
 
+        # salary_period alone doesn't distinguish a real range from an
+        # estimate - "Estimated Only" is genuinely period="yearly" too, it
+        # just has no salary_min/salary_max to also satisfy a magnitude filter.
         yearly_only = client.get("/jobs", params={"salary_period": "yearly"}).json()
-        assert {item["title"] for item in yearly_only["items"]} == {"Yearly Low", "Yearly High"}
+        assert {item["title"] for item in yearly_only["items"]} == {"Yearly Low", "Yearly High", "Estimated Only"}
 
+        assert client.get("/jobs", params={"salary_period": "annual"}).status_code == 422
+
+        # has_salary counts an estimate-only job too - it does have *some*
+        # salary info, just not a real disclosed range.
         has_salary = client.get("/jobs", params={"has_salary": True}).json()
-        assert has_salary["total"] == 3
-        assert "No Salary" not in {item["title"] for item in has_salary["items"]}
+        assert has_salary["total"] == 4
+        assert {"No Salary"}.isdisjoint({item["title"] for item in has_salary["items"]})
+        assert "Estimated Only" in {item["title"] for item in has_salary["items"]}
 
         no_salary_only = client.get("/jobs", params={"has_salary": False}).json()
         assert {item["title"] for item in no_salary_only["items"]} == {"No Salary"}

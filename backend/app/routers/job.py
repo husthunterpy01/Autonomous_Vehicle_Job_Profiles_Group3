@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.job import JobResponse
+from app.schemas.job import JobResponse, SalaryPeriod
 from app.services import job as job_service
 from app.utils.pagination import PageResponse
 
@@ -24,15 +24,27 @@ def list_jobs(
     employment_type: int | None = Query(None, ge=1, le=6),
     min_salary: float | None = Query(None, ge=0),
     max_salary: float | None = Query(None, ge=0),
-    salary_period: str | None = None,
+    salary_period: SalaryPeriod | None = None,
     has_salary: bool | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
 ):
+    if (min_salary is not None or max_salary is not None) and salary_period is None:
+        # salary_min/salary_max are raw numbers with no currency/period
+        # normalization - comparing them across periods (a $30/hour rate vs
+        # a $150,000/year salary) or across an estimated levels.fyi median
+        # vs a real disclosed range is meaningless. Requiring salary_period
+        # keeps the comparison inside one consistent bucket instead of
+        # silently mixing magnitudes that were never comparable.
+        raise HTTPException(
+            status_code=422,
+            detail="salary_period is required when min_salary or max_salary is set.",
+        )
     return job_service.list_jobs(
         db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
         employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
-        salary_period=salary_period, has_salary=has_salary, page=page, page_size=page_size,
+        salary_period=salary_period.value if salary_period else None,
+        has_salary=has_salary, page=page, page_size=page_size,
     )
 
 

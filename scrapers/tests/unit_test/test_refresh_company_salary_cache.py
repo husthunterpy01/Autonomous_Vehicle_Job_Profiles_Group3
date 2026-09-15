@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
+from urllib.error import HTTPError
 
 import yaml
 from scrapers.service.silver_cleaning.levels_fyi import LevelsFyiAverage
@@ -84,3 +85,26 @@ def test_refresh_leaves_missing_companies_out_of_cache(mock_fetch, tmp_path):
 
     cache = yaml.safe_load(cache_path.read_text())
     assert cache == {}
+
+
+@patch("scrapers.utils.refresh_company_salary_cache.fetch_company_average")
+def test_refresh_writes_earlier_fetches_even_when_a_later_one_errors(mock_fetch, tmp_path):
+    # Regression test: fetch_company_average only swallows 404s and
+    # connection errors itself - a 429/403/5xx propagates as HTTPError. That
+    # must not abort the whole run and lose every company already fetched
+    # before it; the cache write happens once, after every company has been
+    # attempted, not only on a clean run.
+    def fake_fetch(slug, timeout=15.0):
+        if slug == "company-b":
+            raise HTTPError("url", 429, "Too Many Requests", {}, None)
+        return LevelsFyiAverage(150000.0, "USD", "https://x")
+
+    mock_fetch.side_effect = fake_fetch
+    cache_path = tmp_path / "company_salary.yaml"
+
+    result = refresh(["Company A", "Company B", "Company C"], cache_path, pause_seconds=0)
+
+    assert set(result) == {"Company A", "Company C"}
+    cache = yaml.safe_load(cache_path.read_text())
+    assert set(cache) == {"Company A", "Company C"}
+    assert mock_fetch.call_count == 3  # Company C is still attempted after B's error

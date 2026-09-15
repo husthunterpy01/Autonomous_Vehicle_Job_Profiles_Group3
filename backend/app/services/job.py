@@ -18,8 +18,8 @@ def to_response(job):
                     for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
-        salary_min=job.salary_min, salary_max=job.salary_max, salary_currency=job.salary_currency,
-        salary_period=job.salary_period, salary_source=job.salary_source,
+        salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
+        salary_currency=job.salary_currency, salary_period=job.salary_period, salary_source=job.salary_source,
     )
 
 
@@ -56,7 +56,11 @@ def list_jobs(
     if salary_period:
         query = query.filter(JobPosting.salary_period == salary_period)
     if has_salary is not None:
-        condition = JobPosting.salary_min.isnot(None)
+        # A job may only have salary_average set (a levels.fyi estimate, no
+        # real disclosed range) - that still counts as "has some salary
+        # info" for this flag, even though min_salary/max_salary above
+        # deliberately only compare real ranges.
+        condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
     query = query.order_by(JobPosting.posted_date.desc().nullslast(), JobPosting.job_id)
     total = query.count()

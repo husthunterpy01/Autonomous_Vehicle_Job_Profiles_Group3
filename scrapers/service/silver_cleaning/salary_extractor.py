@@ -18,11 +18,18 @@ _CURRENCY_SYMBOLS = {"$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY"}
 _CURRENCY_CODES = frozenset({"USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR"})
 
 _PERIOD_PATTERNS = (
-    (re.compile(r"annum|annual|\byear|\byr\b", re.IGNORECASE), "yearly"),
-    (re.compile(r"\bmonth|\bmo\b", re.IGNORECASE), "monthly"),
+    # A number immediately before year/month/week almost always states a
+    # duration - tenure, experience, a probation period ("5+ years of
+    # experience", "after 6 months") - not a pay frequency; a real pay-period
+    # mention reads "per year"/"annually"/"a year" with nothing numeric
+    # right before it. Excluding "<digit> year(s)" / "<digit>+ year(s)" (and
+    # month/week) stops that duration text from being misread as the period.
+    (re.compile(r"annum|annual|(?<!\d )(?<!\+ )\byear|\byr\b", re.IGNORECASE), "yearly"),
+    (re.compile(r"(?<!\d )(?<!\+ )\bmonth|\bmo\b", re.IGNORECASE), "monthly"),
     # "N-hour work week" describes hours per week, not pay frequency - only
-    # count "week"/"weekly" as a pay period when it isn't preceded by "work".
-    (re.compile(r"(?<!work )\bweek|\bwk\b", re.IGNORECASE), "weekly"),
+    # count "week"/"weekly" as a pay period when it isn't preceded by "work"
+    # or a bare duration number.
+    (re.compile(r"(?<!work )(?<!\d )(?<!\+ )\bweek|\bwk\b", re.IGNORECASE), "weekly"),
     # "day" is not a substring of "daily" (unlike year/month/week above,
     # which are substrings of their -ly forms), so it needs its own branch.
     (re.compile(r"\bdaily\b|\bday\b", re.IGNORECASE), "daily"),
@@ -32,15 +39,27 @@ _PERIOD_PATTERNS = (
     (re.compile(r"\bhourly\b|\bhour\b(?!\s*work)|\bhr\b", re.IGNORECASE), "hourly"),
 )
 
+# A range labeled as a bonus/relocation/stipend/referral payment is not the
+# base salary and must never be returned as if it were - "Sign-on bonus of
+# $5,000 - $10,000 ... Base salary $180,000 - $220,000" previously returned
+# the bonus, since it's simply the first range in the text with a period
+# word reachable from it (one "annual" mention early in the text can sit
+# within _BEFORE_WINDOW of both ranges).
+_NON_BASE_SALARY_RE = re.compile(
+    r"\bbonus(es)?\b|\bsign(?:ing)?[- ]on\b|\brelocation\b|\bstipend\b|\breferral\b",
+    re.IGNORECASE,
+)
+
 _SYMBOL_CLASS = "".join(re.escape(s) for s in _CURRENCY_SYMBOLS)
-_NUMBER = r"[\d][\d,.]*"
+# Trailing k/K is shorthand for thousands ("$150K"); _parse_number scales it.
+_NUMBER = r"[\d][\d,.]*[kK]?"
 _CURRENCY_TOKEN = rf"[{_SYMBOL_CLASS}]|\b(?:{'|'.join(_CURRENCY_CODES)})\b"
 _RANGE_RE = re.compile(
     rf"""
     (?P<currency1>{_CURRENCY_TOKEN})?
     \s*(?P<min>{_NUMBER})
     \s*(?P<currency_after_min>{_CURRENCY_TOKEN})?
-    \s*(?:-|to|–|—)\s*
+    \s*(?:-|to|–|—|\band\b)\s*
     (?P<currency2>{_CURRENCY_TOKEN})?
     \s*(?P<max>{_NUMBER})
     \s*(?P<currency3>{_CURRENCY_TOKEN})?
@@ -97,16 +116,39 @@ def _closest_period(before: str, after: str) -> str | None:
 
 
 def _parse_number(raw: str) -> float:
-    """Handle both US (",": thousands, ".": decimal) and European (".":
-    thousands, no decimals in salary figures) grouping. A "." followed by
-    exactly 3 digits (repeatable, e.g. "1.234.567") is thousands grouping,
-    not a fraction - salaries are never reported to thousandths of a unit,
-    and a genuine decimal (hourly cents, e.g. "25.50") always has 2 digits.
+    """Handle US (",": thousands, ".": decimal), pure European (".":
+    thousands, no decimal in salary figures), and full European (".":
+    thousands *and* ",": decimal, e.g. "50.000,00") grouping, plus a
+    trailing k/K thousands shorthand ("150K").
+
+    A "." followed by exactly 3 digits (repeatable, e.g. "1.234.567") is
+    thousands grouping, not a fraction - salaries are never reported to
+    thousandths of a unit, and a genuine decimal (hourly cents, e.g.
+    "25.50") always has 2 digits. The same "." thousands grouping can be
+    followed by a ",XX" decimal (always 2 digits) in the full European
+    format - treating that "," as a US-style thousands separator to strip
+    (the previous behavior) silently collapsed "50.000,00" down to 50.0
+    instead of 50000.0.
     """
     raw = raw.strip()
-    if re.fullmatch(r"\d{1,3}(?:\.\d{3})+", raw):
-        return float(raw.replace(".", ""))
-    return float(raw.replace(",", ""))
+    thousands_shorthand = raw[-1:] in ("k", "K")
+    if thousands_shorthand:
+        raw = raw[:-1]
+    if re.fullmatch(r"\d{1,3}(?:\.\d{3})+,\d{2}", raw):
+        value = float(raw.replace(".", "").replace(",", "."))
+    elif re.fullmatch(r"\d{1,3}(?:\.\d{3})+", raw):
+        value = float(raw.replace(".", ""))
+    else:
+        value = float(raw.replace(",", ""))
+    return value * 1000 if thousands_shorthand else value
+
+
+def _current_clause(text: str) -> str:
+    """The text since the last sentence boundary - so a "bonus" label on an
+    earlier, separate sentence doesn't get attributed to a later range that
+    carries its own, different label within the same before-window."""
+    boundary = max(text.rfind("."), text.rfind("!"), text.rfind("?"), text.rfind(";"))
+    return text[boundary + 1 :] if boundary != -1 else text
 
 
 def extract_salary_from_text(description: str) -> SalaryEstimate | None:
@@ -137,6 +179,8 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
             continue
         before = description[max(0, match.start() - _BEFORE_WINDOW):match.start()]
         after = description[match.end():match.end() + _AFTER_WINDOW]
+        if _NON_BASE_SALARY_RE.search(_current_clause(before)) or _NON_BASE_SALARY_RE.search(after):
+            continue
         period = _closest_period(before, after)
         if period is None:
             continue

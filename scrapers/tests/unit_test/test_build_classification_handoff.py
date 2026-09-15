@@ -153,6 +153,43 @@ def test_salary_uses_phase1_api_field_when_present(tmp_path):
     assert record["salary_source"] == "api"
 
 
+def test_salary_falls_through_to_regex_when_api_field_has_no_currency(tmp_path):
+    # Regression test: a real Silver salary_min/salary_max with a null
+    # salary_currency (e.g. the Greenhouse bronze model when the source
+    # posting's pay_input_ranges entry has no currency_type) must not be
+    # trusted as-is - salary_sync.sync_salary rejects a null currency, and
+    # import_salary rolls back its *entire* batch on that one row's error.
+    path = tmp_path / "av_jobs.jsonl"
+    _write_jsonl(
+        path,
+        [_base_row(
+            salary_min=150000, salary_max=200000, salary_currency=None, salary_period="yearly",
+            job_description="The salary range for this position is $160,000 - $262,000 per year.",
+        )],
+    )
+
+    record = _build([path])[0]
+
+    assert record["salary_min"] == 160000.0
+    assert record["salary_max"] == 262000.0
+    assert record["salary_source"] == "regex"
+
+
+def test_salary_falls_through_to_regex_when_api_field_has_no_period(tmp_path):
+    path = tmp_path / "av_jobs.jsonl"
+    _write_jsonl(
+        path,
+        [_base_row(
+            salary_min=150000, salary_max=200000, salary_currency="USD", salary_period=None,
+            job_description="The salary range for this position is $160,000 - $262,000 per year.",
+        )],
+    )
+
+    record = _build([path])[0]
+
+    assert record["salary_source"] == "regex"
+
+
 def test_salary_falls_back_to_regex_when_no_api_field(tmp_path):
     path = tmp_path / "av_jobs.jsonl"
     _write_jsonl(
@@ -182,8 +219,12 @@ def test_salary_falls_back_to_levels_fyi_cache_when_no_api_or_regex_match(tmp_pa
 
     record = _build([path], company_salary_cache_path=cache_path)[0]
 
-    assert record["salary_min"] == 330413.0
-    assert record["salary_max"] == 330413.0
+    # A single company-wide median, not a real disclosed range for this
+    # posting - goes to salary_average, not salary_min/salary_max (which
+    # would otherwise look like a suspiciously exact min == max range).
+    assert record["salary_average"] == 330413.0
+    assert "salary_min" not in record
+    assert "salary_max" not in record
     assert record["salary_currency"] == "USD"
     assert record["salary_period"] == "yearly"
     assert record["salary_source"] == "levels_fyi_average"

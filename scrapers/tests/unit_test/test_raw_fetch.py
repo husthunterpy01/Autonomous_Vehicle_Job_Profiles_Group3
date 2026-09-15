@@ -359,6 +359,61 @@ def test_greenhouse_keeps_posting_when_pay_transparency_detail_fails(
     assert "pay_input_ranges" not in archived["jobs"][0]
 
 
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_greenhouse_socket_timeout_on_one_job_does_not_lose_the_board(
+    mock_urlopen, mock_archive, mock_sleep
+):
+    # Regression test: a read timeout raises a bare TimeoutError (an
+    # OSError, not RuntimeError) - previously uncaught here, so it
+    # propagated out of the whole board expansion and nothing got archived
+    # at all, even the list call that already succeeded.
+    list_payload = {"jobs": [{"id": 1}, {"id": 2}, {"id": 3}]}
+    mock_urlopen.side_effect = [
+        _urlopen_body(list_payload),
+        _urlopen_body({"pay_input_ranges": [{"min_cents": 1}]}),
+        TimeoutError("timed out"),
+        _urlopen_body({"pay_input_ranges": [{"min_cents": 2}]}),
+    ]
+    mock_archive.return_value.save_raw_response.return_value = "api/kodiak/file.parquet"
+    fetcher = RawFetch("Kodiak", "api", "greenhouse")
+
+    fetcher.fetch_and_archive(
+        "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs?content=true"
+    )
+
+    archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
+    assert archived["jobs"][0]["pay_input_ranges"] == [{"min_cents": 1}]
+    assert "pay_input_ranges" not in archived["jobs"][1]
+    assert archived["jobs"][2]["pay_input_ranges"] == [{"min_cents": 2}]
+
+
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_greenhouse_stops_detail_calls_after_consecutive_failures(
+    mock_urlopen, mock_archive, mock_sleep
+):
+    # Regression test: a dead connection would otherwise mean one full
+    # request timeout (up to 30s) per remaining job for the whole board -
+    # stop after GREENHOUSE_DETAIL_FAILURE_LIMIT consecutive failures
+    # instead, and still archive whatever was collected so far.
+    list_payload = {"jobs": [{"id": i} for i in range(1, 11)]}
+    mock_urlopen.side_effect = [_urlopen_body(list_payload)] + [TimeoutError("timed out")] * 9
+    mock_archive.return_value.save_raw_response.return_value = "api/kodiak/file.parquet"
+    fetcher = RawFetch("Kodiak", "api", "greenhouse")
+
+    fetcher.fetch_and_archive(
+        "https://boards-api.greenhouse.io/v1/boards/kodiak/jobs?content=true"
+    )
+
+    # 1 list call + 3 failed detail attempts (the failure limit), not all 10.
+    assert mock_urlopen.call_count == 4
+    archived = mock_archive.return_value.save_raw_response.call_args.kwargs["raw_response"]
+    assert len(archived["jobs"]) == 10  # the board itself is still archived intact
+
+
 def test_from_company_collects_lever_fallback_urls(tmp_path, monkeypatch):
     sources = tmp_path / "ats_sources.yaml"
     sources.write_text(
