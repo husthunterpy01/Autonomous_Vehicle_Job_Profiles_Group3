@@ -129,6 +129,8 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/api/v1/auth/signup | Account registration |
 | http://127.0.0.1:8000/api/v1/auth/login | JWT sign in |
 | http://127.0.0.1:8000/api/v1/auth/me | Current authenticated user |
+| http://127.0.0.1:8000/api/v1/favorites/jobs | Current user's favorite jobs |
+| http://127.0.0.1:8000/api/v1/favorites/companies | Current user's favorite companies |
 
 ## Authentication API
 
@@ -173,6 +175,61 @@ curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/login \
 
 curl -b cookies.txt http://127.0.0.1:8000/api/v1/auth/me
 ```
+
+## Favorites API (BE-11)
+
+All favorite endpoints require a valid login cookie or bearer token. The user ID
+comes from the authenticated session, not from a client-supplied parameter.
+
+| Method | URL | Result |
+|---|---|---|
+| `GET` | `/api/v1/favorites/jobs` | Current user's favorite jobs with live job details |
+| `POST` | `/api/v1/favorites/jobs/{job_id}` | Add a job favorite (`201`) |
+| `DELETE` | `/api/v1/favorites/jobs/{job_id}` | Remove a job favorite (`204`) |
+| `GET` | `/api/v1/favorites/companies` | Current user's favorite companies with live company details |
+| `POST` | `/api/v1/favorites/companies/{company_id}` | Add a company favorite (`201`) |
+| `DELETE` | `/api/v1/favorites/companies/{company_id}` | Remove a company favorite (`204`) |
+
+The list responses are arrays. Each job entry has `job_id`, `created_at`, and a
+`job` object using the normal `JobResponse` fields. Each company entry has
+`company_id`, `created_at`, and a `company` object using `CompanyResponse`.
+Repeated adds return `409`, missing targets or missing favorites return `404`,
+and unauthenticated requests return `401`. Invalid UUIDs return `422`.
+
+For example, after login:
+
+```bash
+curl -b cookies.txt -X POST \
+  http://127.0.0.1:8000/api/v1/favorites/jobs/<job_uuid>
+curl -b cookies.txt http://127.0.0.1:8000/api/v1/favorites/jobs
+curl -b cookies.txt -X DELETE \
+  http://127.0.0.1:8000/api/v1/favorites/jobs/<job_uuid>
+```
+
+Fresh databases receive the two tables through the normal ORM startup path.
+For an existing PostgreSQL backend, apply `app/sql/be11_favorites_migration.sql`
+after the authentication tables exist; the migration can be run more than once.
+From `backend/`, the command is:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f app/sql/be11_favorites_migration.sql
+```
+
+Its composite primary keys prevent duplicates, and its foreign keys remove
+favorites when a user, job, or company is hard-deleted. The list queries join to
+live targets and eagerly load job relations to avoid per-item queries.
+
+The current job and company schemas have no archived-state field. This API
+therefore handles hard-deleted records, but it cannot distinguish archived
+targets until the team defines and persists an archive status. Also keep
+`SEED_ON_STARTUP=false` when testing persistence: the legacy development seed
+uses `TRUNCATE company CASCADE`, which intentionally removes company-linked
+data, including favorites.
+
+The optional PostgreSQL migration regression runs only against an explicitly
+named test database: set `BE11_TEST_POSTGRES=1` and `BE11_TEST_DATABASE_URL`,
+then run `pytest tests/integration_test/test_favorites_postgres_migration.py`.
+The test creates and removes its own uniquely named schema.
 
 ## Companies API (testing)
 
