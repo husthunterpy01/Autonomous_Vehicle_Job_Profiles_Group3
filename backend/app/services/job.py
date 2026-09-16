@@ -16,7 +16,7 @@ def to_response(job):
         skills=sorted(skill.skill_name for skill in job.skills),
         categories=[{"category_id": c.category_id, "main_type": c.main_type, "sub_type": c.sub_type, "taxonomy_version": c.taxonomy_version}
                     for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
-        employment_type=job.employment_type_resolved, raw_description=job.raw_description,
+        employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
         salary_currency=job.salary_currency, salary_period=job.salary_period, salary_source=job.salary_source,
@@ -48,7 +48,7 @@ def list_jobs(
     if category_id:
         query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
-        query = query.filter(JobPosting.employment_type_resolved == employment_type)
+        query = query.filter(JobPosting.employment_type == employment_type)
     if min_salary is not None:
         query = query.filter(JobPosting.salary_max >= min_salary)
     if max_salary is not None:

@@ -41,10 +41,6 @@ Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
-The scraped employment type is stored as-is in `jobposting.employment_type` (null
-when the source said nothing); the API and the `employment_type` filter use the
-generated `employment_type_resolved` column, which defaults missing values to
-full-time (BE-16, `app/sql/be16_employment_type_resolved_migration.sql`).
 Seniority is not inferred. Salary (`salary_min`/`salary_max`/`salary_currency`/
 `salary_period`/`salary_source`) is populated separately via `python -m
 app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of
@@ -154,8 +150,7 @@ separate work. A later curated taxonomy needs explicit mapping/version migration
 - Existing company job counts now include synced rows.
 
 Response fields: `job_id`, `title`, `company_id`, `company_name`, `locations`,
-`skills`, `employment_type` (integer enum; full-time when the source did not state
-one), `raw_description`, `source_url`,
+`skills`, `employment_type` (existing integer enum), `raw_description`, `source_url`,
 `posted_date`, `categories` (category_id, main_type, sub_type, taxonomy_version).
 Pagination is `{items,total,page,page_size,total_pages}`.
 Location/skill filters use EXISTS semantics so multiple associations do not inflate

@@ -78,15 +78,6 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             assert cursor.fetchone()[0] == 0
             cursor.execute("SELECT title, raw_description FROM jobposting")
             assert cursor.fetchall() == [("Legacy Engineer", "Original description")]
-            resolved_migration = (root / "backend/app/sql/be16_employment_type_resolved_migration.sql").read_text(encoding="utf-8")
-            cursor.execute(resolved_migration)
-            cursor.execute(resolved_migration)
-            cursor.execute(migration)
-            cursor.execute("SELECT employment_type, employment_type_resolved FROM jobposting")
-            assert cursor.fetchall() == [(1, 1)]
-            cursor.execute("UPDATE jobposting SET employment_type = NULL")
-            cursor.execute("SELECT employment_type, employment_type_resolved FROM jobposting")
-            assert cursor.fetchall() == [(None, 1)]
         test_engine = create_engine(database_url, connect_args={"options": f"-csearch_path={schema}"})
         locations = [f"Office {i:02d} - Long location name" for i in range(12)]
         with Session(test_engine) as db, db.begin():

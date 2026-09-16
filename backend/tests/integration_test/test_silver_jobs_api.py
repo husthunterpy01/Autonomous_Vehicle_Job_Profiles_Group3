@@ -126,27 +126,3 @@ def test_salary_filters_and_response_fields(db_session):
         assert {item["title"] for item in no_salary_only["items"]} == {"No Salary"}
 
         assert client.get("/jobs?min_salary=-1").status_code == 422
-
-
-def test_employment_type_serves_resolved_value(db_session):
-    rows = [
-        {"deduplication_key": "unstated", "company_name": "Example AV", "job_name": "Unstated", "job_description": "d"},
-        {"deduplication_key": "contract", "company_name": "Example AV", "job_name": "Contract", "job_description": "d", "employment_type": "contract"},
-    ]
-    SilverSync(db_session).run(rows)
-    db_session.commit()
-    app = FastAPI()
-    app.include_router(router)
-    app.dependency_overrides[get_db] = lambda: db_session
-    with TestClient(app) as client:
-        unstated = db_session.query(JobPosting).filter_by(title="Unstated").one()
-        assert unstated.employment_type is None
-        # The raw null stays in the database; the API only exposes the
-        # resolved value, under the existing field name.
-        detail = client.get("/jobs/" + str(unstated.job_id)).json()
-        assert detail["employment_type"] == 1
-        assert "employment_type_resolved" not in detail
-        full_time = client.get("/jobs", params={"employment_type": 1}).json()
-        assert {item["title"] for item in full_time["items"]} == {"Unstated"}
-        contract = client.get("/jobs", params={"employment_type": 3}).json()
-        assert {item["title"] for item in contract["items"]} == {"Contract"}

@@ -1,6 +1,5 @@
 import pytest
 
-from app.enums.employment_type import EmploymentType
 from app.models import Company, JobPosting, Location, Skill
 from app.services.silver_sync import SilverSync
 
@@ -81,21 +80,3 @@ def test_missing_locations_clear_associations(db_session):
     sync.run([row])
     job = db_session.query(JobPosting).one()
     assert job.locations == []
-
-
-def test_missing_employment_type_is_kept_raw_and_resolved_to_full_time(db_session):
-    sync = SilverSync(db_session)
-    sync.run([record(), {**record(), "deduplication_key": "two", "employment_type": "contract"}])
-    db_session.commit()
-    unstated = db_session.query(JobPosting).filter_by(source_key="silver:one").one()
-    contract = db_session.query(JobPosting).filter_by(source_key="silver:two").one()
-    assert unstated.employment_type is None
-    assert unstated.employment_type_resolved == EmploymentType.FULL_TIME
-    assert contract.employment_type == EmploymentType.CONTRACT
-    assert contract.employment_type_resolved == EmploymentType.CONTRACT
-    # The resolved value follows the raw one when a later snapshot changes it.
-    sync.run([{**record(), "employment_type": "part-time"}])
-    db_session.commit()
-    db_session.refresh(unstated)
-    assert unstated.employment_type == EmploymentType.PART_TIME
-    assert unstated.employment_type_resolved == EmploymentType.PART_TIME
