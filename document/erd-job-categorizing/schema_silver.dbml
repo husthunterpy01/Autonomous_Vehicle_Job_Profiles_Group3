@@ -23,7 +23,7 @@ Table silver.JobPosting {
   company_id uuid [ref: > silver.Company.company_id]
   title varchar [not null]
   department varchar [note: 'nullable - not all sites provide this']
-  employment_type varchar [note: 'nullable - e.g. full-time/contract, not always specified']
+  employment_type varchar [note: 'e.g. full-time/contract; full-time when the source does not state one (defaulted in the Silver model)']
   seniority_level varchar [note: 'nullable - future extension, e.g. Junior/Mid/Senior/Lead']
   salary_min float [note: 'nullable - future extension']
   salary_max float [note: 'nullable - future extension']

@@ -19,6 +19,13 @@ normalizes timestamps, employment types and multi-location values, and
 deduplicates by source job ID, job URL, then normalized fallback fields. It builds
 `silver.cleaned_job_postings` on each successful run.
 
+Missing employment types are treated as full-time: when a source does not state
+one, Silver writes `full-time`. This is a data-processing decision agreed with the
+team, made here rather than in the backend so the backend stores what Silver
+hands over. The default is applied after deduplication, so a duplicate that did
+state a type is still preferred, and the unmodified value remains in
+`bronze.job_postings`.
+
 Skills extraction is exposed separately in `skills_extractor.py`, with its prompt
 stored in `scrapers/prompts/skills_extraction.txt`. AV-domain
 classification is intentionally excluded because it is owned by the separate
