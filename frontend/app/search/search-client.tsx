@@ -5,13 +5,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import CompanyLogo from "@/components/ui/CompanyLogo";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
+import Salary from "@/components/ui/Salary";
 import SearchBar from "@/components/ui/SearchBar";
 import Tag from "@/components/ui/Tag";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
+import { formatPayPeriod } from "@/lib/salary";
 import { ApiError } from "@/lib/services/api";
 import {
   EMPLOYMENT_TYPE_LABELS,
   getJobs,
+  jobSalary,
   type JobListItem,
 } from "@/lib/services/job";
 
@@ -21,10 +24,19 @@ const DEFAULT_PER_PAGE = 6;
    every keystroke would otherwise be a new request. */
 const SEARCH_DEBOUNCE_MS = 400;
 
-function locationLabel(job: JobListItem): string {
-  return job.locations.length > 0
-    ? job.locations.join(", ")
-    : "Location not specified";
+const JOB_TABLE_COLUMNS = [
+  "Role",
+  "Company",
+  "Location",
+  "Salary",
+  "Pay Period",
+  "Type",
+  "Posted",
+];
+
+/** Joined locations, or null when the posting lists none. */
+function locationLabel(job: JobListItem): string | null {
+  return job.locations.length > 0 ? job.locations.join(", ") : null;
 }
 
 function typeLabel(job: JobListItem): string | null {
@@ -35,7 +47,9 @@ function typeLabel(job: JobListItem): string | null {
 
 function postedLabel(job: JobListItem): string {
   if (!job.posted_date) return "Date unknown";
-  return new Date(job.posted_date).toLocaleDateString(undefined, {
+  // Fixed locale so dates read the same for every visitor ("Sep 6, 2026")
+  // instead of following the browser language, matching the job detail page.
+  return new Date(job.posted_date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -44,6 +58,7 @@ function postedLabel(job: JobListItem): string {
 
 function JobRow({ job }: { job: JobListItem }) {
   const type = typeLabel(job);
+  const location = locationLabel(job);
   return (
     // Not a Link: job detail pages are still mock-only (static export
     // requires every dynamic route known at build time), so a real job id
@@ -53,8 +68,10 @@ function JobRow({ job }: { job: JobListItem }) {
       <div className="min-w-0 flex-1">
         <h3 className="font-semibold text-ink">{job.title}</h3>
         <p className="mt-1 text-sm text-ink-secondary">
-          {job.company_name} · {locationLabel(job)}
+          {job.company_name}
+          {location ? ` · ${location}` : ""}
         </p>
+        <Salary className="mt-1" {...jobSalary(job)} />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {type && <Tag label={type} />}
           <span className="text-xs text-ink-muted">
@@ -69,10 +86,10 @@ function JobRow({ job }: { job: JobListItem }) {
 function JobsTable({ jobs }: { jobs: JobListItem[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-      <table className="w-full min-w-[800px] border-collapse text-left">
+      <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-section/60">
-            {["Role", "Company", "Location", "Type", "Posted"].map((label) => (
+            {JOB_TABLE_COLUMNS.map((label) => (
               <th
                 key={label}
                 scope="col"
@@ -96,7 +113,13 @@ function JobsTable({ jobs }: { jobs: JobListItem[] }) {
                 {job.company_name}
               </td>
               <td className="px-4 py-4 text-sm text-ink">
-                {locationLabel(job)}
+                {locationLabel(job) ?? "—"}
+              </td>
+              <td className="whitespace-nowrap px-4 py-4">
+                <Salary fallback="—" showPeriod={false} {...jobSalary(job)} />
+              </td>
+              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary">
+                {formatPayPeriod(jobSalary(job)) ?? "—"}
               </td>
               <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary">
                 {typeLabel(job) ?? "—"}

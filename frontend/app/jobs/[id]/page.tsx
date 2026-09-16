@@ -5,6 +5,7 @@ import {
   getCompanyById,
   getJobById,
   getSimilarJobs,
+  mockJobSalary,
   type Company,
   type Job,
 } from "@/lib/mock-data";
@@ -120,7 +121,7 @@ function RoleSidebar({
           <div className="flex items-center justify-between">
             <dt className="text-ink-muted">Salary</dt>
             <dd>
-              <Salary job={job} />
+              <Salary {...mockJobSalary(job)} />
             </dd>
           </div>
         </dl>
