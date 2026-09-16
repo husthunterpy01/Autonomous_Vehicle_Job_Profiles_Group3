@@ -69,10 +69,17 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             assert cursor.fetchall() == [("Legacy Engineer", "Remote", "Original description")]
             cursor.execute("SELECT data_type FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'", (schema,))
             assert cursor.fetchone()[0] == "text"
+            drop_location_migration = (root / "backend/app/sql/be15_drop_job_location_migration.sql").read_text(encoding="utf-8")
+            cursor.execute(drop_location_migration)
+            cursor.execute(drop_location_migration)
+            # be9 must stay repeatable once the column it used to relax is gone.
+            cursor.execute(migration)
+            cursor.execute("SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'", (schema,))
+            assert cursor.fetchone()[0] == 0
+            cursor.execute("SELECT title, raw_description FROM jobposting")
+            assert cursor.fetchall() == [("Legacy Engineer", "Original description")]
         test_engine = create_engine(database_url, connect_args={"options": f"-csearch_path={schema}"})
         locations = [f"Office {i:02d} - Long location name" for i in range(12)]
-        display = " | ".join(locations)
-        assert len(display) > 255
         with Session(test_engine) as db, db.begin():
             SilverSync(db).run([{
                 "deduplication_key": "f97c5d29941bfb1b2fdab0874906ab82",
@@ -81,9 +88,8 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             }])
         with Session(test_engine) as db:
             job = db.query(JobPosting).filter_by(source_key="silver:f97c5d29941bfb1b2fdab0874906ab82").one()
-            assert job.job_location == display
             assert len(job.locations) == 12
-        assert str(Base.metadata.tables["jobposting"].c.job_location.type) == "TEXT"
+        assert "job_location" not in Base.metadata.tables["jobposting"].c
     finally:
         if test_engine is not None:
             test_engine.dispose()

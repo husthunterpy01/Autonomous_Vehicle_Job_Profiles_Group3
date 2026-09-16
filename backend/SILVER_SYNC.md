@@ -33,10 +33,11 @@ constraints for optional source fields. Legacy naive `posted_date` values are
 interpreted as UTC. Confirm that convention before migrating an existing deployment.
 Fresh databases use the normal ORM `init_db()` startup path.
 
-`JobPosting.job_location` remains a compatibility display field. New consumers
-use `locations`; no country/city is guessed from a free-text location label.
-The display field is Text in both the ORM and migration, so combined location
-names are not limited to 255 characters. Location arrays replace the previous
+Job locations are stored only in `location` + `job_location`; the legacy
+`jobposting.job_location` text column was removed in BE-15 (apply
+`app/sql/be15_drop_job_location_migration.sql` after `be9_migration.sql` on an
+existing database). No country/city is guessed from a free-text location label.
+Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.

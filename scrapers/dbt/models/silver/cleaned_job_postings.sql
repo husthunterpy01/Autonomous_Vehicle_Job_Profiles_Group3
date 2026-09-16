@@ -120,7 +120,10 @@ select
     team,
     job_url,
     job_uploaded_at,
-    employment_type,
+    -- Sources that do not state an employment type are treated as full-time.
+    -- Applied after deduplication so a duplicate that did state a type still
+    -- ranks as more complete; the unmodified value stays in Bronze.
+    coalesce(employment_type, 'full-time') as employment_type,
     workplace_type,
     salary_min,
     salary_max,
