@@ -93,8 +93,6 @@ class SilverSync:
                     self.db.flush()
                 linked[canonical] = location
             job.locations = list(linked.values())
-            # Compatibility display field only; normalized associations are authoritative.
-            job.job_location = " | ".join(item.name for item in job.locations) or None
             # No skills field means extraction has not run: preserve existing skills.
             sync_skills(self.db, job, row, cache=skill_cache)
             self.db.flush()

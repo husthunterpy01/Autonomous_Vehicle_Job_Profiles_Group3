@@ -6,8 +6,18 @@ ALTER TABLE company ALTER COLUMN website_url DROP NOT NULL;
 ALTER TABLE company ALTER COLUMN career_page_url DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN department DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN employment_type DROP NOT NULL;
-ALTER TABLE jobposting ALTER COLUMN job_location DROP NOT NULL;
-ALTER TABLE jobposting ALTER COLUMN job_location TYPE text;
+-- job_location is dropped later by be15_drop_job_location_migration.sql; skip it
+-- when that has already run so this file stays repeatable.
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = current_schema() AND table_name = 'jobposting'
+          AND column_name = 'job_location'
+    ) THEN
+        ALTER TABLE jobposting ALTER COLUMN job_location DROP NOT NULL;
+        ALTER TABLE jobposting ALTER COLUMN job_location TYPE text;
+    END IF;
+END $$;
 ALTER TABLE jobposting ALTER COLUMN seniority_level DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN salary_average DROP NOT NULL;
 ALTER TABLE jobposting ALTER COLUMN salary_currency DROP NOT NULL;
