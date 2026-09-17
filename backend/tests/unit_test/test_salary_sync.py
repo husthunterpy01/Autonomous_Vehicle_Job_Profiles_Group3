@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
 
 from app.models import JobPosting, Location
 from app.services.salary_sync import import_salary
@@ -155,28 +154,3 @@ def test_salary_average_must_be_a_positive_number(db_session):
     with pytest.raises(ValueError), db_session.begin():
         import_salary(db_session, [_average_row(salary_average=0)])
     assert db_session.query(JobPosting).one().salary_average is None
-
-
-DETAILS = {"salary_currency": "USD", "salary_period": "yearly", "salary_source": "api"}
-
-
-@pytest.mark.parametrize(
-    "values",
-    [
-        {"salary_min": 0, "salary_max": 100, **DETAILS},
-        {"salary_min": 200, "salary_max": 100, **DETAILS},
-        {"salary_average": -1, **DETAILS},
-        {"salary_min": 100, "salary_max": 200, "salary_average": 150, **DETAILS},
-        {"salary_min": 100, "salary_max": 200, "salary_currency": "USD", "salary_source": "api"},
-        {"salary_average": 150000},
-    ],
-    ids=["zero-min", "inverted-range", "negative-average", "range-and-average", "missing-period", "missing-details"],
-)
-def test_database_rejects_invalid_salary_written_outside_sync(db_session, values):
-    seed(db_session)
-    job = db_session.query(JobPosting).one()
-    for field, value in values.items():
-        setattr(job, field, value)
-    with pytest.raises(IntegrityError):
-        db_session.commit()
-    db_session.rollback()

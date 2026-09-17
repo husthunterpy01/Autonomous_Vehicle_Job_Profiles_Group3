@@ -31,7 +31,9 @@ the scraper database unless that database deliberately also hosts the backend.
 The migration is repeatable, preserves rows, adds junction tables and relaxes
 constraints for optional source fields. Legacy naive `posted_date` values are
 interpreted as UTC. Confirm that convention before migrating an existing deployment.
-Fresh databases use the normal ORM `init_db()` startup path.
+Fresh databases use the normal ORM `init_db()` startup path; the salary check
+constraints are defined only in `app/sql/be13_salary_constraints_migration.sql`,
+so apply that migration to a fresh database too.
 
 Job locations are stored only in `location` + `job_location`; the legacy
 `jobposting.job_location` text column was removed in BE-15 (apply
