@@ -28,6 +28,17 @@ class JobPosting(Base):
             "salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max",
             name="ck_jobposting_salary_range_order",
         ),
+        # A job has a published range or a levels.fyi estimate, never both.
+        CheckConstraint(
+            "salary_average IS NULL OR (salary_min IS NULL AND salary_max IS NULL)",
+            name="ck_jobposting_salary_range_or_average",
+        ),
+        # Any salary needs its currency, pay period and source to be comparable.
+        CheckConstraint(
+            "(salary_min IS NULL AND salary_max IS NULL AND salary_average IS NULL)"
+            " OR (salary_currency IS NOT NULL AND salary_period IS NOT NULL AND salary_source IS NOT NULL)",
+            name="ck_jobposting_salary_details_required",
+        ),
     )
 
     job_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)

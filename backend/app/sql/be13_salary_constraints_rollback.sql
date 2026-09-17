@@ -5,4 +5,6 @@ ALTER TABLE jobposting DROP CONSTRAINT IF EXISTS ck_jobposting_salary_min_positi
 ALTER TABLE jobposting DROP CONSTRAINT IF EXISTS ck_jobposting_salary_max_positive;
 ALTER TABLE jobposting DROP CONSTRAINT IF EXISTS ck_jobposting_salary_average_positive;
 ALTER TABLE jobposting DROP CONSTRAINT IF EXISTS ck_jobposting_salary_range_order;
+ALTER TABLE jobposting DROP CONSTRAINT IF EXISTS ck_jobposting_salary_range_or_average;
+ALTER TABLE jobposting DROP CONSTRAINT IF EXISTS ck_jobposting_salary_details_required;
 COMMIT;

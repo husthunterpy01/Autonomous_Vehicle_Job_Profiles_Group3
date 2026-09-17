@@ -35,10 +35,17 @@ Decisions:
 - **Salaries are only comparable within one pay period.** The job list's `min_salary`/`max_salary` filters therefore require `salary_period`, and salary sorting is not offered.
 - **Missing salary is null.** Nothing is guessed when a job publishes no salary and no estimate is available.
 
-Rules enforced by the database (`backend/app/sql/be13_salary_constraints_migration.sql`, mirrored in the ORM): salary values are positive, and `salary_min <= salary_max`. Currency, period and source validation happens in `backend/app/services/salary_sync.py`.
+Rules enforced by the database (`backend/app/sql/be13_salary_constraints_migration.sql`, mirrored in the ORM), on top of the checks in `backend/app/services/salary_sync.py`:
+- salary values are positive, and `salary_min <= salary_max`;
+- a job has a published range or `salary_average`, never both;
+- any salary has `salary_currency`, `salary_period` and `salary_source` set.
+
+The allowed values for period and source are still validated in `salary_sync.py` only.
 
 Migrations, applied after `be9_migration.sql`:
 1. `be10_salary_migration.sql` adds `salary_min`, `salary_max`, `salary_period` and `salary_source`. Rollback: `be10_salary_migration_rollback.sql`, which drops those columns and their data.
-2. `be13_salary_constraints_migration.sql` adds the constraints. Rollback: `be13_salary_constraints_rollback.sql`, which removes them without changing data.
+2. `be13_salary_constraints_migration.sql` adds the constraints. It refuses to apply while any existing row breaks a rule, so remove such rows first - in particular the 12 demo jobs from `seed_companies.sql` (job IDs starting `33333333-`), whose salary has no period or source. Rollback: `be13_salary_constraints_rollback.sql`, which removes the constraints without changing data.
+
+`seed_companies.sql` is for local testing only and no longer sets a salary on its demo jobs.
 
 See `schema_silver.dbml` for the full schema definition, and `erd_diagram.pdf` for the visual diagram.

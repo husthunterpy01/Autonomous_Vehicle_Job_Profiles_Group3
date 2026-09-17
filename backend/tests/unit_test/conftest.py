@@ -79,8 +79,6 @@ def make_job(
         department="Engineering",
         employment_type=1,
         seniority_level=2,
-        salary_average=150000,
-        salary_currency="USD",
         raw_description="Build autonomous systems.",
         posted_date=datetime(2026, 8, 1, 12, 0, 0, tzinfo=timezone.utc),
         source_platform="Greenhouse",
