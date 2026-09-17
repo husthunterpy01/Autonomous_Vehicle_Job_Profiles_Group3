@@ -1,8 +1,11 @@
-from app.models.jobposting import job_skill
-from app.models.skill import Skill
 from sqlalchemy import func
 from sqlalchemy.orm import Session
+
+from app.models.jobposting import job_skill
+from app.models.skill import Skill
 from app.schemas.skill import SkillStatResponse
+
+
 class SkillService:
     def __init__(self, db: Session):
         self.db = db
