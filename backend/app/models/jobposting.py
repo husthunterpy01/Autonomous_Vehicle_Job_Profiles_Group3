@@ -1,6 +1,15 @@
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -9,6 +18,17 @@ from app.core.database import Base
 
 class JobPosting(Base):
     __tablename__ = "jobposting"
+    # Mirrors app/sql/be13_salary_constraints_migration.sql so salary rules hold
+    # for any writer, not only app/services/salary_sync.py.
+    __table_args__ = (
+        CheckConstraint("salary_min IS NULL OR salary_min > 0", name="ck_jobposting_salary_min_positive"),
+        CheckConstraint("salary_max IS NULL OR salary_max > 0", name="ck_jobposting_salary_max_positive"),
+        CheckConstraint("salary_average IS NULL OR salary_average > 0", name="ck_jobposting_salary_average_positive"),
+        CheckConstraint(
+            "salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max",
+            name="ck_jobposting_salary_range_order",
+        ),
+    )
 
     job_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), unique=True, nullable=False)

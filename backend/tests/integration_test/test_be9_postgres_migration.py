@@ -55,6 +55,33 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             cursor.execute(migration)
             cursor.execute(salary_migration)
             cursor.execute(salary_migration)
+            sql_dir = root / "backend/app/sql"
+            constraints_migration = (sql_dir / "be13_salary_constraints_migration.sql").read_text(encoding="utf-8")
+            constraints_rollback = (sql_dir / "be13_salary_constraints_rollback.sql").read_text(encoding="utf-8")
+            salary_rollback = (sql_dir / "be10_salary_migration_rollback.sql").read_text(encoding="utf-8")
+            salary_constraints = "SELECT count(*) FROM pg_constraint WHERE conrelid = 'jobposting'::regclass AND conname LIKE 'ck_jobposting_salary_%'"
+            salary_columns = "SELECT column_name FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name LIKE 'salary_%%' ORDER BY column_name"
+            cursor.execute(constraints_migration)
+            cursor.execute(constraints_migration)
+            cursor.execute(salary_constraints)
+            assert cursor.fetchone()[0] == 4
+            with pytest.raises(psycopg2.errors.CheckViolation):
+                cursor.execute("UPDATE jobposting SET salary_min = 200, salary_max = 100")
+            with pytest.raises(psycopg2.errors.CheckViolation):
+                cursor.execute("UPDATE jobposting SET salary_average = 0")
+            # Both rollbacks are repeatable, and the migrations re-apply cleanly after them.
+            cursor.execute(constraints_rollback)
+            cursor.execute(constraints_rollback)
+            cursor.execute(salary_constraints)
+            assert cursor.fetchone()[0] == 0
+            cursor.execute(salary_rollback)
+            cursor.execute(salary_rollback)
+            cursor.execute(salary_columns, (schema,))
+            assert cursor.fetchall() == [("salary_average",), ("salary_currency",)]
+            cursor.execute(salary_migration)
+            cursor.execute(constraints_migration)
+            cursor.execute(salary_constraints)
+            assert cursor.fetchone()[0] == 4
             cursor.execute("SELECT name FROM company")
             assert cursor.fetchall() == [("Legacy",)]
             cursor.execute("SELECT count(*) FROM job_location")
