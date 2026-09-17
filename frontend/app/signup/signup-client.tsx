@@ -1,16 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useRef, useState, type FormEvent } from "react";
 import LoginShowcase from "@/app/login/login-showcase";
+import { AuthApiError, signUp } from "@/lib/services/auth";
 
-const MIN_PASSWORD_LENGTH = 8;
+const MIN_PASSWORD_LENGTH = 12;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const REGISTRATION_UNAVAILABLE_MESSAGE =
-  "Account registration is not available yet. Please try again after the registration service is enabled.";
+const PASSWORD_REQUIREMENTS =
+  "Use at least 12 characters with uppercase, lowercase, number, and special character.";
 
 type FieldErrors = {
   name?: string;
+  username?: string;
   email?: string;
   password?: string;
   confirmPassword?: string;
@@ -54,6 +57,7 @@ function EyeIcon({ open }: { open: boolean }) {
 
 function validateForm(
   name: string,
+  username: string,
   email: string,
   password: string,
   confirmPassword: string,
@@ -63,6 +67,10 @@ function validateForm(
 
   if (!name.trim()) {
     errors.name = "Name is required.";
+  }
+
+  if (!username.trim()) {
+    errors.username = "Username is required.";
   }
 
   if (!trimmedEmail) {
@@ -75,6 +83,13 @@ function validateForm(
     errors.password = "Password is required.";
   } else if (password.length < MIN_PASSWORD_LENGTH) {
     errors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  } else if (
+    !/[a-z]/.test(password) ||
+    !/[A-Z]/.test(password) ||
+    !/\d/.test(password) ||
+    !/[^A-Za-z0-9]/.test(password)
+  ) {
+    errors.password = PASSWORD_REQUIREMENTS;
   }
 
   if (!confirmPassword) {
@@ -86,12 +101,15 @@ function validateForm(
   return errors;
 }
 
-export default function SignupClient() {
+export default function SignUpClient() {
+  const router = useRouter();
   const nameRef = useRef<HTMLInputElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmPasswordRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -115,6 +133,8 @@ export default function SignupClient() {
   function focusFirstError(errors: FieldErrors) {
     if (errors.name) {
       nameRef.current?.focus();
+    } else if (errors.username) {
+      usernameRef.current?.focus();
     } else if (errors.email) {
       emailRef.current?.focus();
     } else if (errors.password) {
@@ -129,7 +149,13 @@ export default function SignupClient() {
     if (submitting) return;
 
     setFormError(null);
-    const errors = validateForm(name, email, password, confirmPassword);
+    const errors = validateForm(
+      name,
+      username,
+      email,
+      password,
+      confirmPassword,
+    );
     setFieldErrors(errors);
 
     if (Object.keys(errors).length > 0) {
@@ -138,15 +164,26 @@ export default function SignupClient() {
     }
 
     setName(name.trim());
+    setUsername(username.trim());
     setEmail(email.trim());
     setSubmitting(true);
 
     try {
-      // The backend currently has no registration endpoint. Keep valid form
-      // values in place and report the dependency instead of faking success.
-      setFormError(REGISTRATION_UNAVAILABLE_MESSAGE);
-    } finally {
+      await signUp({
+        full_name: name.trim(),
+        username: username.trim(),
+        email: email.trim(),
+        password,
+      });
+      window.dispatchEvent(new Event("auth-changed"));
+      router.push("/");
+    } catch (error) {
       setSubmitting(false);
+      setFormError(
+        error instanceof AuthApiError
+          ? error.message
+          : "Unable to create your account. Please try again.",
+      );
     }
   }
 
@@ -208,9 +245,49 @@ export default function SignupClient() {
               {fieldErrors.name && (
                 <p
                   id="signup-name-error"
+                  role="alert"
                   className="mt-1.5 text-sm text-warning"
                 >
                   {fieldErrors.name}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="signup-username"
+                className="mb-1.5 block text-sm font-medium text-ink"
+              >
+                Username
+              </label>
+              <input
+                ref={usernameRef}
+                id="signup-username"
+                name="username"
+                type="text"
+                required
+                autoComplete="username"
+                value={username}
+                onChange={(event) => {
+                  setUsername(event.target.value);
+                  clearError("username");
+                }}
+                aria-invalid={Boolean(fieldErrors.username)}
+                aria-describedby={
+                  fieldErrors.username ? "signup-username-error" : undefined
+                }
+                placeholder="Choose a username"
+                className={`${inputClassName} ${
+                  fieldErrors.username ? "border-warning" : "border-line"
+                }`}
+              />
+              {fieldErrors.username && (
+                <p
+                  id="signup-username-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.username}
                 </p>
               )}
             </div>
@@ -246,6 +323,7 @@ export default function SignupClient() {
               {fieldErrors.email && (
                 <p
                   id="signup-email-error"
+                  role="alert"
                   className="mt-1.5 text-sm text-warning"
                 >
                   {fieldErrors.email}
@@ -280,7 +358,9 @@ export default function SignupClient() {
                   aria-invalid={Boolean(fieldErrors.password)}
                   aria-describedby={
                     fieldErrors.password
-                      ? "signup-password-requirements signup-password-error"
+                      ? fieldErrors.password === PASSWORD_REQUIREMENTS
+                        ? "signup-password-error"
+                        : "signup-password-requirements signup-password-error"
                       : "signup-password-requirements"
                   }
                   placeholder="Create a password"
@@ -302,11 +382,12 @@ export default function SignupClient() {
                 id="signup-password-requirements"
                 className="mt-1.5 text-xs text-ink-muted"
               >
-                Use at least {MIN_PASSWORD_LENGTH} characters.
+                {PASSWORD_REQUIREMENTS}
               </p>
               {fieldErrors.password && (
                 <p
                   id="signup-password-error"
+                  role="alert"
                   className="mt-1.5 text-sm text-warning"
                 >
                   {fieldErrors.password}
@@ -365,6 +446,7 @@ export default function SignupClient() {
               {fieldErrors.confirmPassword && (
                 <p
                   id="signup-confirm-password-error"
+                  role="alert"
                   className="mt-1.5 text-sm text-warning"
                 >
                   {fieldErrors.confirmPassword}

@@ -10,6 +10,8 @@
  * hard-coded into the page: update this array as the list evolves.
  */
 
+import type { SalaryInput } from "./salary";
+
 function slugify(s: string): string {
   return s
     .toLowerCase()
@@ -168,6 +170,18 @@ export type Job = {
   /** Link to the original posting / company careers page. */
   sourceUrl: string;
 };
+
+/** Mock salaries are a range in thousands of USD per year; expose them in
+ *  the API's shape so the shared Salary component renders them (FE-14). */
+export function mockJobSalary(job: Job): SalaryInput {
+  return {
+    min: job.salaryMin * 1000,
+    max: job.salaryMax * 1000,
+    currency: "USD",
+    period: "yearly",
+    source: null,
+  };
+}
 
 type JobInput = Omit<Job, "id">;
 

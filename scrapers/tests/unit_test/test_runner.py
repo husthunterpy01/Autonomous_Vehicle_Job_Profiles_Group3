@@ -1,8 +1,8 @@
 from unittest.mock import patch
 
+from scrapers.scraper_main import main
 from scrapers.utils.company_scraper import CompanyScraper
 from scrapers.utils.runner import ScraperRunner
-from scrapers.scraper_main import main
 
 
 def test_scrape_company_skips_missing_slug():

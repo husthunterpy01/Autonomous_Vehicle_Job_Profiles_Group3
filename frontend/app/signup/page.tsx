@@ -1,5 +1,5 @@
-import SignupClient from "./signup-client";
+import SignUpClient from "./signup-client";
 
-export default function SignupPage() {
-  return <SignupClient />;
+export default function SignUpPage() {
+  return <SignUpClient />;
 }

@@ -2,7 +2,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 from psycopg2.extras import Json
-
 from scrapers.scraper_main import main
 from scrapers.utils.company_scraper import CompanyScraper
 
@@ -122,7 +121,10 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
     status = main(["--company", "stack_av", "--max-jobs", "1"])
 
     assert status == 0
-    request = mock_urlopen.call_args[0][0]
+    # Greenhouse now makes one list call plus a per-job `pay_transparency=true`
+    # detail call for each posting (see _expand_greenhouse_postings), so the
+    # list request is the first call, not the last.
+    request = mock_urlopen.call_args_list[0][0][0]
     assert request.get_header("User-agent").startswith("Mozilla/5.0")
     assert request.full_url.endswith("/boards/stackav/jobs?content=true")
     assert stored["object_name"].startswith("api/stack_av/")
@@ -135,7 +137,12 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
     assert inserted[2] == "api"
     assert inserted[3] == "greenhouse"
     assert isinstance(inserted[4], Json)
-    assert inserted[4].adapted == greenhouse_payload
+    # The pay_transparency detail call (mocked with the same list payload,
+    # which has no pay_input_ranges) attaches an empty array to each posting.
+    expected_archived_payload = json.loads(json.dumps(greenhouse_payload))
+    for job in expected_archived_payload["jobs"]:
+        job["pay_input_ranges"] = []
+    assert inserted[4].adapted == expected_archived_payload
     assert inserted[5] == "US"
     assert "raw_responses" in mock_execute_values.call_args.args[1]
 

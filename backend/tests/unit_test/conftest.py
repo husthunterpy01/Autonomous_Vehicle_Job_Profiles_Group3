@@ -78,7 +78,6 @@ def make_job(
         title=title,
         department="Engineering",
         employment_type=1,
-        job_location="Remote",
         seniority_level=2,
         salary_average=150000,
         salary_currency="USD",

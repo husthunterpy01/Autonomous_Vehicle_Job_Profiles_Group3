@@ -98,7 +98,7 @@ class SeleniumClient:
                 WebDriverWait(self.driver, self.page_load_timeout).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, wait_selector))
                 )
-            except Exception:  # noqa: BLE001 - fall back to the settle delay
+            except Exception:  # noqa: BLE001, S110 - fall back to the settle delay
                 pass
         time.sleep(self.settle_delay)
         if scroll:

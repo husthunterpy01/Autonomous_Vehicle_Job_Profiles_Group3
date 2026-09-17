@@ -4,7 +4,6 @@ import logging
 from typing import Any
 
 import yaml
-
 from scrapers.service.fetch.rawfetch import RawFetch
 
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ class CompanyScraper:
             payload = yaml.safe_load(file) or {}
         companies = payload.get("companies")
         if not isinstance(companies, list):
-            raise ValueError(f"Expected a companies list in {cls.COMPANY_LIST_PATH}")
+            raise ValueError(f"Expected a companies list in {cls.COMPANY_LIST_PATH}")  # noqa: TRY004 - malformed YAML, not a Python type error
         return companies
 
     @classmethod

@@ -7,6 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.main import app
+from app.routers.auth import login_rate_limiter
+
+
+@pytest.fixture(autouse=True)
+def reset_login_rate_limiter():
+    login_rate_limiter.reset()
+    yield
+    login_rate_limiter.reset()
 
 
 @pytest.fixture

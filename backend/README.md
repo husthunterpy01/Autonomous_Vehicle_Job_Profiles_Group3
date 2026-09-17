@@ -84,12 +84,22 @@ Example for a manual local install (port `5432`):
 DATABASE_URL=postgresql://team3:<password>@localhost:5432/autojobdatabase
 DATABASE_USER=team3
 DATABASE_PASSWORD=<password>
-SEED_ON_STARTUP=true
+SEED_ON_STARTUP=false
+JWT_SECRET_KEY=<generate-a-long-random-secret>
+AUTH_COOKIE_SECURE=false
 ```
 
 Use the same password you set when creating the Postgres user. If you used the Docker option above, use port `5433` instead.
 
-`SEED_ON_STARTUP=true` reseeds companies on every API start (local/dev). Leave it unset or `false` outside local development so production data is not truncated.
+Keep `SEED_ON_STARTUP=false` (see `.env.sample`): `true` reseeds companies on *every* API start via `app/sql/seed_companies.sql`, which opens with `TRUNCATE TABLE company CASCADE` - that cascades through the FK graph and wipes every jobposting (Silver-synced categories, skills, and salary data included) down to the 12 hardcoded demo postings. Only set it `true` for a genuine from-scratch reseed on a database you don't mind emptying.
+
+Generate `JWT_SECRET_KEY` with a cryptographically secure random generator and
+keep it outside source control. Set `AUTH_COOKIE_SECURE=true` when the frontend
+and API are served over HTTPS. Any environment other than an explicitly named
+`development` environment fails at startup when `JWT_SECRET_KEY` is missing or
+blank. An unset or blank `ENVIRONMENT` does not enable development mode. To use
+the local fallback explicitly, set `ENVIRONMENT=development`; otherwise provide
+a real signing key. CI uses a freshly generated test-only key.
 
 ### CI note
 
@@ -116,6 +126,110 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/redoc | ReDoc |
 | http://127.0.0.1:8000/health | Health check |
 | http://127.0.0.1:8000/api/v1/companies | Companies API |
+| http://127.0.0.1:8000/api/v1/auth/signup | Account registration |
+| http://127.0.0.1:8000/api/v1/auth/login | JWT sign in |
+| http://127.0.0.1:8000/api/v1/auth/me | Current authenticated user |
+| http://127.0.0.1:8000/api/v1/favorites/jobs | Current user's favorite jobs |
+| http://127.0.0.1:8000/api/v1/favorites/companies | Current user's favorite companies |
+
+## Authentication API
+
+Passwords must contain at least 12 characters, including uppercase, lowercase,
+a number, and a special character. Passwords are stored as Argon2 hashes. The
+signed JWT contains only the user ID, token type, issued-at time, and expiry and
+is returned in an HTTP-only `SameSite=Lax` cookie rather than response JSON.
+
+The login identifier accepts either the normalized email address or username.
+Five failed attempts for the same client and identifier within five minutes are
+rate limited by default; both values can be changed with
+`AUTH_LOGIN_MAX_ATTEMPTS` and `AUTH_LOGIN_WINDOW_SECONDS`.
+
+The included limiter stores counters in the current API process. This is
+appropriate for local development and single-worker deployments. Production
+deployments with multiple workers or instances must use a shared store such as
+Redis so failed-login counters are enforced consistently across processes.
+
+### Sign up
+
+```bash
+curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "driver@example.com",
+    "username": "driver_engineer",
+    "full_name": "Driver Engineer",
+    "password": "SecurePassword!123"
+  }'
+```
+
+### Sign in and access a protected endpoint
+
+```bash
+curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "identifier": "driver@example.com",
+    "password": "SecurePassword!123",
+    "remember_me": false
+  }'
+
+curl -b cookies.txt http://127.0.0.1:8000/api/v1/auth/me
+```
+
+## Favorites API (BE-11)
+
+All favorite endpoints require a valid login cookie or bearer token. The user ID
+comes from the authenticated session, not from a client-supplied parameter.
+
+| Method | URL | Result |
+|---|---|---|
+| `GET` | `/api/v1/favorites/jobs` | Current user's favorite jobs with live job details |
+| `POST` | `/api/v1/favorites/jobs/{job_id}` | Add a job favorite (`201`) |
+| `DELETE` | `/api/v1/favorites/jobs/{job_id}` | Remove a job favorite (`204`) |
+| `GET` | `/api/v1/favorites/companies` | Current user's favorite companies with live company details |
+| `POST` | `/api/v1/favorites/companies/{company_id}` | Add a company favorite (`201`) |
+| `DELETE` | `/api/v1/favorites/companies/{company_id}` | Remove a company favorite (`204`) |
+
+The list responses are arrays. Each job entry has `job_id`, `created_at`, and a
+`job` object using the normal `JobResponse` fields. Each company entry has
+`company_id`, `created_at`, and a `company` object using `CompanyResponse`.
+Repeated adds return `409`, missing targets or missing favorites return `404`,
+and unauthenticated requests return `401`. Invalid UUIDs return `422`.
+
+For example, after login:
+
+```bash
+curl -b cookies.txt -X POST \
+  http://127.0.0.1:8000/api/v1/favorites/jobs/<job_uuid>
+curl -b cookies.txt http://127.0.0.1:8000/api/v1/favorites/jobs
+curl -b cookies.txt -X DELETE \
+  http://127.0.0.1:8000/api/v1/favorites/jobs/<job_uuid>
+```
+
+Fresh databases receive the two tables through the normal ORM startup path.
+For an existing PostgreSQL backend, apply `app/sql/be11_favorites_migration.sql`
+after the authentication tables exist; the migration can be run more than once.
+From `backend/`, the command is:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f app/sql/be11_favorites_migration.sql
+```
+
+Its composite primary keys prevent duplicates, and its foreign keys remove
+favorites when a user, job, or company is hard-deleted. The list queries join to
+live targets and eagerly load job relations to avoid per-item queries.
+
+The current job and company schemas have no archived-state field. This API
+therefore handles hard-deleted records, but it cannot distinguish archived
+targets until the team defines and persists an archive status. Also keep
+`SEED_ON_STARTUP=false` when testing persistence: the legacy development seed
+uses `TRUNCATE company CASCADE`, which intentionally removes company-linked
+data, including favorites.
+
+The optional PostgreSQL migration regression runs only against an explicitly
+named test database: set `BE11_TEST_POSTGRES=1` and `BE11_TEST_DATABASE_URL`,
+then run `pytest tests/integration_test/test_favorites_postgres_migration.py`.
+The test creates and removes its own uniquely named schema.
 
 ## Companies API (testing)
 

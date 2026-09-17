@@ -3,14 +3,27 @@ name: autonomous-job-backend-ci
 on:
   pull_request:
     branches: [ main ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/ci-backend.yml"
+  push:
+    branches: [ main ]
+    paths:
+      - "backend/**"
+      - ".github/workflows/ci-backend.yml"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     env:
+      ENVIRONMENT: test
       POSTGRES_USER: team3
       POSTGRES_DB: autojobdatabase
       DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
+      BE9_TEST_POSTGRES: '1'
+      BE9_TEST_DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
+      BE11_TEST_POSTGRES: '1'
+      BE11_TEST_DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
     services:
       postgres:
         image: postgres:16
@@ -26,11 +39,13 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
+    - name: Generate ephemeral test signing key
+      run: python -c "import os, secrets; open(os.environ['GITHUB_ENV'], 'a').write('JWT_SECRET_KEY=' + secrets.token_hex(32) + '\n')"
     - name: Install dependencies
       working-directory: backend
       run: |

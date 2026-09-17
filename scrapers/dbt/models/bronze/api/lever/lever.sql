@@ -14,7 +14,21 @@ select
     job->'categories'->>'location' as location,
     job->>'hostedUrl' as job_url,
     job->>'createdAt' as job_uploaded_at,
-    job->'categories'->>'commitment' as employment_type
+    job->'categories'->>'commitment' as employment_type,
+    nullif(job->'salaryRange'->>'min', '')::numeric as salary_min,
+    nullif(job->'salaryRange'->>'max', '')::numeric as salary_max,
+    job->'salaryRange'->>'currency' as salary_currency,
+    -- Lever's own values seen so far: "per-year-salary"; match loosely by
+    -- substring so other interval spellings ("per-hour", "per-month-salary",
+    -- ...) still normalize instead of silently going null.
+    case
+        when job->'salaryRange'->>'interval' ilike '%year%' then 'yearly'
+        when job->'salaryRange'->>'interval' ilike '%month%' then 'monthly'
+        when job->'salaryRange'->>'interval' ilike '%week%' then 'weekly'
+        when job->'salaryRange'->>'interval' ilike '%day%' then 'daily'
+        when job->'salaryRange'->>'interval' ilike '%hour%' then 'hourly'
+        else null
+    end as salary_period
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(
     case

@@ -28,3 +28,27 @@ unit_tests:
           job_url: https://boards.greenhouse.io/stackav/jobs/1
           job_uploaded_at: "2026-01-01T00:00:00Z"
           employment_type: null
+
+  - name: greenhouse_does_not_tag_an_implausibly_small_range_as_yearly
+    description: >
+      pay_input_ranges has no interval field to distinguish an hourly rate
+      from an annual salary (unlike Lever/Ashby); a range under $1,000 is
+      never a real annual salary, so salary_period must be null instead of
+      confidently wrong, letting the regex fallback take the real period
+      from the posting text instead.
+    model: greenhouse
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'greenhouse'::text as source_system,
+            'Stack AV'::text as company_name,
+            'US'::text as headquarter,
+            $json${"jobs":[{"id":"1","title":"Intern","content":"<p>Intern role</p>","location":{"name":"Pittsburgh, PA"},"first_published":"2026-01-01T00:00:00Z","absolute_url":"https://boards.greenhouse.io/stackav/jobs/1","pay_input_ranges":[{"min_cents":2000,"max_cents":7100,"currency_type":"USD"}]}]}$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Intern
+          salary_currency: USD
+          salary_period: null

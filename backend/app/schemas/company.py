@@ -33,6 +33,6 @@ class CompanyUpdate(BaseModel):
 class CompanyWithJobNumberResponse(BaseModel):
     company_id: UUID
     name: str
-    company_type: str
+    company_type: str | None
     location: str | None
     number_of_jobs: int

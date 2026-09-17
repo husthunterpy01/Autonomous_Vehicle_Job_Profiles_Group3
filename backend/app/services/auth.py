@@ -1,0 +1,71 @@
+import sqlite3
+
+from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
+from app.models.user import User
+from app.schemas.auth import SignUpRequest
+from app.utils.security import DUMMY_PASSWORD_HASH, SecurityService
+
+
+class DuplicateUserError(Exception):
+    pass
+
+
+class AuthService:
+    @staticmethod
+    def _is_unique_violation(error: IntegrityError) -> bool:
+        original_error = error.orig
+        sqlstate = getattr(original_error, "sqlstate", None) or getattr(
+            original_error, "pgcode", None
+        )
+        if sqlstate == "23505":
+            return True
+
+        sqlite_error_code = getattr(original_error, "sqlite_errorcode", None)
+        if sqlite_error_code in {1555, 2067}:
+            return True
+        return isinstance(original_error, sqlite3.IntegrityError) and str(
+            original_error
+        ).startswith("UNIQUE constraint failed:")
+
+    @staticmethod
+    def create_user(db: Session, data: SignUpRequest) -> User:
+        duplicate = (
+            db.query(User)
+            .filter(or_(User.email == data.email, User.username == data.username))
+            .first()
+        )
+        if duplicate:
+            raise DuplicateUserError
+
+        user = User(
+            email=data.email,
+            username=data.username,
+            full_name=data.full_name,
+            password_hash=SecurityService.hash_password(data.password),
+        )
+        db.add(user)
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            if AuthService._is_unique_violation(error):
+                raise DuplicateUserError from error
+            raise
+        db.refresh(user)
+        return user
+
+    @staticmethod
+    def authenticate(db: Session, identifier: str, password: str) -> User | None:
+        user = (
+            db.query(User)
+            .filter(or_(User.email == identifier, User.username == identifier))
+            .first()
+        )
+        stored_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
+        password_matches = SecurityService.verify_password(password, stored_hash)
+        if not user or not user.is_active or not password_matches:
+            return None
+        return user

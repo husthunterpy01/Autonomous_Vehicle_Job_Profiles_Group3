@@ -3,10 +3,10 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { mockLogin } from "@/lib/mock-auth";
+import { AuthApiError, signIn } from "@/lib/services/auth";
 import LoginShowcase from "./login-showcase";
 
-type FieldErrors = { email?: string; password?: string };
+type FieldErrors = { identifier?: string; password?: string };
 
 function GoogleIcon() {
   return (
@@ -67,7 +67,7 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function LoginClient() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -80,23 +80,24 @@ export default function LoginClient() {
     setFormError(null);
 
     const errors: FieldErrors = {};
-    if (!email.trim()) errors.email = "Email is required";
+    if (!identifier.trim()) errors.identifier = "Email or username is required";
     if (!password) errors.password = "Password is required";
     setFieldErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
     setSubmitting(true);
-    const result = await mockLogin(email, password);
-    setSubmitting(false);
-
-    if (!result.ok) {
-      setFormError("Incorrect email or password. Please try again.");
-      return;
+    try {
+      await signIn(identifier, password, rememberMe);
+      window.dispatchEvent(new Event("auth-changed"));
+      router.push("/");
+    } catch (error) {
+      setSubmitting(false);
+      setFormError(
+        error instanceof AuthApiError
+          ? error.message
+          : "Unable to sign in. Please try again.",
+      );
     }
-
-    const storage = rememberMe ? window.localStorage : window.sessionStorage;
-    storage.setItem("av-job-finder-token", result.token);
-    router.push("/");
   }
 
   return (
@@ -142,27 +143,32 @@ export default function LoginClient() {
 
             <div>
               <label
-                htmlFor="email"
+                htmlFor="identifier"
                 className="mb-1.5 block text-sm font-medium text-ink"
               >
-                Email Address
+                Email or Username
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="identifier"
+                name="identifier"
+                type="text"
                 required
-                autoComplete="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                aria-invalid={Boolean(fieldErrors.email)}
-                aria-describedby={fieldErrors.email ? "email-error" : undefined}
-                placeholder="Enter email address"
+                autoComplete="username"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                aria-invalid={Boolean(fieldErrors.identifier)}
+                aria-describedby={
+                  fieldErrors.identifier ? "identifier-error" : undefined
+                }
+                placeholder="Enter email or username"
                 className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-muted focus:border-primary"
               />
-              {fieldErrors.email && (
-                <p id="email-error" className="mt-1.5 text-sm text-warning">
-                  {fieldErrors.email}
+              {fieldErrors.identifier && (
+                <p
+                  id="identifier-error"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.identifier}
                 </p>
               )}
             </div>
