@@ -247,7 +247,9 @@ export default function FavoritesClient() {
           {jobsStatus === "success" && jobs.length > 0 && (
             <>
               <div className="mt-6 flex justify-end">
-                <ViewToggle view={view} onChange={setView} />
+                <div className="w-56">
+                  <ViewToggle view={view} onChange={setView} />
+                </div>
               </div>
 
               <div className="mt-4">
