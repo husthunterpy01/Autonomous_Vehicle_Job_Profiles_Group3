@@ -12,7 +12,7 @@ import {
   JobsTable,
 } from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
-import { addFavorite, removeFavorite } from "@/lib/services/favorite";
+import { addFavoriteJob, removeFavoriteJob } from "@/lib/services/favorite";
 import { getJobs, type JobListItem } from "@/lib/services/job";
 
 const DEFAULT_PER_PAGE = 6;
@@ -50,14 +50,14 @@ export default function SearchClient() {
     setSavingId(jobId);
     try {
       if (alreadySaved) {
-        await removeFavorite(jobId);
+        await removeFavoriteJob(jobId);
         setSavedIds((prev) => {
           const next = new Set(prev);
           next.delete(jobId);
           return next;
         });
       } else {
-        await addFavorite(jobId);
+        await addFavoriteJob(jobId);
         setSavedIds((prev) => new Set(prev).add(jobId));
       }
     } catch (error) {

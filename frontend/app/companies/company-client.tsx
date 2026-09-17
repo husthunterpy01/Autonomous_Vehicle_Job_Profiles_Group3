@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { DropdownOption } from "@/components/ui/Dropdown";
 import CompanyCard, { type CompanyCardData } from "@/components/ui/CompanyCard";
+import { FavoriteHeartButton } from "@/components/ui/JobResultsList";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
@@ -12,6 +13,10 @@ import {
   COMPANY_TYPE_LABELS,
   getCompaniesWithJobCounts,
 } from "@/lib/services/company";
+import {
+  addFavoriteCompany,
+  removeFavoriteCompany,
+} from "@/lib/services/favorite";
 
 const COMPANY_TYPE_OPTIONS: DropdownOption[] = [
   { value: "All", label: "All Company Types" },
@@ -41,6 +46,36 @@ export default function CompanyClient() {
   );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
+
+  // Tracks companies favorited/unfavorited this session — there's no bulk
+  // "is this favorited" endpoint, so this resets on reload (same approach
+  // as the Find Jobs heart button).
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [savingId, setSavingId] = useState<string | null>(null);
+
+  const handleToggleFavorite = async (companyId: string) => {
+    const alreadySaved = savedIds.has(companyId);
+    setSavingId(companyId);
+    try {
+      if (alreadySaved) {
+        await removeFavoriteCompany(companyId);
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(companyId);
+          return next;
+        });
+      } else {
+        await addFavoriteCompany(companyId);
+        setSavedIds((prev) => new Set(prev).add(companyId));
+      }
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.push("/login");
+      }
+    } finally {
+      setSavingId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -210,6 +245,13 @@ export default function CompanyClient() {
                   ...company,
                   type: COMPANY_TYPE_LABELS[company.type] ?? company.type,
                 }}
+                action={
+                  <FavoriteHeartButton
+                    filled={savedIds.has(company.id)}
+                    disabled={savingId === company.id}
+                    onClick={() => handleToggleFavorite(company.id)}
+                  />
+                }
               />
             ))}
           </div>

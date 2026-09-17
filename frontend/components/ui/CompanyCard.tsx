@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import CompanyLogo from "./CompanyLogo";
 
 export type CompanyCardData = {
@@ -8,7 +9,13 @@ export type CompanyCardData = {
   openPositions: number;
 };
 
-export default function CompanyCard({ company }: { company: CompanyCardData }) {
+export default function CompanyCard({
+  company,
+  action,
+}: {
+  company: CompanyCardData;
+  action?: ReactNode;
+}) {
   return (
     // Not a Link: /companies/[id] is still mock-only (static export requires
     // every dynamic route known at build time), so a real company id would
@@ -25,6 +32,7 @@ export default function CompanyCard({ company }: { company: CompanyCardData }) {
           {company.openPositions} open positions
         </p>
       </div>
+      {action}
     </div>
   );
 }

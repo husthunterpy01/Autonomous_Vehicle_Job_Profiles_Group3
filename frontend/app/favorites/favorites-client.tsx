@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CompanyLogo from "@/components/ui/CompanyLogo";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import PageHeader from "@/components/ui/PageHeader";
 import ViewToggle, { type ViewMode } from "@/components/ui/ViewToggle";
@@ -12,30 +13,81 @@ import {
   RemoveFavoriteButton,
 } from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
-import { getFavorites, removeFavorite } from "@/lib/services/favorite";
+import { COMPANY_TYPE_LABELS } from "@/lib/services/company";
+import {
+  getFavoriteCompanies,
+  getFavoriteJobs,
+  removeFavoriteCompany,
+  removeFavoriteJob,
+  type FavoriteCompanyDetail,
+} from "@/lib/services/favorite";
 import type { JobListItem } from "@/lib/services/job";
+
+type Tab = "jobs" | "companies";
+type Status = "loading" | "success" | "error";
+
+function FavoriteCompanyCard({
+  company,
+  action,
+}: {
+  company: FavoriteCompanyDetail;
+  action?: ReactNode;
+}) {
+  const type = company.company_type
+    ? (COMPANY_TYPE_LABELS[company.company_type] ?? company.company_type)
+    : null;
+  return (
+    <div className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5">
+      <CompanyLogo text={company.name.charAt(0)} />
+      <div className="min-w-0 flex-1">
+        <h3 className="font-semibold text-ink">{company.name}</h3>
+        {type && <p className="mt-1 text-sm text-ink-secondary">{type}</p>}
+        {company.career_page_url && (
+          <a
+            href={company.career_page_url}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-block text-sm text-primary hover:text-primary-hover"
+          >
+            View careers page
+          </a>
+        )}
+      </div>
+      {action}
+    </div>
+  );
+}
 
 export default function FavoritesClient() {
   const router = useRouter();
+  const [tab, setTab] = useState<Tab>("jobs");
   const [view, setView] = useState<ViewMode>("table");
-  const [jobs, setJobs] = useState<JobListItem[]>([]);
-  const [status, setStatus] = useState<"loading" | "success" | "error">(
-    "loading",
-  );
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [removingId, setRemovingId] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
-  const [pendingRemoval, setPendingRemoval] = useState<JobListItem | null>(
+
+  const [jobs, setJobs] = useState<JobListItem[]>([]);
+  const [jobsStatus, setJobsStatus] = useState<Status>("loading");
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const [removingJobId, setRemovingJobId] = useState<string | null>(null);
+  const [pendingJobRemoval, setPendingJobRemoval] =
+    useState<JobListItem | null>(null);
+
+  const [companies, setCompanies] = useState<FavoriteCompanyDetail[]>([]);
+  const [companiesStatus, setCompaniesStatus] = useState<Status>("loading");
+  const [companiesError, setCompaniesError] = useState<string | null>(null);
+  const [removingCompanyId, setRemovingCompanyId] = useState<string | null>(
     null,
   );
+  const [pendingCompanyRemoval, setPendingCompanyRemoval] =
+    useState<FavoriteCompanyDetail | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    getFavorites()
-      .then((items) => {
+
+    getFavoriteJobs()
+      .then((favorites) => {
         if (cancelled) return;
-        setJobs(items);
-        setStatus("success");
+        setJobs(favorites.map((favorite) => favorite.job));
+        setJobsStatus("success");
       })
       .catch((error: unknown) => {
         if (cancelled) return;
@@ -43,12 +95,32 @@ export default function FavoritesClient() {
           router.replace("/login");
           return;
         }
-        setErrorMessage(
+        setJobsError(
           error instanceof ApiError
             ? error.message
-            : "Something went wrong loading your favorites. Please try again.",
+            : "Something went wrong loading your favorite jobs. Please try again.",
         );
-        setStatus("error");
+        setJobsStatus("error");
+      });
+
+    getFavoriteCompanies()
+      .then((favorites) => {
+        if (cancelled) return;
+        setCompanies(favorites.map((favorite) => favorite.company));
+        setCompaniesStatus("success");
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error instanceof ApiError && error.status === 401) {
+          router.replace("/login");
+          return;
+        }
+        setCompaniesError(
+          error instanceof ApiError
+            ? error.message
+            : "Something went wrong loading your favorite companies. Please try again.",
+        );
+        setCompaniesStatus("error");
       });
 
     return () => {
@@ -56,25 +128,49 @@ export default function FavoritesClient() {
     };
   }, [reloadToken, router]);
 
-  const confirmRemove = async () => {
-    const job = pendingRemoval;
+  const confirmRemoveJob = async () => {
+    const job = pendingJobRemoval;
     if (!job) return;
-    setPendingRemoval(null);
-    setRemovingId(job.job_id);
+    setPendingJobRemoval(null);
+    setRemovingJobId(job.job_id);
     try {
-      await removeFavorite(job.job_id);
+      await removeFavoriteJob(job.job_id);
       setJobs((prev) => prev.filter((j) => j.job_id !== job.job_id));
     } catch {
       // Leave the row in place so the user can just try the button again.
     } finally {
-      setRemovingId(null);
+      setRemovingJobId(null);
     }
   };
 
-  const renderRemoveAction = (job: JobListItem) => (
+  const confirmRemoveCompany = async () => {
+    const company = pendingCompanyRemoval;
+    if (!company) return;
+    setPendingCompanyRemoval(null);
+    setRemovingCompanyId(company.company_id);
+    try {
+      await removeFavoriteCompany(company.company_id);
+      setCompanies((prev) =>
+        prev.filter((c) => c.company_id !== company.company_id),
+      );
+    } catch {
+      // Leave the card in place so the user can just try the button again.
+    } finally {
+      setRemovingCompanyId(null);
+    }
+  };
+
+  const renderRemoveJobAction = (job: JobListItem) => (
     <RemoveFavoriteButton
-      disabled={removingId === job.job_id}
-      onClick={() => setPendingRemoval(job)}
+      disabled={removingJobId === job.job_id}
+      onClick={() => setPendingJobRemoval(job)}
+    />
+  );
+
+  const renderRemoveCompanyAction = (company: FavoriteCompanyDetail) => (
+    <RemoveFavoriteButton
+      disabled={removingCompanyId === company.company_id}
+      onClick={() => setPendingCompanyRemoval(company)}
     />
   );
 
@@ -82,103 +178,214 @@ export default function FavoritesClient() {
     <div className="mx-auto max-w-[1200px] px-6 py-10">
       <PageHeader
         title="My Favorites"
-        subtitle="Job postings you've saved for later."
+        subtitle="Jobs and companies you've saved for later."
       />
 
-      {status === "loading" && (
-        <div
-          aria-busy="true"
-          className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center"
+      <div className="mt-6 inline-flex rounded-xl border border-line bg-surface p-1 shadow-sm">
+        <button
+          type="button"
+          aria-pressed={tab === "jobs"}
+          onClick={() => setTab("jobs")}
+          className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+            tab === "jobs"
+              ? "bg-primary-light text-primary shadow-sm"
+              : "text-ink-secondary hover:bg-section hover:text-ink"
+          }`}
         >
-          <p className="font-semibold text-ink">Loading your favorites…</p>
-        </div>
-      )}
-
-      {status === "error" && (
-        <div
-          role="alert"
-          className="mt-10 rounded-xl border border-dashed border-line bg-warning/10 p-12 text-center"
+          Jobs{jobs.length > 0 ? ` (${jobs.length})` : ""}
+        </button>
+        <button
+          type="button"
+          aria-pressed={tab === "companies"}
+          onClick={() => setTab("companies")}
+          className={`rounded-lg px-4 py-2.5 text-sm font-medium transition-colors ${
+            tab === "companies"
+              ? "bg-primary-light text-primary shadow-sm"
+              : "text-ink-secondary hover:bg-section hover:text-ink"
+          }`}
         >
-          <p className="font-semibold text-warning">
-            Couldn&apos;t load your favorites
-          </p>
-          <p className="mt-2 text-sm text-ink-secondary">{errorMessage}</p>
-          <button
-            type="button"
-            onClick={() => {
-              setStatus("loading");
-              setErrorMessage(null);
-              setReloadToken((n) => n + 1);
-            }}
-            className="mt-4 text-sm font-medium text-primary hover:text-primary-hover"
-          >
-            Try again
-          </button>
-        </div>
-      )}
+          Companies{companies.length > 0 ? ` (${companies.length})` : ""}
+        </button>
+      </div>
 
-      {status === "success" && jobs.length > 0 && (
+      {tab === "jobs" && (
         <>
-          <div className="mt-4 flex flex-col gap-4 lg:mt-8 lg:grid lg:grid-cols-[minmax(0,1fr)_14rem] lg:items-center lg:gap-x-6 lg:pr-3">
-            <p className="text-sm text-ink-secondary">
-              <span className="font-semibold text-ink">{jobs.length}</span>{" "}
-              {jobs.length === 1 ? "job" : "jobs"} saved
-            </p>
-            <div className="lg:justify-self-end">
-              <ViewToggle view={view} onChange={setView} />
+          {jobsStatus === "loading" && (
+            <div
+              aria-busy="true"
+              className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center"
+            >
+              <p className="font-semibold text-ink">
+                Loading your favorite jobs…
+              </p>
             </div>
-          </div>
+          )}
 
-          <div className="mt-4">
-            {view === "table" ? (
-              <JobsTable
-                jobs={jobs}
-                renderAction={renderRemoveAction}
-                actionColumnLabel="Remove"
-              />
-            ) : (
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                {jobs.map((job) => (
-                  <JobRow
-                    key={job.job_id}
-                    job={job}
-                    action={renderRemoveAction(job)}
-                  />
-                ))}
+          {jobsStatus === "error" && (
+            <div
+              role="alert"
+              className="mt-10 rounded-xl border border-dashed border-line bg-warning/10 p-12 text-center"
+            >
+              <p className="font-semibold text-warning">
+                Couldn&apos;t load your favorite jobs
+              </p>
+              <p className="mt-2 text-sm text-ink-secondary">{jobsError}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setJobsStatus("loading");
+                  setJobsError(null);
+                  setReloadToken((n) => n + 1);
+                }}
+                className="mt-4 text-sm font-medium text-primary hover:text-primary-hover"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {jobsStatus === "success" && jobs.length > 0 && (
+            <>
+              <div className="mt-6 flex justify-end">
+                <ViewToggle view={view} onChange={setView} />
               </div>
-            )}
-          </div>
+
+              <div className="mt-4">
+                {view === "table" ? (
+                  <JobsTable
+                    jobs={jobs}
+                    renderAction={renderRemoveJobAction}
+                    actionColumnLabel="Favorite"
+                  />
+                ) : (
+                  <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+                    {jobs.map((job) => (
+                      <JobRow
+                        key={job.job_id}
+                        job={job}
+                        action={renderRemoveJobAction(job)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
+          {jobsStatus === "success" && jobs.length === 0 && (
+            <div className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
+              <p className="font-semibold text-ink">No favorite jobs yet</p>
+              <p className="mt-2 text-sm text-ink-secondary">
+                Browse{" "}
+                <Link
+                  href="/search"
+                  className="text-primary hover:text-primary-hover"
+                >
+                  Find Jobs
+                </Link>{" "}
+                and save the ones you want to revisit.
+              </p>
+            </div>
+          )}
         </>
       )}
 
-      {status === "success" && jobs.length === 0 && (
-        <div className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
-          <p className="font-semibold text-ink">No favorites yet</p>
-          <p className="mt-2 text-sm text-ink-secondary">
-            Browse{" "}
-            <Link
-              href="/search"
-              className="text-primary hover:text-primary-hover"
+      {tab === "companies" && (
+        <>
+          {companiesStatus === "loading" && (
+            <div
+              aria-busy="true"
+              className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center"
             >
-              Find Jobs
-            </Link>{" "}
-            and save the ones you want to revisit.
-          </p>
-        </div>
+              <p className="font-semibold text-ink">
+                Loading your favorite companies…
+              </p>
+            </div>
+          )}
+
+          {companiesStatus === "error" && (
+            <div
+              role="alert"
+              className="mt-10 rounded-xl border border-dashed border-line bg-warning/10 p-12 text-center"
+            >
+              <p className="font-semibold text-warning">
+                Couldn&apos;t load your favorite companies
+              </p>
+              <p className="mt-2 text-sm text-ink-secondary">
+                {companiesError}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompaniesStatus("loading");
+                  setCompaniesError(null);
+                  setReloadToken((n) => n + 1);
+                }}
+                className="mt-4 text-sm font-medium text-primary hover:text-primary-hover"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {companiesStatus === "success" && companies.length > 0 && (
+            <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {companies.map((company) => (
+                <FavoriteCompanyCard
+                  key={company.company_id}
+                  company={company}
+                  action={renderRemoveCompanyAction(company)}
+                />
+              ))}
+            </div>
+          )}
+
+          {companiesStatus === "success" && companies.length === 0 && (
+            <div className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
+              <p className="font-semibold text-ink">
+                No favorite companies yet
+              </p>
+              <p className="mt-2 text-sm text-ink-secondary">
+                Browse{" "}
+                <Link
+                  href="/companies"
+                  className="text-primary hover:text-primary-hover"
+                >
+                  Companies
+                </Link>{" "}
+                and save the ones you want to revisit.
+              </p>
+            </div>
+          )}
+        </>
       )}
 
       <ConfirmDialog
-        open={pendingRemoval !== null}
+        open={pendingJobRemoval !== null}
         title="Remove from favorites?"
         description={
-          pendingRemoval
-            ? `Are you sure you want to remove "${pendingRemoval.title}" from your favorites list?`
+          pendingJobRemoval
+            ? `Are you sure you want to remove "${pendingJobRemoval.title}" from your favorites list?`
             : undefined
         }
         confirmLabel="Yes"
         cancelLabel="No"
-        onConfirm={confirmRemove}
-        onCancel={() => setPendingRemoval(null)}
+        onConfirm={confirmRemoveJob}
+        onCancel={() => setPendingJobRemoval(null)}
+      />
+
+      <ConfirmDialog
+        open={pendingCompanyRemoval !== null}
+        title="Remove from favorites?"
+        description={
+          pendingCompanyRemoval
+            ? `Are you sure you want to remove "${pendingCompanyRemoval.name}" from your favorites list?`
+            : undefined
+        }
+        confirmLabel="Yes"
+        cancelLabel="No"
+        onConfirm={confirmRemoveCompany}
+        onCancel={() => setPendingCompanyRemoval(null)}
       />
     </div>
   );
