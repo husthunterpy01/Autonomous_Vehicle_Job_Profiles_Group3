@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Job } from "@/lib/mock-data";
+import { mockJobSalary, type Job } from "@/lib/mock-data";
 import CompanyLogo from "./CompanyLogo";
 import StatusBadge from "./StatusBadge";
 import Salary from "./Salary";
@@ -18,7 +18,7 @@ export default function JobCardColumn({ job }: { job: Job }) {
       <p className="mt-1 text-sm text-ink-secondary">
         {job.company} · {job.country}
       </p>
-      <Salary job={job} />
+      <Salary {...mockJobSalary(job)} />
       <div className="mt-4 flex flex-wrap gap-2">
         <StatusBadge status={job.status} />
         <Tag label={job.type} />

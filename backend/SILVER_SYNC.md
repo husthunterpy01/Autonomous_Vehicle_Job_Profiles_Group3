@@ -33,15 +33,21 @@ constraints for optional source fields. Legacy naive `posted_date` values are
 interpreted as UTC. Confirm that convention before migrating an existing deployment.
 Fresh databases use the normal ORM `init_db()` startup path.
 
-`JobPosting.job_location` remains a compatibility display field. New consumers
-use `locations`; no country/city is guessed from a free-text location label.
-The display field is Text in both the ORM and migration, so combined location
-names are not limited to 255 characters. Location arrays replace the previous
+Job locations are stored only in `location` + `job_location`; the legacy
+`jobposting.job_location` text column was removed in BE-15 (apply
+`app/sql/be15_drop_job_location_migration.sql` after `be9_migration.sql` on an
+existing database). No country/city is guessed from a free-text location label.
+Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
-Salary and seniority are not inferred. Existing company metadata is preserved;
-new companies have null URLs/type and `datasource_status=unverified`.
+Seniority is not inferred. Salary (`salary_min`/`salary_max`/`salary_currency`/
+`salary_period`/`salary_source`) is populated separately via `python -m
+app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of
+`SilverSync`/`sync_silver`, since the Silver staging table itself carries no
+salary data for most ATS sources; see `scrapers/README.md` for how the
+scraper pipeline derives it. Existing company metadata is preserved; new
+companies have null URLs/type and `datasource_status=unverified`.
 
 ## Manual development refresh
 
@@ -114,12 +120,16 @@ advisory lock as Silver sync. Library callers must supply a transaction and
 serialize writers. SilverSync also accepts the same inline classification fields.
 
 `functional_area` is one label string or an array of strings. Each label becomes
-Category.sub_type; main_type stays null because no parent taxonomy has been
-provided. Labels are NFKC-normalized, whitespace-collapsed and casefolded for
-uniqueness within taxonomy_version (positive integer, default 1). The first
-cleaned spelling is kept for display. Synonyms are not guessed; commas, slashes
-and other punctuation do not split a label. Use an array for multiple categories.
-Labels from the producer are provisional categories, not a curated allowlist.
+Category.sub_type. main_type is never accepted from a record - it's a property
+of the category, not of any individual job, so it comes only from the backend's
+own static mapping at `app/config/category_main_types.yaml` (a hand-kept copy of
+`scrapers/config/category_main_types.yaml`) and is looked up by normalized label
+on every sync; a label with no entry there keeps main_type null. Labels are
+NFKC-normalized, whitespace-collapsed and casefolded for uniqueness within
+taxonomy_version (positive integer, default 1). The first cleaned spelling is
+kept for display. Synonyms are not guessed; commas, slashes and other punctuation
+do not split a label. Use an array for multiple categories. Labels from the
+producer are provisional categories, not a curated allowlist.
 
 JobCategory stores the many-to-many foreign-key association. An explicit value
 replaces all current associations for that job, including older taxonomy versions;
@@ -149,6 +159,18 @@ counts. Ordering is posted date descending then UUID for stable page boundaries.
 Frontend pages still use mock data and must be wired to this API after agreeing
 their nullable-field/category contract. Market Trends aggregates, LLM skill
 extraction, and final classified-data integration are not completed by this slice.
+
+## Supabase mirror
+
+When `SUPABASE_DATABASE_URL` is set in `backend/.env`, `sync_silver`,
+`import_categories`, `import_skills`, and `import_salary` each automatically
+push a full mirror (`scripts/sync_to_supabase.py`: `pg_dump --schema public`
+locally, `pg_restore --clean --if-exists` into Supabase) after they succeed.
+A mirror failure is logged, not raised - it never fails the command that
+triggered it, since the local write already committed. Unset the variable to
+disable mirroring; run `python -m scripts.sync_to_supabase` directly to sync
+on demand without running an import. See the root README's "Supabase mirror"
+section for setup (connection-pooler string, not the IPv6-only direct host).
 
 ## Tests
 

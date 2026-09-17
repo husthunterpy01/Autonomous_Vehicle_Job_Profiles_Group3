@@ -7,4 +7,6 @@ pyarrow==21.0.0
 minio==7.2.16
 psycopg2-binary==2.9.12
 dbt-postgres==1.11.0
+groq==1.6.0
+scikit-learn==1.7.2
 pytest==9.1.1

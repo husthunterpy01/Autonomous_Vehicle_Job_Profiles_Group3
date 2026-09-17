@@ -1,18 +1,33 @@
 import type { ReactNode } from "react";
+import { formatPayPeriod } from "@/lib/salary";
+import {
+  EMPLOYMENT_TYPE_LABELS,
+  jobSalary,
+  type JobListItem,
+} from "@/lib/services/job";
 import CompanyLogo from "./CompanyLogo";
+import Salary from "./Salary";
 import Tag from "./Tag";
-import { EMPLOYMENT_TYPE_LABELS, type JobListItem } from "@/lib/services/job";
 
 /* Shared Table/Cards rendering for any screen that lists real jobs (Find
    Jobs, My Favorites) — kept in one place so both stay visually and
-   behaviorally identical. `renderAction` lets each screen slot in its own
-   per-job button (add to favorites, remove from favorites, ...) without
-   this file needing to know what that action does. */
+   behaviorally identical. `renderAction`/`action` let each screen slot in
+   its own per-job button (add to favorites, remove from favorites, ...)
+   without this file needing to know what that action does. */
 
-export function locationLabel(job: JobListItem): string {
-  return job.locations.length > 0
-    ? job.locations.join(", ")
-    : "Location not specified";
+const JOB_TABLE_COLUMNS = [
+  "Role",
+  "Company",
+  "Location",
+  "Salary",
+  "Pay Period",
+  "Type",
+  "Posted",
+];
+
+/** Joined locations, or null when the posting lists none. */
+export function locationLabel(job: JobListItem): string | null {
+  return job.locations.length > 0 ? job.locations.join(", ") : null;
 }
 
 export function typeLabel(job: JobListItem): string | null {
@@ -23,7 +38,9 @@ export function typeLabel(job: JobListItem): string | null {
 
 export function postedLabel(job: JobListItem): string {
   if (!job.posted_date) return "Date unknown";
-  return new Date(job.posted_date).toLocaleDateString(undefined, {
+  // Fixed locale so dates read the same for every visitor ("Sep 6, 2026")
+  // instead of following the browser language, matching the job detail page.
+  return new Date(job.posted_date).toLocaleDateString("en-US", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -111,6 +128,7 @@ export function JobRow({
   action?: ReactNode;
 }) {
   const type = typeLabel(job);
+  const location = locationLabel(job);
   return (
     // Not a Link: job detail pages are still mock-only (static export
     // requires every dynamic route known at build time), so a real job id
@@ -120,8 +138,10 @@ export function JobRow({
       <div className="min-w-0 flex-1">
         <h3 className="font-semibold text-ink">{job.title}</h3>
         <p className="mt-1 text-sm text-ink-secondary">
-          {job.company_name} · {locationLabel(job)}
+          {job.company_name}
+          {location ? ` · ${location}` : ""}
         </p>
+        <Salary className="mt-1" {...jobSalary(job)} />
         <div className="mt-3 flex flex-wrap items-center gap-2">
           {type && <Tag label={type} />}
           <span className="text-xs text-ink-muted">
@@ -143,12 +163,13 @@ export function JobsTable({
   renderAction?: (job: JobListItem) => ReactNode;
   actionColumnLabel?: string;
 }) {
-  const columns = ["Role", "Company", "Location", "Type", "Posted"];
-  if (renderAction) columns.push(actionColumnLabel);
+  const columns = renderAction
+    ? [...JOB_TABLE_COLUMNS, actionColumnLabel]
+    : JOB_TABLE_COLUMNS;
 
   return (
     <div className="overflow-x-auto rounded-xl border border-line bg-surface">
-      <table className="w-full min-w-[800px] border-collapse text-left">
+      <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-section/60">
             {columns.map((label, index) => (
@@ -168,23 +189,29 @@ export function JobsTable({
               key={job.job_id}
               className="border-b border-line last:border-b-0 hover:bg-section/40"
             >
-              <td className="px-4 py-4 pl-5 align-middle font-semibold text-ink">
+              <td className="px-4 py-4 pl-5 align-middle font-semibold text-ink last:pr-5">
                 {job.title}
               </td>
-              <td className="px-4 py-4 text-sm text-ink-secondary">
+              <td className="px-4 py-4 text-sm text-ink-secondary last:pr-5">
                 {job.company_name}
               </td>
-              <td className="px-4 py-4 text-sm text-ink">
-                {locationLabel(job)}
+              <td className="px-4 py-4 text-sm text-ink last:pr-5">
+                {locationLabel(job) ?? "—"}
               </td>
-              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary">
+              <td className="whitespace-nowrap px-4 py-4 last:pr-5">
+                <Salary fallback="—" showPeriod={false} {...jobSalary(job)} />
+              </td>
+              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary last:pr-5">
+                {formatPayPeriod(jobSalary(job)) ?? "—"}
+              </td>
+              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary last:pr-5">
                 {typeLabel(job) ?? "—"}
               </td>
-              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary">
+              <td className="whitespace-nowrap px-4 py-4 text-sm text-ink-secondary last:pr-5">
                 {postedLabel(job)}
               </td>
               {renderAction && (
-                <td className="whitespace-nowrap px-4 py-4 pr-5 align-middle">
+                <td className="whitespace-nowrap px-4 py-4 align-middle last:pr-5">
                   {renderAction(job)}
                 </td>
               )}

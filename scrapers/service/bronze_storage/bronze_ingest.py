@@ -4,7 +4,6 @@ import logging
 import psycopg2
 import yaml
 from psycopg2.extras import Json, execute_values
-
 from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 from scrapers.response_archive import ResponseArchive
@@ -35,7 +34,7 @@ CREATE TABLE IF NOT EXISTS bronze.raw_responses (
 """
 
 
-class BronzeIngest():
+class BronzeIngest:
     def __init__(self, bucket_name, postgres_config=None, dbt_config=None):
         self.bucket_name = bucket_name
         self.postgres_config = postgres_config or PostgresConfig()

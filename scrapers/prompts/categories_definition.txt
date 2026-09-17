@@ -1,0 +1,40 @@
+UNIFIED JOB-PROFILE CATEGORY TAXONOMY
+These jobs have already been confirmed AV-relevant. Do not re-decide relevance.
+Assign one or more of these categories to an AV-relevant posting. A posting may span multiple categories when responsibilities overlap. Weight multi-word, platform-specific phrases more heavily than broad single words.
+
+Sensing — sensor integration, calibration, and raw data acquisition from vehicle sensors.
+Keywords: camera_driver, lidar_driver, radar_driver, gnss_driver, imu_driver, LiDAR, camera, radar, point cloud, velodyne, distortion correction, ring_outlier_filter, sensor calibration, sensor integration, data acquisition
+
+Localization — determining the vehicle's own pose within its environment.
+Keywords: ndt_scan_matcher, ekf_localizer, gyro_odometer, NDT (Normal Distributions Transform), pose estimation, dead reckoning, twist estimator, SLAM, HD-map-relative localization
+
+Perception — detecting and understanding objects and the scene around the vehicle.
+Keywords: object_recognition, object detection, object tracking, multi_object_tracker, euclidean_cluster, roi_cluster_fusion, camera-lidar fusion, sensor fusion, semantic segmentation, panoptic segmentation, traffic light recognition, YOLO, YOLOX, TensorRT, computer vision, machine learning, deep learning, neural network, obstacle detection, 2D/3D object detection
+
+Prediction — forecasting the future behavior or trajectory of other agents.
+Keywords: trajectory prediction, motion forecasting, interaction prediction, behavior modeling, Lane Sequence Predictor, Inter-TNT, Free Move Predictor
+
+Planning — deciding the vehicle's intended path or maneuver.
+Keywords: mission_planner, behavior_path_planner, motion_velocity_planner, lane change, lane following, obstacle avoidance, path smoother, path optimizer, scenario selector, freespace planner, motion planning, trajectory generation, EM Planner
+
+Control — executing the planned trajectory through vehicle actuation.
+Keywords: trajectory_follower, lateral controller, longitudinal controller, MPC, model predictive control, PID control, vehicle_cmd_gate, throttle, brake, steering
+
+Vehicle Interface — embedded integration between software and vehicle hardware/actuators.
+Keywords: vehicle_interface, raw_vehicle_cmd_converter, drive-by-wire, CAN bus, pacmod, CanBus, embedded vehicle integration
+
+Mapping — building or consuming HD maps and geospatial map data.
+Keywords: lanelet2, HD map, vector map, pointcloud map, map projection, mapping, map engineering, geospatial systems
+
+System and Safety — fault handling, diagnostics, functional safety, and system-level monitoring.
+Keywords: diagnostics, emergency_handler, fail-safe, system monitor, safety monitoring, autoware_state, functional safety, HMI
+
+SKILL NORMALIZATION
+Normalize extracted skill names while keeping them recognizable. Examples:
+ROS2, ROS 2 -> ROS 2
+lidar, LiDAR, LIDAR -> LiDAR
+pointcloud, point cloud -> Point Cloud
+MPC, model predictive control -> Model Predictive Control
+NDT, Normal Distributions Transform -> NDT
+CyberRT, Cyber RT, Apollo Cyber -> Cyber RT
+Waymo dataset, Waymo Open Dataset -> Waymo Open Dataset

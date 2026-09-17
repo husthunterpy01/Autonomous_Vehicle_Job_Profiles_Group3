@@ -84,14 +84,14 @@ Example for a manual local install (port `5432`):
 DATABASE_URL=postgresql://team3:<password>@localhost:5432/autojobdatabase
 DATABASE_USER=team3
 DATABASE_PASSWORD=<password>
-SEED_ON_STARTUP=true
+SEED_ON_STARTUP=false
 JWT_SECRET_KEY=<generate-a-long-random-secret>
 AUTH_COOKIE_SECURE=false
 ```
 
 Use the same password you set when creating the Postgres user. If you used the Docker option above, use port `5433` instead.
 
-`SEED_ON_STARTUP=true` reseeds companies on every API start (local/dev). Leave it unset or `false` outside local development so production data is not truncated.
+Keep `SEED_ON_STARTUP=false` (see `.env.sample`): `true` reseeds companies on *every* API start via `app/sql/seed_companies.sql`, which opens with `TRUNCATE TABLE company CASCADE` - that cascades through the FK graph and wipes every jobposting (Silver-synced categories, skills, and salary data included) down to the 12 hardcoded demo postings. Only set it `true` for a genuine from-scratch reseed on a database you don't mind emptying.
 
 Generate `JWT_SECRET_KEY` with a cryptographically secure random generator and
 keep it outside source control. Set `AUTH_COOKIE_SECURE=true` when the frontend

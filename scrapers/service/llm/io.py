@@ -3,8 +3,10 @@ from __future__ import annotations
 import csv
 import json
 import math
+from collections.abc import Iterable, Mapping, Sequence
+from decimal import Decimal
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 
 class JobPostingIO:
@@ -62,6 +64,8 @@ class JobPostingIO:
 
     @classmethod
     def json_safe(cls, value: Any) -> Any:
+        if isinstance(value, Decimal):
+            value = float(value)
         if isinstance(value, float) and not math.isfinite(value):
             return None
         if isinstance(value, Mapping):

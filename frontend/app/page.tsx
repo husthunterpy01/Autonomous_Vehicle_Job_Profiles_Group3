@@ -4,6 +4,7 @@ import {
   AV_COMPANIES,
   FEATURED_JOBS,
   MOCK_JOBS,
+  mockJobSalary,
 } from "@/lib/mock-data";
 import CompanyLogo from "@/components/ui/CompanyLogo";
 import JobCardColumn from "@/components/ui/JobCardColumn";
@@ -122,7 +123,7 @@ function Hero() {
                       {job.company} · {job.country}
                     </p>
                   </div>
-                  <Salary job={job} />
+                  <Salary {...mockJobSalary(job)} />
                 </div>
               ))}
 

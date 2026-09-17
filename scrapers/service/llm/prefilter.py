@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-import html
-import json
 import logging
 import re
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
 
 from scrapers.service.llm.config import JobFilterConfig
 from scrapers.service.llm.decision import FilterDecision
 from scrapers.service.llm.result import FilterResult
+from scrapers.service.llm.text import normalize_text
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +29,7 @@ class JobPrefilter:
         )
 
     @classmethod
-    def from_config(cls, path: str | Path | None = None) -> "JobPrefilter":
+    def from_config(cls, path: str | Path | None = None) -> JobPrefilter:
         return cls(JobFilterConfig.load(path))
 
     @staticmethod
@@ -43,15 +43,6 @@ class JobPrefilter:
             )
             for keyword in keywords
         )
-
-    @staticmethod
-    def _normalise_text(value: object) -> str:
-        if value is None:
-            return ""
-        if isinstance(value, (dict, list, tuple)):
-            value = json.dumps(value, ensure_ascii=False, default=str)
-        plain_text = re.sub(r"<[^>]+>", " ", html.unescape(str(value)))
-        return re.sub(r"\s+", " ", plain_text).strip()
 
     def _resolve(self, posting: Mapping[str, Any], field_name: str) -> object:
         for alias in self.config.field_aliases.get(field_name, (field_name,)):
@@ -69,11 +60,11 @@ class JobPrefilter:
     def _categorize_excluded(
         self, posting: Mapping[str, Any], title: str
     ) -> tuple[str, tuple[str, ...]]:
-        description = self._normalise_text(self._resolve(posting, "description"))
-        department = self._normalise_text(self._resolve(posting, "department"))
-        team = self._normalise_text(self._resolve(posting, "team"))
+        description = normalize_text(self._resolve(posting, "description"))
+        department = normalize_text(self._resolve(posting, "department"))
+        team = normalize_text(self._resolve(posting, "team"))
 
-        for text in (title, " ".join((description, department, team))):
+        for text in (title, f"{description} {department} {team}"):
             for category, patterns in self._category_patterns:
                 evidence = self._matches(text, patterns)
                 if evidence:
@@ -81,15 +72,15 @@ class JobPrefilter:
         return self.config.default_excluded_category, ()
 
     def evaluate(self, posting: Mapping[str, Any]) -> FilterDecision:
-        title = self._normalise_text(self._resolve(posting, "title"))
-        job_id = self._normalise_text(self._resolve(posting, "id")) or "unknown"
-        company = self._normalise_text(self._resolve(posting, "company")) or "unknown"
+        title = normalize_text(self._resolve(posting, "title"))
+        job_id = normalize_text(self._resolve(posting, "id")) or "unknown"
+        company = normalize_text(self._resolve(posting, "company")) or "unknown"
         excluded_matches = self._matches(title, self._excluded_patterns)
 
         matches_by_field: dict[str, tuple[str, ...]] = {}
         score = 0
         for field_name, weight in self.config.field_weights.items():
-            text = self._normalise_text(self._resolve(posting, field_name))
+            text = normalize_text(self._resolve(posting, field_name))
             matches = self._matches(text, self._positive_patterns)
             matches_by_field[field_name] = matches
             score += weight * len(matches)

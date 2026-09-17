@@ -56,6 +56,7 @@ class DbtConfig:
                 select,
             ],
             env=self.env(postgres_config),
+            check=False,
         )
         if completed.returncode != 0:
             logger.error("dbt run failed with exit code %s.", completed.returncode)

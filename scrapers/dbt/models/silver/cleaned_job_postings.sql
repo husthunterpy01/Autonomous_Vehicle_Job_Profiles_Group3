@@ -65,6 +65,10 @@ with source_rows as (
             else regexp_replace(lower(btrim(employment_type)), '\s+', ' ', 'g')
         end as employment_type,
         null::text as workplace_type,
+        salary_min,
+        salary_max,
+        nullif(upper(btrim(coalesce(salary_currency, ''))), '') as salary_currency,
+        salary_period,
         ingested_at::timestamptz as ingested_at
     from {{ ref("job_postings") }}
 ),
@@ -116,8 +120,15 @@ select
     team,
     job_url,
     job_uploaded_at,
-    employment_type,
+    -- Sources that do not state an employment type are treated as full-time.
+    -- Applied after deduplication so a duplicate that did state a type still
+    -- ranks as more complete; the unmodified value stays in Bronze.
+    coalesce(employment_type, 'full-time') as employment_type,
     workplace_type,
+    salary_min,
+    salary_max,
+    salary_currency,
+    salary_period,
     ingested_at
 from ranked
 where duplicate_rank = 1

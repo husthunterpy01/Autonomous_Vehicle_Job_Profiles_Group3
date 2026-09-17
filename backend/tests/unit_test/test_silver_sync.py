@@ -60,7 +60,6 @@ def test_invalid_locations_roll_back_all_updates(db_session, invalid):
         sync.run([first, second])
     job = db_session.query(JobPosting).one()
     assert sorted(location.name for location in job.locations) == ["Pittsburgh", "Remote"]
-    assert job.job_location == "Pittsburgh | Remote"
     assert db_session.query(Location).count() == 2
 
 
@@ -71,7 +70,6 @@ def test_empty_locations_clear_associations(db_session, empty):
     sync.run([{**record(), "locations": empty}])
     job = db_session.query(JobPosting).one()
     assert job.locations == []
-    assert job.job_location is None
 
 
 def test_missing_locations_clear_associations(db_session):
@@ -82,4 +80,3 @@ def test_missing_locations_clear_associations(db_session):
     sync.run([row])
     job = db_session.query(JobPosting).one()
     assert job.locations == []
-    assert job.job_location is None
