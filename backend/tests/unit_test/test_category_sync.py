@@ -51,12 +51,14 @@ def test_silver_inline_categories_and_missing_preserves(db_session):
 
 
 def test_main_type_assigned_from_static_mapping_on_create(db_session):
-    # "Perception" -> "Perception" comes from the real
+    # "Perception" -> "Perception & Sensing" comes from the real
     # backend/app/config/category_main_types.yaml, not from the record.
+    # The main_type is deliberately not just "Perception" - a sub_type must
+    # never share its own main_type's exact name.
     seed(db_session)
     import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Perception"}])
     job = db_session.query(JobPosting).one()
-    assert [(c.sub_type, c.main_type) for c in job.categories] == [("Perception", "Perception")]
+    assert [(c.sub_type, c.main_type) for c in job.categories] == [("Perception", "Perception & Sensing")]
 
 
 def test_main_type_self_heals_to_static_mapping_on_existing_category(db_session):
@@ -68,7 +70,7 @@ def test_main_type_self_heals_to_static_mapping_on_existing_category(db_session)
 
     import_categories(db_session, [{"deduplication_key": "one", "functional_area": "Perception"}])
 
-    assert db_session.query(Category).one().main_type == "Perception"
+    assert db_session.query(Category).one().main_type == "Perception & Sensing"
 
 
 def test_unmapped_category_main_type_stays_none(db_session):

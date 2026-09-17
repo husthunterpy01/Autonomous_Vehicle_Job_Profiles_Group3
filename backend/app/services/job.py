@@ -4,8 +4,31 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import Category, Company, JobPosting, Location, Skill
-from app.schemas.job import JobResponse
+from app.schemas.job import CategoryResponse, JobResponse
 from app.utils.pagination import PageResponse
+
+
+def _to_category_response(categories) -> CategoryResponse | None:
+    """Groups a job's Category rows by main_type and keeps only the largest
+    group, so the response mentions main_type once with every sub_type that
+    shares it - mirroring the one-main-type-per-job rule the scraper now
+    enforces going forward (see category_hierarchy.constrain_to_dominant_main_type).
+    Jobs imported before that rule existed may still have categories
+    spanning more than one main_type; this picks the dominant group rather
+    than misreporting a mixed job as single-main_type-clean.
+    """
+    if not categories:
+        return None
+    groups: dict[tuple[int, str | None], list[Category]] = {}
+    for category in sorted(categories, key=lambda c: (c.taxonomy_version, c.normalized_name)):
+        key = (category.taxonomy_version, category.main_type)
+        groups.setdefault(key, []).append(category)
+    (taxonomy_version, main_type), members = max(groups.items(), key=lambda item: len(item[1]))
+    return CategoryResponse(
+        main_type=main_type,
+        taxonomy_version=taxonomy_version,
+        sub_types=[{"category_id": c.category_id, "sub_type": c.sub_type} for c in members],
+    )
 
 
 def to_response(job):
@@ -14,8 +37,7 @@ def to_response(job):
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
-        categories=[{"category_id": c.category_id, "main_type": c.main_type, "sub_type": c.sub_type, "taxonomy_version": c.taxonomy_version}
-                    for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
+        category=_to_category_response(job.categories),
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,

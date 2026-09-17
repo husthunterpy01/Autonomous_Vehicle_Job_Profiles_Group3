@@ -3,12 +3,9 @@ from app.models.company import Company
 from app.models.company_location import CompanyLocation
 from app.models.favorite_company import FavoriteCompany
 from app.models.favorite_job import FavoriteJob
-from app.models.job_category import JobCategory
-from app.models.job_location import JobLocation
-from app.models.job_skill import JobSkill
-from app.models.jobposting import JobPosting
+from app.models.jobposting import JobPosting, job_category, job_location, job_skill
 from app.models.location import Location
 from app.models.skill import Skill
 from app.models.user import User
 
-__all__ = ["Category", "Company", "CompanyLocation", "FavoriteCompany", "FavoriteJob", "JobCategory", "JobLocation", "JobPosting", "JobSkill", "Location", "Skill", "User"]
+__all__ = ["Category", "Company", "CompanyLocation", "FavoriteCompany", "FavoriteJob", "JobPosting", "Location", "Skill", "User", "job_category", "job_location", "job_skill"]

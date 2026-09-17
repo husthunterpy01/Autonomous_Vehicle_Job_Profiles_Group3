@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class SalaryPeriod(str, Enum):
@@ -20,15 +20,24 @@ class SalaryPeriod(str, Enum):
     HOURLY = "hourly"
 
 
-class CategoryResponse(BaseModel):
+class SubCategoryResponse(BaseModel):
     category_id: UUID
-    main_type: str | None
     sub_type: str
+
+
+class CategoryResponse(BaseModel):
+    """A job gets exactly one main_type (see scrapers/service/llm/
+    category_hierarchy.py), so it's mentioned once here with every sub_type
+    that shares it listed underneath, instead of repeating main_type on a
+    flat list of per-sub_type entries."""
+
+    main_type: str | None
     taxonomy_version: int
+    sub_types: list[SubCategoryResponse]
 
 
 class JobResponse(BaseModel):
-    categories: list[CategoryResponse] = Field(default_factory=list)
+    category: CategoryResponse | None = None
     job_id: UUID
     title: str
     company_id: UUID

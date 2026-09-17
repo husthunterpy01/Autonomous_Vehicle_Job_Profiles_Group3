@@ -23,7 +23,7 @@ def test_sync_to_supabase_dumps_then_restores(mock_grant, tmp_path, monkeypatch)
     sync_to_supabase("postgresql://local", "postgresql://supabase")
 
     assert calls[0][:2] == ["pg_dump", "postgresql://local"]
-    assert "--schema" in calls[0] and "public" in calls[0]
+    assert "-t" in calls[0] and "public.jobposting" in calls[0]
     assert calls[1][:3] == ["pg_restore", "-d", "postgresql://supabase"]
     assert "--clean" in calls[1] and "--if-exists" in calls[1]
     assert "--single-transaction" in calls[1]
@@ -39,7 +39,9 @@ def test_sync_to_supabase_excludes_user_account_from_the_dump(mock_grant, monkey
     # Regression test: user_account (email, username, password_hash) must
     # never be part of the Supabase mirror - it has no business in the
     # public job-browsing dataset, and a hosted copy would sit behind the
-    # same anon-readable GRANT as everything else.
+    # same anon-readable GRANT as everything else. The dump uses an
+    # include-list (-t per table), not an exclude flag, so this asserts
+    # user_account is simply absent from what gets selected.
     calls = []
     monkeypatch.setattr(
         "scripts.sync_to_supabase.subprocess.run",
@@ -49,8 +51,9 @@ def test_sync_to_supabase_excludes_user_account_from_the_dump(mock_grant, monkey
     sync_to_supabase("postgresql://local", "postgresql://supabase")
 
     dump_args = calls[0]
-    assert "-T" in dump_args
-    assert dump_args[dump_args.index("-T") + 1] == "public.user_account"
+    assert "-T" not in dump_args
+    assert "public.user_account" not in dump_args
+    assert "public.jobposting" in dump_args
 
 
 @patch("scripts.sync_to_supabase._grant_api_read_access")
