@@ -1,3 +1,4 @@
+import type { JobSort } from "@/lib/job-sort";
 import type { SalaryInput } from "@/lib/salary";
 import { apiFetch, type PageResponse } from "./api";
 
@@ -47,11 +48,16 @@ export function jobSalary(job: JobListItem): SalaryInput {
 
 export function getJobs(params: {
   q?: string;
+  sort?: JobSort;
   page?: number;
   page_size?: number;
 }): Promise<PageResponse<JobListItem>> {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
+  if (params.sort) {
+    search.set("sort", params.sort.field);
+    search.set("direction", params.sort.direction);
+  }
   search.set("page", String(params.page ?? 1));
   search.set("page_size", String(params.page_size ?? 10));
   return apiFetch<PageResponse<JobListItem>>(

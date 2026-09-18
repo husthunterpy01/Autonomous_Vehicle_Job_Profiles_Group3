@@ -13,6 +13,13 @@ import {
 } from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
 import { addFavoriteJob, removeFavoriteJob } from "@/lib/services/favorite";
+import {
+  DEFAULT_JOB_SORT,
+  isDefaultJobSort,
+  nextJobSort,
+  parseJobSort,
+  type JobSortField,
+} from "@/lib/job-sort";
 import { getJobs, type JobListItem } from "@/lib/services/job";
 
 const DEFAULT_PER_PAGE = 6;
@@ -25,6 +32,9 @@ export default function SearchClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
+  const [sort, setSort] = useState(() =>
+    parseJobSort(searchParams.get("sort"), searchParams.get("direction")),
+  );
   const [view, setView] = useState<ViewMode>("table");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
@@ -81,7 +91,12 @@ export default function SearchClient() {
     let cancelled = false;
     const handle = setTimeout(
       () => {
-        getJobs({ q: keyword.trim() || undefined, page, page_size: perPage })
+        getJobs({
+          q: keyword.trim() || undefined,
+          sort,
+          page,
+          page_size: perPage,
+        })
           .then((response) => {
             if (cancelled) return;
             setJobs(response.items);
@@ -106,15 +121,30 @@ export default function SearchClient() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [keyword, page, perPage, reloadToken]);
+  }, [keyword, sort, page, perPage, reloadToken]);
 
-  const hasFilters = keyword.trim() !== "";
+  const hasFilters = keyword.trim() !== "" || !isDefaultJobSort(sort);
 
-  const syncUrl = (kw: string) => {
+  const syncUrl = (kw: string, nextSort = sort) => {
     const params = new URLSearchParams();
     if (kw.trim()) params.set("q", kw.trim());
+    // The default sort is what the API does anyway, so it stays out of the
+    // URL and a plain /search link keeps working.
+    if (!isDefaultJobSort(nextSort)) {
+      params.set("sort", nextSort.field);
+      params.set("direction", nextSort.direction);
+    }
     const qs = params.toString();
     router.replace(qs ? `/search?${qs}` : "/search");
+  };
+
+  const handleSortChange = (field: JobSortField) => {
+    const updated = nextJobSort(sort, field);
+    setSort(updated);
+    // A re-sorted list starts from the first page, otherwise page 3 of the
+    // old order silently becomes page 3 of the new one.
+    setPage(1);
+    syncUrl(keyword, updated);
   };
 
   const handleKeyword = (value: string) => {
@@ -144,6 +174,7 @@ export default function SearchClient() {
 
   const resetFilters = () => {
     setKeyword("");
+    setSort(DEFAULT_JOB_SORT);
     setPage(1);
     router.replace("/search");
   };
@@ -228,6 +259,8 @@ export default function SearchClient() {
                     jobs={jobs}
                     renderAction={renderFavoriteAction}
                     actionColumnLabel="Favorite"
+                    sort={sort}
+                    onSortChange={handleSortChange}
                   />
                 ) : (
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
