@@ -20,7 +20,7 @@ CLI helpers (`app/utils/cli.py`) and delegate workflow execution to
 categories. The pipeline owns sessions, transactions and writer locking;
 record-level behavior remains in the individual services.
 
-The logical ERD is in `Document/erd-job-categorizing/schema_silver.dbml`.
+The logical ERD is in `document/erd-job-categorizing/schema_silver.dbml`.
 Its `silver` namespace describes the normalized logical layer; the backend's
 physical ORM tables retain their existing names and default database schema.
 The existing PDF diagram has not yet been regenerated.
@@ -31,7 +31,9 @@ the scraper database unless that database deliberately also hosts the backend.
 The migration is repeatable, preserves rows, adds junction tables and relaxes
 constraints for optional source fields. Legacy naive `posted_date` values are
 interpreted as UTC. Confirm that convention before migrating an existing deployment.
-Fresh databases use the normal ORM `init_db()` startup path.
+Fresh databases use the normal ORM `init_db()` startup path; the salary check
+constraints are defined only in `app/sql/be13_salary_constraints_migration.sql`,
+so apply that migration to a fresh database too.
 
 Job locations are stored only in `location` + `job_location`; the legacy
 `jobposting.job_location` text column was removed in BE-15 (apply
@@ -41,8 +43,9 @@ Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
-Seniority is not inferred. Salary (`salary_min`/`salary_max`/`salary_currency`/
-`salary_period`/`salary_source`) is populated separately via `python -m
+Seniority is not inferred. Salary (`salary_min`/`salary_max`/`salary_average`/
+`salary_currency`/`salary_period`/`salary_source`; model, decisions and migrations
+in `document/erd-job-categorizing/README.md`) is populated separately via `python -m
 app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of
 `SilverSync`/`sync_silver`, since the Silver staging table itself carries no
 salary data for most ATS sources; see `scrapers/README.md` for how the
