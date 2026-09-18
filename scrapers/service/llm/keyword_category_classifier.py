@@ -3,6 +3,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from scrapers.service.llm.category_hierarchy import constrain_to_dominant_main_type
+
 _CATEGORIES_PATH = Path(__file__).resolve().parents[2] / "prompts" / "categories_definition.txt"
 _CATEGORY_BLOCK = re.compile(r"^([A-Za-z][A-Za-z ]+) — .+\.\nKeywords: (.+)$", re.MULTILINE)
 
@@ -45,4 +47,4 @@ class KeywordCategoryClassifier:
         for name, patterns in self._categories:
             if any(pattern.search(text) for pattern in patterns):
                 matched.append(name)
-        return tuple(matched)
+        return constrain_to_dominant_main_type(tuple(matched))

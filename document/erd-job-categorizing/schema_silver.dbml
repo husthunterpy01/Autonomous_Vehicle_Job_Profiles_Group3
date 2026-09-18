@@ -55,7 +55,7 @@ Table silver.JobLocation {
 
 Table silver.Category {
   category_id uuid [pk, default: `gen_random_uuid()`]
-  main_type varchar [note: 'nullable; initial functional_area import does not infer a parent']
+  main_type varchar [note: 'derived from a static sub_type -> main_type taxonomy mapping (app/config/category_main_types.yaml), never set per job - one Category row per (taxonomy_version, sub_type)']
   sub_type varchar [not null, note: 'cleaned producer functional_area label']
   normalized_name text [not null, note: 'NFKC, collapsed whitespace, casefold']
   taxonomy_version int [not null, note: 'positive integer; import defaults to version 1']
@@ -72,6 +72,8 @@ Table silver.JobCategory {
   indexes {
     (job_id, category_id) [pk]
   }
+
+  Note: 'A job links to one or more Category rows, but they must all share the same main_type - the scraper enforces exactly one dominant technical area per job (constrain_to_dominant_main_type), so a job can carry multiple sub_types (e.g. Sensing + Perception, both under main_type "Perception & Sensing") but never sub_types spanning two different main_types (e.g. Sensing + Control). main_type is deliberately never spelled the same as one of its own sub_types (e.g. "Perception & Sensing", not "Perception") to avoid a sub_type reading as a duplicate of its own group.'
 }
 
 Enum skill_type_enum {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getTopSkills, getCompaniesForSkill } from "@/lib/mock-data";
+import { getCompaniesForSkill } from "@/lib/mock-data";
+import { getTopSkills, type SkillDemand } from "@/lib/services/home";
 import CompanyLogo from "./ui/CompanyLogo";
 import Dropdown from "./ui/Dropdown";
 
@@ -12,9 +13,48 @@ type TopN = (typeof TOP_N_OPTIONS)[number];
 export default function TopSkillsPanel() {
   const [topN, setTopN] = useState<TopN>(10);
   const [expandedSkill, setExpandedSkill] = useState<string | null>(null);
+  const [skills, setSkills] = useState<SkillDemand[]>([]);
+  const [status, setStatus] = useState<"loading" | "success" | "error">(
+    "loading",
+  );
 
-  const skills = getTopSkills(topN);
+  useEffect(() => {
+    let cancelled = false;
+    setStatus("loading");
+    getTopSkills(topN)
+      .then((result) => {
+        if (cancelled) return;
+        setSkills(result);
+        setStatus("success");
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setStatus("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [topN]);
+
   const max = skills[0]?.jobs ?? 1;
+
+  if (status === "loading") {
+    return (
+      <div className="rounded-2xl border border-line bg-section p-6 shadow-sm sm:p-8">
+        <p className="text-sm text-ink-secondary">Loading top skills…</p>
+      </div>
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <div className="rounded-2xl border border-line bg-section p-6 shadow-sm sm:p-8">
+        <p className="text-sm text-ink-secondary">
+          Couldn&apos;t load top skills right now.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-2xl border border-line bg-section p-6 shadow-sm sm:p-8">

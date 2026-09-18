@@ -4,6 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+from scrapers.service.llm.category_hierarchy import constrain_to_dominant_main_type
 from scrapers.service.llm.json_response import (
     build_batch_prompt,
     parse_batch_response,
@@ -80,5 +81,10 @@ class JobEnricher:
         if not categories:
             raise ValueError("AV-relevant jobs must include at least one category")
 
+        # A job gets exactly one main_type (see category_hierarchy.py) even
+        # when the LLM proposes sub_types spanning more than one - keep only
+        # the dominant group's sub_types rather than trusting the raw
+        # cross-group list.
+        categories = constrain_to_dominant_main_type(categories)
         skills = parse_skills(payload.get("skills", []))
         return JobEnrichment(categories, skills)

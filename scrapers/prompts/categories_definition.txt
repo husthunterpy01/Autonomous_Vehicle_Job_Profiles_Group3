@@ -1,6 +1,11 @@
 UNIFIED JOB-PROFILE CATEGORY TAXONOMY
 These jobs have already been confirmed AV-relevant. Do not re-decide relevance.
-Assign one or more of these categories to an AV-relevant posting. A posting may span multiple categories when responsibilities overlap. Weight multi-word, platform-specific phrases more heavily than broad single words.
+The 9 categories below group into 4 technical areas:
+- Perception & Sensing area: Sensing, Perception
+- Localization & Mapping area: Localization, Mapping
+- Decision area: Planning, Prediction
+- System area: Control, Vehicle Interface, System and Safety
+Pick the ONE technical area that best matches the posting's primary responsibilities, then assign one or more categories from that area only - a posting may span multiple categories when responsibilities overlap, but only within that single area. Do not mix categories from different areas on the same posting. Weight multi-word, platform-specific phrases more heavily than broad single words.
 
 Sensing — sensor integration, calibration, and raw data acquisition from vehicle sensors.
 Keywords: camera_driver, lidar_driver, radar_driver, gnss_driver, imu_driver, LiDAR, camera, radar, point cloud, velodyne, distortion correction, ring_outlier_filter, sensor calibration, sensor integration, data acquisition
