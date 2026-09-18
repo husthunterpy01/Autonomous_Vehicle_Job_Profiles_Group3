@@ -1,10 +1,10 @@
 from uuid import UUID
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import Category, Company, JobPosting, Location, Skill
-from app.schemas.job import CategoryResponse, JobResponse
+from app.schemas.job import CategoryResponse, JobResponse, JobSortField, SortDirection
 from app.services.category_sync import dominant_categories
 from app.utils.pagination import PageResponse
 
@@ -50,11 +50,35 @@ def job_query(db):
     )
 
 
+# Newest first reads best for dates; A-Z for names. Each entry is the
+# default direction plus the column to order by. Company is sorted by the
+# company name rather than its UUID, so the join below is required.
+_SORT_COLUMNS = {
+    JobSortField.POSTED_DATE: (SortDirection.DESC, lambda: JobPosting.posted_date),
+    JobSortField.TITLE: (SortDirection.ASC, lambda: func.lower(JobPosting.title)),
+    JobSortField.COMPANY: (SortDirection.ASC, lambda: func.lower(Company.name)),
+}
+
+
+def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
+    default_direction, column_factory = _SORT_COLUMNS[sort]
+    column = column_factory()
+    if sort is JobSortField.COMPANY:
+        # Many-to-one, so this cannot duplicate job rows.
+        query = query.join(Company, JobPosting.company_id == Company.company_id)
+    ordering = column.desc() if (direction or default_direction) is SortDirection.DESC else column.asc()
+    # Jobs missing the sorted value go last whichever direction is chosen,
+    # so an empty column never occupies the first page. job_id breaks ties
+    # so a row cannot drift between pages while paginating.
+    return query.order_by(ordering.nullslast(), JobPosting.job_id)
+
+
 def list_jobs(
     db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
     category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
     min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
-    has_salary: bool | None = None, page: int = 1, page_size: int = 10,
+    has_salary: bool | None = None, sort: JobSortField = JobSortField.POSTED_DATE,
+    direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
 ):
     query = job_query(db)
     if q:
@@ -82,7 +106,7 @@ def list_jobs(
         # deliberately only compare real ranges.
         condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
-    query = query.order_by(JobPosting.posted_date.desc().nullslast(), JobPosting.job_id)
+    query = _apply_sort(query, sort, direction)
     total = query.count()
     jobs = query.offset((page - 1) * page_size).limit(page_size).all()
     return PageResponse(items=[to_response(job) for job in jobs], total=total, page=page, page_size=page_size, total_pages=(total + page_size - 1) // page_size)

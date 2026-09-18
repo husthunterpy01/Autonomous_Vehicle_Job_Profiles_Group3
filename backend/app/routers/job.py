@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.job import JobResponse, SalaryPeriod
+from app.schemas.job import JobResponse, JobSortField, SalaryPeriod, SortDirection
 from app.services import job as job_service
 from app.utils.pagination import PageResponse
 
@@ -26,6 +26,8 @@ def list_jobs(
     max_salary: float | None = Query(None, ge=0),
     salary_period: SalaryPeriod | None = None,
     has_salary: bool | None = None,
+    sort: JobSortField = JobSortField.POSTED_DATE,
+    direction: SortDirection | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
 ):
@@ -44,7 +46,7 @@ def list_jobs(
         db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
         employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
         salary_period=salary_period.value if salary_period else None,
-        has_salary=has_salary, page=page, page_size=page_size,
+        has_salary=has_salary, sort=sort, direction=direction, page=page, page_size=page_size,
     )
 
 
