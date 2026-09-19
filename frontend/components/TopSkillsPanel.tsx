@@ -17,10 +17,15 @@ export default function TopSkillsPanel() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
+  const [fetchedTopN, setFetchedTopN] = useState(topN);
+
+  if (topN !== fetchedTopN) {
+    setFetchedTopN(topN);
+    setStatus("loading");
+  }
 
   useEffect(() => {
     let cancelled = false;
-    setStatus("loading");
     getTopSkills(topN)
       .then((result) => {
         if (cancelled) return;
