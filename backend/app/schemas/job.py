@@ -5,6 +5,22 @@ from uuid import UUID
 from pydantic import BaseModel
 
 
+class JobSortField(str, Enum):
+    """Sortable columns of the job list. Salary is deliberately absent:
+    values mix pay periods, currencies and levels.fyi estimates, so ordering
+    them against each other is meaningless (the same reason min_salary and
+    max_salary require a salary_period)."""
+
+    POSTED_DATE = "posted_date"
+    TITLE = "title"
+    COMPANY = "company"
+
+
+class SortDirection(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
 class SalaryPeriod(str, Enum):
     """The single source of truth for valid salary_period values, on both
     the write path (salary_sync.SALARY_PERIODS derives from this) and the

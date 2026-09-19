@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Dropdown from "@/components/ui/Dropdown";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
@@ -13,6 +14,19 @@ import {
 } from "@/components/ui/JobResultsList";
 import { ApiError } from "@/lib/services/api";
 import { addFavoriteJob, removeFavoriteJob } from "@/lib/services/favorite";
+import {
+  ALL_CATEGORIES,
+  categoryOptions,
+  resolveCategory,
+} from "@/lib/category-filter";
+import {
+  DEFAULT_JOB_SORT,
+  isDefaultJobSort,
+  nextJobSort,
+  parseJobSort,
+  type JobSortField,
+} from "@/lib/job-sort";
+import { getCategoryStatsRaw } from "@/lib/services/home";
 import { getJobs, type JobListItem } from "@/lib/services/job";
 
 const DEFAULT_PER_PAGE = 6;
@@ -25,6 +39,15 @@ export default function SearchClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
+  const [sort, setSort] = useState(() =>
+    parseJobSort(searchParams.get("sort"), searchParams.get("direction")),
+  );
+  const [categoryOptionList, setCategoryOptionList] = useState(() =>
+    categoryOptions([]),
+  );
+  const [category, setCategory] = useState(
+    searchParams.get("category") ?? ALL_CATEGORIES,
+  );
   const [view, setView] = useState<ViewMode>("table");
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
@@ -79,9 +102,34 @@ export default function SearchClient() {
 
   useEffect(() => {
     let cancelled = false;
+    getCategoryStatsRaw()
+      .then((stats) => {
+        if (cancelled) return;
+        const options = categoryOptions(stats);
+        setCategoryOptionList(options);
+        // Drop a category from the URL that the backend no longer returns,
+        // which would otherwise filter the list down to nothing.
+        setCategory((current) => resolveCategory(current, options));
+      })
+      // The dropdown just stays on "All categories" if this fails; the job
+      // list itself does not depend on it.
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
     const handle = setTimeout(
       () => {
-        getJobs({ q: keyword.trim() || undefined, page, page_size: perPage })
+        getJobs({
+          q: keyword.trim() || undefined,
+          category_id: category || undefined,
+          sort,
+          page,
+          page_size: perPage,
+        })
           .then((response) => {
             if (cancelled) return;
             setJobs(response.items);
@@ -106,15 +154,40 @@ export default function SearchClient() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [keyword, page, perPage, reloadToken]);
+  }, [keyword, category, sort, page, perPage, reloadToken]);
 
-  const hasFilters = keyword.trim() !== "";
+  const hasFilters =
+    keyword.trim() !== "" ||
+    category !== ALL_CATEGORIES ||
+    !isDefaultJobSort(sort);
 
-  const syncUrl = (kw: string) => {
+  const syncUrl = (kw: string, nextSort = sort, nextCategory = category) => {
     const params = new URLSearchParams();
     if (kw.trim()) params.set("q", kw.trim());
+    if (nextCategory) params.set("category", nextCategory);
+    // The default sort is what the API does anyway, so it stays out of the
+    // URL and a plain /search link keeps working.
+    if (!isDefaultJobSort(nextSort)) {
+      params.set("sort", nextSort.field);
+      params.set("direction", nextSort.direction);
+    }
     const qs = params.toString();
     router.replace(qs ? `/search?${qs}` : "/search");
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setCategory(value);
+    setPage(1);
+    syncUrl(keyword, sort, value);
+  };
+
+  const handleSortChange = (field: JobSortField) => {
+    const updated = nextJobSort(sort, field);
+    setSort(updated);
+    // A re-sorted list starts from the first page, otherwise page 3 of the
+    // old order silently becomes page 3 of the new one.
+    setPage(1);
+    syncUrl(keyword, updated);
   };
 
   const handleKeyword = (value: string) => {
@@ -144,6 +217,8 @@ export default function SearchClient() {
 
   const resetFilters = () => {
     setKeyword("");
+    setCategory(ALL_CATEGORIES);
+    setSort(DEFAULT_JOB_SORT);
     setPage(1);
     router.replace("/search");
   };
@@ -165,6 +240,19 @@ export default function SearchClient() {
           syncUrl(keyword);
         }}
       />
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <label htmlFor="category-filter" className="text-sm text-ink-secondary">
+          Category
+        </label>
+        <Dropdown
+          id="category-filter"
+          className="w-64"
+          value={category}
+          onChange={handleCategoryChange}
+          options={categoryOptionList}
+        />
+      </div>
 
       {status === "loading" && (
         <div
@@ -228,6 +316,8 @@ export default function SearchClient() {
                     jobs={jobs}
                     renderAction={renderFavoriteAction}
                     actionColumnLabel="Favorite"
+                    sort={sort}
+                    onSortChange={handleSortChange}
                   />
                 ) : (
                   <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">

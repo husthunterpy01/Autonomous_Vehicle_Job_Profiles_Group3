@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { JobSort, JobSortField } from "@/lib/job-sort";
 import { formatPayPeriod } from "@/lib/salary";
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -24,6 +25,44 @@ const JOB_TABLE_COLUMNS = [
   "Type",
   "Posted",
 ];
+
+/* Columns the API can sort on. Salary is absent on purpose: its values mix
+   pay periods, currencies and levels.fyi estimates, so ordering them against
+   each other would be meaningless. */
+const SORTABLE_COLUMNS: Record<string, JobSortField> = {
+  Role: "title",
+  Company: "company",
+  Posted: "posted_date",
+};
+
+function SortableHeader({
+  label,
+  field,
+  sort,
+  onSortChange,
+}: {
+  label: string;
+  field: JobSortField;
+  sort: JobSort;
+  onSortChange: (field: JobSortField) => void;
+}) {
+  const active = sort.field === field;
+  return (
+    <button
+      type="button"
+      onClick={() => onSortChange(field)}
+      className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-ink"
+    >
+      {label}
+      <span
+        aria-hidden="true"
+        className={active ? "text-primary" : "text-ink-muted"}
+      >
+        {active && sort.direction === "asc" ? "▲" : "▼"}
+      </span>
+    </button>
+  );
+}
 
 /** Joined locations, or null when the posting lists none. */
 export function locationLabel(job: JobListItem): string | null {
@@ -158,10 +197,16 @@ export function JobsTable({
   jobs,
   renderAction,
   actionColumnLabel = "",
+  sort,
+  onSortChange,
 }: {
   jobs: JobListItem[];
   renderAction?: (job: JobListItem) => ReactNode;
   actionColumnLabel?: string;
+  /* Both together make the headers sortable; screens without server-side
+     sorting (My Favorites) simply leave them out. */
+  sort?: JobSort;
+  onSortChange?: (field: JobSortField) => void;
 }) {
   const columns = renderAction
     ? [...JOB_TABLE_COLUMNS, actionColumnLabel]
@@ -172,15 +217,35 @@ export function JobsTable({
       <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-section/60">
-            {columns.map((label, index) => (
-              <th
-                key={label || `col-${index}`}
-                scope="col"
-                className="px-4 py-4 text-sm font-semibold text-ink-secondary first:pl-5 last:pr-5"
-              >
-                {label}
-              </th>
-            ))}
+            {columns.map((label, index) => {
+              const field = SORTABLE_COLUMNS[label];
+              const sortable = Boolean(field && sort && onSortChange);
+              return (
+                <th
+                  key={label || `col-${index}`}
+                  scope="col"
+                  aria-sort={
+                    sortable && sort?.field === field
+                      ? sort.direction === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : undefined
+                  }
+                  className="px-4 py-4 text-sm font-semibold text-ink-secondary first:pl-5 last:pr-5"
+                >
+                  {sortable && sort && onSortChange ? (
+                    <SortableHeader
+                      label={label}
+                      field={field}
+                      sort={sort}
+                      onSortChange={onSortChange}
+                    />
+                  ) : (
+                    label
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
