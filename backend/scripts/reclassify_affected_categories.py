@@ -39,7 +39,7 @@ from app.services.category_sync import sync_categories
 
 logger = logging.getLogger(__name__)
 
-AUDIT_LOG_PATH = Path(__file__).resolve().parent / "backfill_dominant_category_removed.json"
+AUDIT_LOG_PATH = Path(__file__).resolve().parent.parent / "evidence" / "backfill_dominant_category_removed.json"
 MAX_DESCRIPTION_CHARS = 1200
 BATCH_SIZE = 10
 
