@@ -113,7 +113,7 @@ ambiguous matches require the Silver key. Jobs without source IDs use that key.
 ## Category import rule (initial taxonomy version 1)
 
 Apply `app/sql/be9_migration.sql` to an existing backend first. Fresh databases
-create Category and JobCategory through ORM startup. To import a handoff after
+create Category and the job_category association table through ORM startup. To import a handoff after
 identity preflight, run `python -m app.import_categories handoff.json`.
 The CLI commits the entire batch or rolls it back and uses the same PostgreSQL
 advisory lock as Silver sync. Library callers must supply a transaction and
@@ -131,7 +131,7 @@ kept for display. Synonyms are not guessed; commas, slashes and other punctuatio
 do not split a label. Use an array for multiple categories. Labels from the
 producer are provisional categories, not a curated allowlist.
 
-JobCategory stores the many-to-many foreign-key association. An explicit value
+job_category stores the many-to-many foreign-key association. An explicit value
 replaces all current associations for that job, including older taxonomy versions;
 missing functional_area preserves them, [] clears them, and null/blank/invalid
 labels reject the whole batch. Unlinked categories are retained. No confidence

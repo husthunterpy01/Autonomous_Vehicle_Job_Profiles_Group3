@@ -25,7 +25,7 @@ from app.models import JobPosting
 
 logger = logging.getLogger(__name__)
 
-BACKUP_PATH = Path(__file__).resolve().parent / "backfill_dominant_category_removed.json"
+BACKUP_PATH = Path(__file__).resolve().parent.parent / "evidence" / "backfill_dominant_category_removed.json"
 
 
 def _dominant_categories(categories):
@@ -73,7 +73,7 @@ def main() -> int:
     try:
         with db.begin():
             summary = backfill(db)
-        BACKUP_PATH.write_text(json.dumps(summary["removed_log"], indent=2), encoding="utf-8")
+            BACKUP_PATH.write_text(json.dumps(summary["removed_log"], indent=2), encoding="utf-8")
         logger.info(
             "Backfill complete: %d/%d jobs changed, %d job_category links dropped. Removed-link audit log: %s",
             summary["jobs_changed"], summary["jobs_scanned"], summary["links_dropped"], BACKUP_PATH,

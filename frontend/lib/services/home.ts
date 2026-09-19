@@ -3,7 +3,7 @@ import { apiFetch } from "./api";
 type SkillStat = {
   skill_id: string;
   skill_name: string;
-  number_of_occurence: number;
+  number_of_occurrences: number;
 };
 
 export type SkillDemand = {
@@ -11,14 +11,11 @@ export type SkillDemand = {
   jobs: number;
 };
 
-/** Backend doesn't support a limit param yet, so fetch every skill's job
- *  count and rank/trim here - matches lib/mock-data's getTopSkills shape. */
+/** Backend already orders by job count desc, so this just reshapes the
+ *  response - matches lib/mock-data's getTopSkills shape. */
 export async function getTopSkills(limit = 8): Promise<SkillDemand[]> {
-  const stats = await apiFetch<SkillStat[]>("/api/v1/home/skill-stats");
-  return stats
-    .map((stat) => ({ name: stat.skill_name, jobs: stat.number_of_occurence }))
-    .sort((a, b) => b.jobs - a.jobs)
-    .slice(0, limit);
+  const stats = await apiFetch<SkillStat[]>(`/api/v1/home/skill-stats?limit=${limit}`);
+  return stats.map((stat) => ({ name: stat.skill_name, jobs: stat.number_of_occurrences }));
 }
 
 type CategoryStat = {

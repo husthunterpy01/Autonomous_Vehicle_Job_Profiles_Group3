@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,9 +14,9 @@ router = APIRouter(prefix="/home", tags=["homepage"])
 DbSession = Annotated[Session, Depends(get_db)]
 
 @router.get("/skill-stats", response_model=list[SkillStatResponse])
-def get_skill_stats(db: DbSession):
+def get_skill_stats(db: DbSession, limit: int | None = Query(default=None, gt=0)):
     skill_service = SkillService(db)
-    skill_stats = skill_service.get_skill_stat_per_job()
+    skill_stats = skill_service.get_skill_stat_per_job(limit=limit)
     return skill_stats
 
 @router.get("/category-stats", response_model=list[CategoryStatResponse])
