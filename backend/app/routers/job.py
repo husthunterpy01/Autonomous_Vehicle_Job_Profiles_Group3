@@ -30,6 +30,12 @@ def list_jobs(
     page_size: int = Query(10, ge=1, le=100),
 ):
     if (min_salary is not None or max_salary is not None) and salary_period is None:
+        # salary_min/salary_max are raw numbers with no currency/period
+        # normalization - comparing them across periods (a $30/hour rate vs
+        # a $150,000/year salary) or across an estimated levels.fyi median
+        # vs a real disclosed range is meaningless. Requiring salary_period
+        # keeps the comparison inside one consistent bucket instead of
+        # silently mixing magnitudes that were never comparable.
         raise HTTPException(
             status_code=422,
             detail="salary_period is required when min_salary or max_salary is set.",
