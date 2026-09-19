@@ -62,6 +62,21 @@ def test_job_with_no_categories_does_not_affect_other_counts(db_session):
     assert stats[0].job_count == 1
 
 
+def test_orders_by_job_count_descending(db_session):
+    seed(db_session, "one", "Engineer One")
+    seed(db_session, "two", "Engineer Two")
+    seed(db_session, "three", "Engineer Three")
+    import_categories(db_session, [
+        {"deduplication_key": "one", "functional_area": ["Perception"]},
+        {"deduplication_key": "two", "functional_area": ["Perception"]},
+        {"deduplication_key": "three", "functional_area": ["Planning"]},
+    ])
+
+    stats = CategoryService(db_session).get_category_stat_per_job()
+
+    assert [s.sub_type for s in stats] == ["Perception", "Planning"]
+
+
 def test_unmapped_sub_type_reports_null_main_type(db_session):
     seed(db_session)
     import_categories(db_session, [{"deduplication_key": "one", "functional_area": ["Not A Real Category"]}])
