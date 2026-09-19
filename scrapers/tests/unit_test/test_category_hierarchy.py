@@ -45,6 +45,54 @@ def test_unrecognized_category_falls_back_to_its_own_singleton_group():
     assert result == ("Sensing", "Perception")
 
 
+def test_weights_let_a_heavier_group_beat_a_larger_one():
+    # Without weights, Perception's 2-sub_type group would beat Control's
+    # 1-sub_type group on size alone. A real per-category signal (e.g.
+    # keyword-match count) should be able to override that when Control's
+    # single sub_type is far more strongly evidenced.
+    weights = {"Sensing": 1, "Perception": 1, "Control": 10}
+    result = constrain_to_dominant_main_type(("Sensing", "Perception", "Control"), MAIN_TYPES, weights=weights)
+    assert result == ("Control",)
+
+
+def test_weights_default_to_one_per_category_when_omitted():
+    # No weights (the LLM path, which has no per-category signal) falls
+    # back to ranking purely by group size, same as before this feature.
+    result = constrain_to_dominant_main_type(("Sensing", "Perception", "Control"), MAIN_TYPES)
+    assert result == ("Sensing", "Perception")
+
+
+def test_weights_tie_still_breaks_by_earliest_category():
+    # Equal total weight across groups falls back to classifier order, same
+    # tie-break as the unweighted case.
+    weights = {"Control": 3, "Planning": 3}
+    assert constrain_to_dominant_main_type(("Planning", "Control"), MAIN_TYPES, weights=weights) == ("Planning",)
+    assert constrain_to_dominant_main_type(("Control", "Planning"), MAIN_TYPES, weights=weights) == ("Control",)
+
+
+def test_one_strongly_weighted_category_beats_two_weakly_weighted_ones_in_another_group():
+    # Regression test: an earlier version ranked groups by *total* weight,
+    # which let several weakly-evidenced categories in one group outvote a
+    # single strongly-evidenced category in another (e.g. two Medium=2
+    # confidences summing to 4 beating one High=3). Ranking by each group's
+    # highest weight first fixes that: Control's lone weight-3 category
+    # beats Decision's two weight-2 categories (3 > 2), even though
+    # Decision's total (4) is larger.
+    weights = {"Control": 3, "Planning": 2, "Prediction": 2}
+    result = constrain_to_dominant_main_type(("Control", "Planning", "Prediction"), MAIN_TYPES, weights=weights)
+    assert result == ("Control",)
+
+
+def test_equal_top_weight_still_falls_back_to_total_then_order():
+    # When the single strongest category is equally weighted in both groups,
+    # the tie-break isn't thrown away - it falls through to total weight
+    # (rewarding more matched sub_types at the same confidence), exactly as
+    # it did before this feature existed.
+    weights = {"Sensing": 2, "Perception": 2, "Control": 2}
+    result = constrain_to_dominant_main_type(("Sensing", "Control", "Perception"), MAIN_TYPES, weights=weights)
+    assert result == ("Sensing", "Perception")
+
+
 def test_load_main_types_returns_the_real_checked_in_mapping():
     mapping = load_main_types()
     assert mapping["Sensing"] == "Perception & Sensing"

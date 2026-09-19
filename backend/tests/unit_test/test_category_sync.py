@@ -122,3 +122,36 @@ def test_import_preloads_categories_in_one_query_instead_of_one_per_label_per_jo
     # Well below the ~140 a one-SELECT-per-label-per-job pattern would need
     # for 100 label-instances, and doesn't grow with categories-per-job.
     assert select_count < 60
+
+
+def test_only_the_dominant_main_type_group_is_actually_linked_to_the_job(db_session):
+    # Regression test: a job whose functional_area spans two main_types
+    # (Perception & Sensing has 1 match here, System has 1 - a tie broken
+    # by classifier order, not alphabetically, so "Perception" wins since
+    # it's listed first) must only link to that one group's Category rows
+    # in job_category. Without this, the /jobs?category_id= filter (which
+    # checks job_category directly) could match a category the response
+    # never shows, since the response only ever displays the dominant group.
+    seed(db_session)
+    import_categories(db_session, [{"deduplication_key": "one", "functional_area": ["Perception", "Control"]}])
+
+    job = db_session.query(JobPosting).one()
+
+    assert [(c.sub_type, c.main_type) for c in job.categories] == [("Perception", "Perception & Sensing")]
+    # The losing category's row still exists (other jobs may use it) - only
+    # the *link* to this job is what gets dropped.
+    assert db_session.query(Category).filter_by(sub_type="Control").one() is not None
+
+
+def test_tie_break_follows_classifier_order_not_alphabetical(db_session):
+    # Regression test: an earlier version sorted categories by
+    # normalized_name before grouping, so a tie always fell to whichever
+    # sub_type happened to sort first alphabetically - discarding real LLM
+    # output for a naming coincidence (Mapping beating Perception because
+    # "m" < "p", regardless of which the classifier actually listed first).
+    # The tie must instead go to whichever group's sub_type functional_area
+    # listed first - reversing the input order should reverse the winner.
+    seed(db_session)
+    import_categories(db_session, [{"deduplication_key": "one", "functional_area": ["Control", "Perception"]}])
+    job = db_session.query(JobPosting).one()
+    assert [c.sub_type for c in job.categories] == ["Control"]

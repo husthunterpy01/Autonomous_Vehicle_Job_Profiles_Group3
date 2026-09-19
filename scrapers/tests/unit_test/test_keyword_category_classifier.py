@@ -29,6 +29,21 @@ def test_collapses_to_one_dominant_area_when_matches_span_multiple_areas():
     assert categories == ("Planning",)
 
 
+def test_heavily_evidenced_category_wins_over_a_barely_matched_one_even_out_of_file_order():
+    # Regression test: Control (System area) appears before Mapping
+    # (Localization & Mapping area) in categories_definition.txt, so the old
+    # category-count-only tie-break (1 sub_type matched each) would have
+    # picked Control just because of file order. Weighting by distinct
+    # keyword-match count instead correctly favors Mapping here, which has
+    # 6 distinct keyword hits against Control's 1.
+    classifier = KeywordCategoryClassifier()
+    text = (
+        "We build HD map and vector map pipelines using map projection and lanelet2, "
+        "plus mapping and map engineering workflows. Also touches PID control briefly."
+    )
+    assert classifier.classify(text) == ("Mapping",)
+
+
 def test_returns_empty_tuple_when_nothing_matches():
     classifier = KeywordCategoryClassifier()
     assert classifier.classify("General office administration and scheduling.") == ()

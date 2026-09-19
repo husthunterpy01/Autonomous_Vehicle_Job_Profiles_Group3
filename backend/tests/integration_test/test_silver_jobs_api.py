@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.core.database import get_db
-from app.models import JobPosting
+from app.models import Category, JobPosting
 from app.routers.job import router
 from app.services.salary_sync import import_salary
 from app.services.silver_sync import SilverSync
@@ -45,6 +45,35 @@ def test_synced_jobs_search_filter_pagination_and_detail(db_session):
         assert client.get("/jobs?category_id=bad").status_code == 422
         assert client.get("/jobs?page=0").status_code == 422
         assert client.get("/jobs/00000000-0000-0000-0000-000000000000").status_code == 404
+
+
+def test_category_filter_never_matches_a_group_dropped_from_the_response(db_session):
+    # Regression test: a job whose functional_area spans two main_types
+    # (Perception & Sensing vs. System, 1 match each - a tie broken by
+    # classifier order, so "Perception" wins since it's listed first) must
+    # not still be filterable by the losing group's category_id. That would
+    # let a user filter by Control and get back a job whose displayed
+    # category never mentions Control at all.
+    SilverSync(db_session).run([{
+        "deduplication_key": "one", "company_name": "Example AV", "job_name": "Engineer", "job_description": "d",
+        "functional_area": ["Perception", "Control"],
+    }])
+    db_session.commit()
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db_session
+    with TestClient(app) as client:
+        job = client.get("/jobs").json()["items"][0]
+        assert job["category"]["main_type"] == "Perception & Sensing"
+        assert [s["sub_type"] for s in job["category"]["sub_types"]] == ["Perception"]
+
+        perception_id = job["category"]["sub_types"][0]["category_id"]
+        filtered = client.get("/jobs", params={"category_id": perception_id}).json()
+        assert filtered["total"] == 1
+
+        control_id = db_session.query(Category).filter_by(sub_type="Control").one().category_id
+        filtered_out = client.get("/jobs", params={"category_id": str(control_id)}).json()
+        assert filtered_out["total"] == 0
 
 
 def test_salary_filters_and_response_fields(db_session):

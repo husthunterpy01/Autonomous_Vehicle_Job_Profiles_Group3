@@ -44,7 +44,14 @@ class KeywordCategoryClassifier:
 
     def classify(self, text: str) -> tuple[str, ...]:
         matched = []
+        weights = {}
         for name, patterns in self._categories:
-            if any(pattern.search(text) for pattern in patterns):
+            # Count of distinct keyword phrases that matched at least once -
+            # not total occurrences, so a phrase repeated five times still
+            # counts once - used to weight which main_type group wins a tie
+            # instead of just how many sub_types matched.
+            match_count = sum(1 for pattern in patterns if pattern.search(text))
+            if match_count:
                 matched.append(name)
-        return constrain_to_dominant_main_type(tuple(matched))
+                weights[name] = match_count
+        return constrain_to_dominant_main_type(tuple(matched), weights=weights)

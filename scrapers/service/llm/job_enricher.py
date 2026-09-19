@@ -8,7 +8,6 @@ from scrapers.service.llm.category_hierarchy import constrain_to_dominant_main_t
 from scrapers.service.llm.json_response import (
     build_batch_prompt,
     parse_batch_response,
-    parse_string_list,
 )
 from scrapers.service.llm.skill import ExtractedSkill, parse_skills
 
@@ -28,6 +27,37 @@ ALLOWED_CATEGORIES = frozenset(
         "System and Safety",
     }
 )
+
+# How strongly the model itself says a category applies, used only to weight
+# constrain_to_dominant_main_type's tie-break (see _parse_one) - never
+# stored or exposed beyond that, since JobEnrichment.categories is still a
+# plain tuple of names.
+_CONFIDENCE_WEIGHTS = {"High": 3, "Medium": 2, "Low": 1}
+
+
+def parse_categories_with_confidence(value: object) -> tuple[tuple[str, str], ...]:
+    """Returns ((category_name, confidence), ...) in response order, deduped
+    by name (first occurrence wins) - mirrors parse_skills's shape-validation
+    style for a list of {name, confidence} objects."""
+    if not isinstance(value, list):
+        raise ValueError("'categories' must be a list")  # noqa: TRY004 - malformed LLM JSON, not a Python type error
+
+    parsed: list[tuple[str, str]] = []
+    seen: set[str] = set()
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("Each category entry must be an object with 'name' and 'confidence'")  # noqa: TRY004
+        name = str(item.get("name") or "").strip()
+        confidence = str(item.get("confidence") or "").strip().title()
+        if not name:
+            raise ValueError("Category entries must have a non-empty 'name'")
+        if confidence not in _CONFIDENCE_WEIGHTS:
+            raise ValueError(f"Category confidence must be one of {sorted(_CONFIDENCE_WEIGHTS)}")
+        if name in seen:
+            continue
+        parsed.append((name, confidence))
+        seen.add(name)
+    return tuple(parsed)
 
 
 @dataclass(frozen=True)
@@ -74,17 +104,23 @@ class JobEnricher:
 
     @staticmethod
     def _parse_one(payload: Mapping[str, object]) -> JobEnrichment:
-        categories = parse_string_list(payload.get("categories"))
-        unknown_categories = [name for name in categories if name not in ALLOWED_CATEGORIES]
+        categories_with_confidence = parse_categories_with_confidence(payload.get("categories"))
+        names = tuple(name for name, _ in categories_with_confidence)
+        unknown_categories = [name for name in names if name not in ALLOWED_CATEGORIES]
         if unknown_categories:
             raise ValueError(f"Unknown categories in LLM response: {unknown_categories}")
-        if not categories:
+        if not names:
             raise ValueError("AV-relevant jobs must include at least one category")
 
         # A job gets exactly one main_type (see category_hierarchy.py) even
         # when the LLM proposes sub_types spanning more than one - keep only
         # the dominant group's sub_types rather than trusting the raw
-        # cross-group list.
-        categories = constrain_to_dominant_main_type(categories)
+        # cross-group list. Weighting by the model's own reported confidence
+        # (instead of just counting matched sub_types) lets one
+        # strongly-evidenced category outweigh two weakly-evidenced ones in
+        # a different group, and gives ties a real signal to break on
+        # instead of falling back to response order.
+        weights = {name: _CONFIDENCE_WEIGHTS[confidence] for name, confidence in categories_with_confidence}
+        categories = constrain_to_dominant_main_type(names, weights=weights)
         skills = parse_skills(payload.get("skills", []))
         return JobEnrichment(categories, skills)

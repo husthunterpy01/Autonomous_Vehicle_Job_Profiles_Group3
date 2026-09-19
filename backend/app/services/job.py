@@ -5,28 +5,26 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models import Category, Company, JobPosting, Location, Skill
 from app.schemas.job import CategoryResponse, JobResponse
+from app.services.category_sync import dominant_categories
 from app.utils.pagination import PageResponse
 
 
 def _to_category_response(categories) -> CategoryResponse | None:
-    """Groups a job's Category rows by main_type and keeps only the largest
-    group, so the response mentions main_type once with every sub_type that
-    shares it - mirroring the one-main-type-per-job rule the scraper now
-    enforces going forward (see category_hierarchy.constrain_to_dominant_main_type).
-    Jobs imported before that rule existed may still have categories
-    spanning more than one main_type; this picks the dominant group rather
-    than misreporting a mixed job as single-main_type-clean.
+    """Shapes a job's Category rows into the response's one-main-type-with-
+    its-sub_types contract. sync_categories now enforces that invariant at
+    write time (see category_sync.dominant_categories), but this still
+    collapses to the dominant group defensively for any job written before
+    that enforcement existed, rather than misreporting a mixed job as
+    single-main_type-clean.
     """
     if not categories:
         return None
-    groups: dict[tuple[int, str | None], list[Category]] = {}
-    for category in sorted(categories, key=lambda c: (c.taxonomy_version, c.normalized_name)):
-        key = (category.taxonomy_version, category.main_type)
-        groups.setdefault(key, []).append(category)
-    (taxonomy_version, main_type), members = max(groups.items(), key=lambda item: len(item[1]))
+    members = dominant_categories(categories)
+    if not members:
+        return None
     return CategoryResponse(
-        main_type=main_type,
-        taxonomy_version=taxonomy_version,
+        main_type=members[0].main_type,
+        taxonomy_version=members[0].taxonomy_version,
         sub_types=[{"category_id": c.category_id, "sub_type": c.sub_type} for c in members],
     )
 
