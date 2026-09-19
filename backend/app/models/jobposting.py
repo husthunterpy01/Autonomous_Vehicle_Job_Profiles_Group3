@@ -1,10 +1,31 @@
 from uuid import uuid4
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
+
+job_location = Table(
+    "job_location",
+    Base.metadata,
+    Column("job_id", UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True),
+    Column("location_id", UUID(as_uuid=True), ForeignKey("location.location_id"), primary_key=True),
+)
+
+job_skill = Table(
+    "job_skill",
+    Base.metadata,
+    Column("job_id", UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True),
+    Column("skill_id", UUID(as_uuid=True), ForeignKey("skill.skill_id"), primary_key=True),
+)
+
+job_category = Table(
+    "job_category",
+    Base.metadata,
+    Column("job_id", UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True),
+    Column("category_id", UUID(as_uuid=True), ForeignKey("category.category_id"), primary_key=True),
+)
 
 
 class JobPosting(Base):

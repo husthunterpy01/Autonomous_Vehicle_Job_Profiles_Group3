@@ -90,7 +90,7 @@ def test_default_main_types_path_is_module_relative_not_cwd_relative(monkeypatch
     monkeypatch.chdir(tmp_path)
     assert DEFAULT_MAIN_TYPES_PATH.is_file()
     mapping = _load_main_types(DEFAULT_MAIN_TYPES_PATH)
-    assert mapping.get("Perception") == "Perception"
+    assert mapping.get("Perception") == "Perception & Sensing"
 
 
 def test_missing_default_main_types_path_fails_loudly(monkeypatch, tmp_path):

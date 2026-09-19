@@ -1,11 +1,11 @@
 import Link from "next/link";
 import {
-  AV_CATEGORIES,
   AV_COMPANIES,
   FEATURED_JOBS,
   MOCK_JOBS,
   mockJobSalary,
 } from "@/lib/mock-data";
+import CategoryGridPanel from "@/components/CategoryGridPanel";
 import CompanyLogo from "@/components/ui/CompanyLogo";
 import JobCardColumn from "@/components/ui/JobCardColumn";
 import JobCardRow from "@/components/ui/JobCardRow";
@@ -156,20 +156,7 @@ function JobCategories() {
           linkLabel="View all categories"
         />
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {AV_CATEGORIES.map((category) => (
-            <Link
-              key={category.name}
-              href="/search"
-              className="rounded-[10px] border border-line bg-surface p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
-            >
-              <h3 className="font-semibold text-ink">{category.name}</h3>
-              <p className="mt-1 text-sm text-ink-secondary">
-                {category.jobs} jobs available
-              </p>
-            </Link>
-          ))}
-        </div>
+        <CategoryGridPanel />
       </div>
     </section>
   );

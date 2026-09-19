@@ -4,7 +4,7 @@
 
 | Request | Change |
 | --- | --- |
-| One entity per file | Split Location, JobLocation, Skill, JobSkill and JobCategory into individual model files; update model registration. |
+| One entity per file | Split Location, JobLocation, Skill, JobSkill and JobCategory into individual model files; update model registration. (Later consolidated: the association tables now live as plain `Table` objects in `app/models/jobposting.py` rather than their own ORM classes/files.) |
 | Keep sorting and logic out of the router | Move job querying, filters, ordering, pagination and response assembly into `app/services/job.py`. The router only passes HTTP arguments and handles 404. |
 | Share small identity helpers | Move identifier validation to `app/utils/validation.py`; keep database job resolution in its service. |
 | Share Silver normalization | Move text normalization to `app/utils/normalization.py`. |

@@ -4,8 +4,29 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import Category, Company, JobPosting, Location, Skill
-from app.schemas.job import JobResponse
+from app.schemas.job import CategoryResponse, JobResponse
+from app.services.category_sync import dominant_categories
 from app.utils.pagination import PageResponse
+
+
+def _to_category_response(categories) -> CategoryResponse | None:
+    """Shapes a job's Category rows into the response's one-main-type-with-
+    its-sub_types contract. sync_categories now enforces that invariant at
+    write time (see category_sync.dominant_categories), but this still
+    collapses to the dominant group defensively for any job written before
+    that enforcement existed, rather than misreporting a mixed job as
+    single-main_type-clean.
+    """
+    if not categories:
+        return None
+    members = dominant_categories(categories)
+    if not members:
+        return None
+    return CategoryResponse(
+        main_type=members[0].main_type,
+        taxonomy_version=members[0].taxonomy_version,
+        sub_types=[{"category_id": c.category_id, "sub_type": c.sub_type} for c in members],
+    )
 
 
 def to_response(job):
@@ -14,8 +35,7 @@ def to_response(job):
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
-        categories=[{"category_id": c.category_id, "main_type": c.main_type, "sub_type": c.sub_type, "taxonomy_version": c.taxonomy_version}
-                    for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
+        category=_to_category_response(job.categories),
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,

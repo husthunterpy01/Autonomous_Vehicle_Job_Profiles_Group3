@@ -4,12 +4,17 @@
 # individual job, so the backend owns this mapping directly instead of
 # trusting a per-record value from the handoff - keep this file in sync
 # with the scrapers copy by hand; it changes rarely.
+# "Perception & Sensing" and "Localization & Mapping" are deliberately not
+# just "Perception"/"Localization" - a sub_type must never share its exact
+# name with its own main_type, since a job whose sub_types are e.g.
+# ["Perception", "Sensing"] would otherwise display as main_type
+# "Perception" containing a sub_type "Perception", reading as a duplicate.
 Control: System
-Localization: Localization
-Mapping: Localization
-Perception: Perception
+Localization: Localization & Mapping
+Mapping: Localization & Mapping
+Perception: Perception & Sensing
 Planning: Decision
 Prediction: Decision
-Sensing: Perception
+Sensing: Perception & Sensing
 System and Safety: System
 Vehicle Interface: System

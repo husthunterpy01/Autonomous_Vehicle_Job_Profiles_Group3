@@ -29,10 +29,7 @@ def get_companies(db: DbSession):
 
 
 @router.get("/with-job-counts", response_model=PageResponse[CompanyWithJobNumberResponse])
-def get_companies_with_job_numbers(
-    db: DbSession,
-    pagination: PaginationParams,
-):
+def get_companies_with_job_numbers(db: DbSession, pagination: PaginationParams):
     return CompanyService.get_companies_with_num_jobs(db, **pagination)
 
 
