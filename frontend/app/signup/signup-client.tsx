@@ -2,61 +2,177 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import LoginShowcase from "@/app/login/login-showcase";
 import { AuthApiError, signUp } from "@/lib/services/auth";
 
-type FieldErrors = Partial<
-  Record<
-    "fullName" | "username" | "email" | "password" | "confirmPassword",
-    string
-  >
->;
-
+const MIN_PASSWORD_LENGTH = 12;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_REQUIREMENTS =
   "Use at least 12 characters with uppercase, lowercase, number, and special character.";
 
-function passwordIsStrong(password: string) {
+type FieldErrors = {
+  name?: string;
+  username?: string;
+  email?: string;
+  password?: string;
+  confirmPassword?: string;
+};
+
+type FieldName = keyof FieldErrors;
+
+function EyeIcon({ open }: { open: boolean }) {
   return (
-    password.length >= 12 &&
-    /[a-z]/.test(password) &&
-    /[A-Z]/.test(password) &&
-    /\d/.test(password) &&
-    /[^A-Za-z0-9]/.test(password)
+    <svg
+      className="h-5 w-5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.8}
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      {open ? (
+        <>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
+          />
+        </>
+      ) : (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M3 3l18 18M10.58 10.58a3 3 0 0 0 4.24 4.24M6.53 6.53C4.34 8 2.25 12 2.25 12s3.75 7.5 9.75 7.5c1.98 0 3.68-.53 5.09-1.35M9.88 4.83A9.7 9.7 0 0 1 12 4.5c6 0 9.75 7.5 9.75 7.5a17.4 17.4 0 0 1-2.7 3.85"
+        />
+      )}
+    </svg>
   );
+}
+
+function validateForm(
+  name: string,
+  username: string,
+  email: string,
+  password: string,
+  confirmPassword: string,
+): FieldErrors {
+  const errors: FieldErrors = {};
+  const trimmedEmail = email.trim();
+
+  if (!name.trim()) {
+    errors.name = "Name is required.";
+  }
+
+  if (!username.trim()) {
+    errors.username = "Username is required.";
+  }
+
+  if (!trimmedEmail) {
+    errors.email = "Email is required.";
+  } else if (!EMAIL_PATTERN.test(trimmedEmail)) {
+    errors.email = "Enter a valid email address.";
+  }
+
+  if (!password) {
+    errors.password = "Password is required.";
+  } else if (password.length < MIN_PASSWORD_LENGTH) {
+    errors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters.`;
+  } else if (
+    !/[a-z]/.test(password) ||
+    !/[A-Z]/.test(password) ||
+    !/\d/.test(password) ||
+    !/[^A-Za-z0-9]/.test(password)
+  ) {
+    errors.password = PASSWORD_REQUIREMENTS;
+  }
+
+  if (!confirmPassword) {
+    errors.confirmPassword = "Confirm your password.";
+  } else if (password !== confirmPassword) {
+    errors.confirmPassword = "Passwords do not match.";
+  }
+
+  return errors;
 }
 
 export default function SignUpClient() {
   const router = useRouter();
-  const [fullName, setFullName] = useState("");
+  const nameRef = useRef<HTMLInputElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const confirmPasswordRef = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  function clearError(field: FieldName) {
+    setFieldErrors((currentErrors) => {
+      if (!currentErrors[field]) return currentErrors;
+
+      const nextErrors = { ...currentErrors };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+    setFormError(null);
+  }
+
+  function focusFirstError(errors: FieldErrors) {
+    if (errors.name) {
+      nameRef.current?.focus();
+    } else if (errors.username) {
+      usernameRef.current?.focus();
+    } else if (errors.email) {
+      emailRef.current?.focus();
+    } else if (errors.password) {
+      passwordRef.current?.focus();
+    } else if (errors.confirmPassword) {
+      confirmPasswordRef.current?.focus();
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
+
     setFormError(null);
-
-    const errors: FieldErrors = {};
-    if (!fullName.trim()) errors.fullName = "Full name is required";
-    if (!username.trim()) errors.username = "Username is required";
-    if (!email.trim()) errors.email = "Email is required";
-    if (!passwordIsStrong(password)) errors.password = PASSWORD_REQUIREMENTS;
-    if (password !== confirmPassword) {
-      errors.confirmPassword = "Passwords do not match";
-    }
+    const errors = validateForm(
+      name,
+      username,
+      email,
+      password,
+      confirmPassword,
+    );
     setFieldErrors(errors);
-    if (Object.keys(errors).length > 0) return;
 
+    if (Object.keys(errors).length > 0) {
+      focusFirstError(errors);
+      return;
+    }
+
+    setName(name.trim());
+    setUsername(username.trim());
+    setEmail(email.trim());
     setSubmitting(true);
+
     try {
       await signUp({
-        email,
-        username,
-        full_name: fullName,
+        full_name: name.trim(),
+        username: username.trim(),
+        email: email.trim(),
         password,
       });
       window.dispatchEvent(new Event("auth-changed"));
@@ -71,150 +187,294 @@ export default function SignUpClient() {
     }
   }
 
+  const inputClassName =
+    "w-full rounded-lg border bg-surface px-4 py-2.5 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted focus:border-primary focus:ring-2 focus:ring-primary/20";
+  const passwordInputClassName = `${inputClassName} pr-12`;
+
   return (
-    <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center bg-background px-6 py-16">
-      <div className="w-full max-w-lg rounded-2xl border border-line bg-surface p-8 shadow-sm">
-        <div className="text-center">
-          <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-sm font-bold text-white">
-            AV
-          </span>
-          <h1 className="mt-5 text-2xl font-bold tracking-tight text-ink">
+    <main className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-2">
+      <LoginShowcase />
+
+      <div className="flex items-center justify-center bg-surface px-6 py-12 sm:px-8 sm:py-16">
+        <div className="w-full max-w-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">
             Create your account
           </h1>
           <p className="mt-2 text-sm text-ink-secondary">
-            Save AV jobs and build your personalized opportunity list.
+            Sign up to save jobs and personalize your search.
+          </p>
+
+          <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
+            {formError && (
+              <p
+                role="alert"
+                className="rounded-lg bg-warning/10 px-4 py-2.5 text-sm font-medium text-warning"
+              >
+                {formError}
+              </p>
+            )}
+
+            <div>
+              <label
+                htmlFor="signup-name"
+                className="mb-1.5 block text-sm font-medium text-ink"
+              >
+                Name
+              </label>
+              <input
+                ref={nameRef}
+                id="signup-name"
+                name="name"
+                type="text"
+                required
+                autoComplete="name"
+                value={name}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  clearError("name");
+                }}
+                aria-invalid={Boolean(fieldErrors.name)}
+                aria-describedby={
+                  fieldErrors.name ? "signup-name-error" : undefined
+                }
+                placeholder="Enter your name"
+                className={`${inputClassName} ${
+                  fieldErrors.name ? "border-warning" : "border-line"
+                }`}
+              />
+              {fieldErrors.name && (
+                <p
+                  id="signup-name-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.name}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="signup-username"
+                className="mb-1.5 block text-sm font-medium text-ink"
+              >
+                Username
+              </label>
+              <input
+                ref={usernameRef}
+                id="signup-username"
+                name="username"
+                type="text"
+                required
+                autoComplete="username"
+                value={username}
+                onChange={(event) => {
+                  setUsername(event.target.value);
+                  clearError("username");
+                }}
+                aria-invalid={Boolean(fieldErrors.username)}
+                aria-describedby={
+                  fieldErrors.username ? "signup-username-error" : undefined
+                }
+                placeholder="Choose a username"
+                className={`${inputClassName} ${
+                  fieldErrors.username ? "border-warning" : "border-line"
+                }`}
+              />
+              {fieldErrors.username && (
+                <p
+                  id="signup-username-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.username}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="signup-email"
+                className="mb-1.5 block text-sm font-medium text-ink"
+              >
+                Email Address
+              </label>
+              <input
+                ref={emailRef}
+                id="signup-email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  clearError("email");
+                }}
+                aria-invalid={Boolean(fieldErrors.email)}
+                aria-describedby={
+                  fieldErrors.email ? "signup-email-error" : undefined
+                }
+                placeholder="Enter email address"
+                className={`${inputClassName} ${
+                  fieldErrors.email ? "border-warning" : "border-line"
+                }`}
+              />
+              {fieldErrors.email && (
+                <p
+                  id="signup-email-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.email}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="signup-password"
+                className="mb-1.5 block text-sm font-medium text-ink"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  ref={passwordRef}
+                  id="signup-password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  minLength={MIN_PASSWORD_LENGTH}
+                  autoComplete="new-password"
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                    clearError("password");
+                    if (fieldErrors.confirmPassword) {
+                      clearError("confirmPassword");
+                    }
+                  }}
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  aria-describedby={
+                    fieldErrors.password
+                      ? fieldErrors.password === PASSWORD_REQUIREMENTS
+                        ? "signup-password-error"
+                        : "signup-password-requirements signup-password-error"
+                      : "signup-password-requirements"
+                  }
+                  placeholder="Create a password"
+                  className={`${passwordInputClassName} ${
+                    fieldErrors.password ? "border-warning" : "border-line"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <EyeIcon open={showPassword} />
+                </button>
+              </div>
+              <p
+                id="signup-password-requirements"
+                className="mt-1.5 text-xs text-ink-muted"
+              >
+                {PASSWORD_REQUIREMENTS}
+              </p>
+              {fieldErrors.password && (
+                <p
+                  id="signup-password-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.password}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="signup-confirm-password"
+                className="mb-1.5 block text-sm font-medium text-ink"
+              >
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  ref={confirmPasswordRef}
+                  id="signup-confirm-password"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  minLength={MIN_PASSWORD_LENGTH}
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
+                    clearError("confirmPassword");
+                  }}
+                  aria-invalid={Boolean(fieldErrors.confirmPassword)}
+                  aria-describedby={
+                    fieldErrors.confirmPassword
+                      ? "signup-confirm-password-error"
+                      : undefined
+                  }
+                  placeholder="Re-enter your password"
+                  className={`${passwordInputClassName} ${
+                    fieldErrors.confirmPassword
+                      ? "border-warning"
+                      : "border-line"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  aria-label={
+                    showConfirmPassword
+                      ? "Hide confirm password"
+                      : "Show confirm password"
+                  }
+                  aria-pressed={showConfirmPassword}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-1 text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  <EyeIcon open={showConfirmPassword} />
+                </button>
+              </div>
+              {fieldErrors.confirmPassword && (
+                <p
+                  id="signup-confirm-password-error"
+                  role="alert"
+                  className="mt-1.5 text-sm text-warning"
+                >
+                  {fieldErrors.confirmPassword}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting}
+              aria-busy={submitting}
+              className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {submitting ? "Signing up..." : "Sign Up"}
+            </button>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-ink-secondary">
+            Already have an account?{" "}
+            <Link
+              href="/login"
+              className="rounded-sm font-medium text-primary hover:text-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            >
+              Log in
+            </Link>
           </p>
         </div>
-
-        <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
-          {formError && (
-            <p
-              role="alert"
-              className="rounded-lg bg-warning/10 px-4 py-2.5 text-sm font-medium text-warning"
-            >
-              {formError}
-            </p>
-          )}
-
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field
-              id="fullName"
-              label="Full Name"
-              value={fullName}
-              onChange={setFullName}
-              autoComplete="name"
-              error={fieldErrors.fullName}
-            />
-            <Field
-              id="username"
-              label="Username"
-              value={username}
-              onChange={setUsername}
-              autoComplete="username"
-              error={fieldErrors.username}
-            />
-          </div>
-
-          <Field
-            id="email"
-            label="Email Address"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            autoComplete="email"
-            error={fieldErrors.email}
-          />
-
-          <Field
-            id="password"
-            label="Password"
-            type="password"
-            value={password}
-            onChange={setPassword}
-            autoComplete="new-password"
-            error={fieldErrors.password}
-            help={!fieldErrors.password ? PASSWORD_REQUIREMENTS : undefined}
-          />
-
-          <Field
-            id="confirmPassword"
-            label="Confirm Password"
-            type="password"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-            autoComplete="new-password"
-            error={fieldErrors.confirmPassword}
-          />
-
-          <button
-            type="submit"
-            disabled={submitting}
-            aria-busy={submitting}
-            className="w-full rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            {submitting ? "Creating account..." : "Create Account"}
-          </button>
-        </form>
-
-        <p className="mt-6 text-center text-sm text-ink-secondary">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-primary hover:text-primary-hover"
-          >
-            Log In
-          </Link>
-        </p>
       </div>
     </main>
-  );
-}
-
-function Field({
-  id,
-  label,
-  type = "text",
-  value,
-  onChange,
-  autoComplete,
-  error,
-  help,
-}: {
-  id: string;
-  label: string;
-  type?: string;
-  value: string;
-  onChange: (value: string) => void;
-  autoComplete: string;
-  error?: string;
-  help?: string;
-}) {
-  const message = error || help;
-  return (
-    <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
-        {label}
-      </label>
-      <input
-        id={id}
-        name={id}
-        type={type}
-        required
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        autoComplete={autoComplete}
-        aria-invalid={Boolean(error)}
-        aria-describedby={message ? `${id}-message` : undefined}
-        className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-muted focus:border-primary"
-      />
-      {message && (
-        <p
-          id={`${id}-message`}
-          className={`mt-1.5 text-xs ${error ? "text-warning" : "text-ink-muted"}`}
-        >
-          {message}
-        </p>
-      )}
-    </div>
   );
 }
