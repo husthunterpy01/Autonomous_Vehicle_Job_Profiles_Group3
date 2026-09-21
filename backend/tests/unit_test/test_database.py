@@ -4,7 +4,7 @@ bound to whatever settings.database_url points to, so these mock that engine
 rather than hitting a real database (the same reason app.main's own tests
 patch init_db/seed_db instead of calling them for real)."""
 
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 import pytest
 from sqlalchemy.orm import Session
@@ -35,9 +35,11 @@ def test_seed_db_executes_the_seed_companies_sql_file(mock_engine):
     from app.core.database import seed_db
 
     mock_connection = mock_engine.begin.return_value.__enter__.return_value
+    fake_sql = "TRUNCATE TABLE company CASCADE;\n"
+    with patch("builtins.open", mock_open(read_data=fake_sql)) as mock_file:
+        seed_db()
 
-    seed_db()
-
+    mock_file.assert_called_once_with("app/sql/seed_companies.sql", encoding="utf-8")
     mock_connection.exec_driver_sql.assert_called_once()
     executed_sql = mock_connection.exec_driver_sql.call_args.args[0]
     assert "TRUNCATE TABLE company" in executed_sql
