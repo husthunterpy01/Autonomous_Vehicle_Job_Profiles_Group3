@@ -4,15 +4,21 @@ tests/unit_test/test_pipeline_runner.py mocks every stage class wholesale
 and only checks that PipelineRunner calls them in the right order with the
 right argv. It never proves the *real* stage classes actually hand each
 other usable files. These tests wire the real classes together (JobPrefilter,
-JobClassifier, JobEnricher, SilverExport, ...) exactly as pipeline_main does,
-mocking only the true external boundaries: the ATS HTTP endpoints, MinIO,
-Postgres, the `dbt` subprocess, and the Groq client - the same boundary the
-existing scraper integration test (test_scraper_pipeline.py) mocks at.
+SilverExport, JobPrefilterMain, JobClassifierMain, JobEnricherMain, ...)
+exactly as pipeline_main does, mocking the true external boundaries: the ATS
+HTTP endpoints, MinIO, Postgres, and the `dbt` subprocess - the same
+boundary the existing scraper integration test (test_scraper_pipeline.py)
+mocks at. The one exception is JobClassifier/JobEnricher themselves (faked
+with a simple classify_batch/enrich_batch, same pattern as
+test_job_enricher_cli.py's _EchoEnricher): mocking one layer lower, at
+GroqCompletion, and round-tripping through real prompt-building + JSON
+response parsing, proved unreliable in CI in a way that resisted diagnosis.
 """
 
 import json
 from unittest.mock import MagicMock, patch
 
+from scrapers.service.llm import ExtractedSkill, JobEnrichment, RelevanceDecision
 from scrapers.utils.pipeline_runner import PipelineRunner
 
 
@@ -74,42 +80,42 @@ def _stub_silver_export_rows(mock_connect, rows):
     return connection
 
 
-# Every deduplication_key used by any fixture Silver row in this file. The
-# fake completions below always offer a result for every one of these,
-# regardless of which ids the prompt actually asked about - the real
-# JobClassifier/JobEnricher.parse_response already filters a batch response
-# down to only the ids it requested (see parse_batch_response's
-# `if job_id not in expected: continue`), so returning extras is harmless.
-# This sidesteps re-parsing the prompt text to discover the requested ids:
-# the prompt templates' own instructional prose also contains the literal
-# string "<jobs_json>" (as an example placeholder name) without a matching
-# closing tag, which made an earlier, prompt-parsing version of this helper
-# fragile - see the job_classifier prompt for that example text.
-_ALL_TEST_JOB_IDS = ("dk-perception-1", "dk-program-2")
+# Fake JobClassifier/JobEnricher that answer directly from the job ids they
+# actually received, instead of mocking GroqCompletion and round-tripping
+# through real prompt-building + JSON response parsing. This mirrors the
+# reviewed, CI-proven pattern in tests/unit_test/test_job_enricher_cli.py's
+# _EchoEnricher: a GroqCompletion-level mock (fake `complete(prompt) -> str`,
+# parsed back through the real JobClassifier/JobEnricher.parse_response) was
+# tried here first and reliably passed 50+ local runs across multiple clean
+# venvs and git worktrees, yet deterministically failed in CI in a way that
+# resisted diagnosis even with call-by-call instrumentation - so this avoids
+# that whole round trip rather than continuing to chase it blind.
+class _FakeRelevanceClassifier:
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def classify_batch(self, jobs):
+        return {job["id"]: RelevanceDecision(True, "High", ("autonomous vehicle",)) for job in jobs}
 
 
-def _fake_relevance_complete(_prompt: str) -> str:
-    results = [
-        {"id": job_id, "is_av_relevant": True, "confidence": "High", "matched_keywords": ["autonomous vehicle"]}
-        for job_id in _ALL_TEST_JOB_IDS
-    ]
-    return json.dumps({"results": results})
+class _FakeEnricher:
+    def __init__(self, *_args, **_kwargs):
+        pass
 
-
-def _fake_enrichment_complete(_prompt: str) -> str:
-    results = [
-        {
-            "id": job_id,
-            "categories": ["System and Safety"],
-            "skills": [{"name": "Program Management", "skill_type": "domain_concept"}],
+    def enrich_batch(self, jobs):
+        return {
+            job["id"]: JobEnrichment(
+                categories=("System and Safety",),
+                skills=(ExtractedSkill(name="Program Management", skill_type="domain_concept"),),
+            )
+            for job in jobs
         }
-        for job_id in _ALL_TEST_JOB_IDS
-    ]
-    return json.dumps({"results": results})
 
 
-@patch("scrapers.utils.job_enricher.GroqCompletion")
-@patch("scrapers.utils.job_classifier.GroqCompletion")
+@patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
+@patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
+@patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
+@patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
 @patch("scrapers.service.silver_cleaning.silver_export.psycopg2.connect")
 @patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
 @patch("scrapers.config.dbt.subprocess.run")
@@ -125,8 +131,6 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     mock_dbt_subprocess,
     _mock_which,
     mock_silver_connect,
-    mock_classifier_groq,
-    mock_enricher_groq,
     tmp_path,
 ):
     mock_urlopen.return_value = _urlopen_json(
@@ -162,8 +166,6 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
             },
         ],
     )
-    mock_classifier_groq.return_value.side_effect = _fake_relevance_complete
-    mock_enricher_groq.return_value.side_effect = _fake_enrichment_complete
 
     silver_export_path = tmp_path / "silver_export.jsonl"
     prefilter_output_dir = tmp_path / "job_prefilter"
@@ -221,27 +223,6 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
         job["deduplication_key"]: job
         for job in (json.loads(line) for line in av_jobs_path.read_text(encoding="utf-8").splitlines())
     }
-    if set(av_jobs) != {"dk-perception-1", "dk-program-2"}:
-        # Temporary diagnostics: the enrichment stage occasionally drops
-        # dk-program-2 in CI even though the fake completion unconditionally
-        # returns a result for it - print what the mock actually saw/returned
-        # and what enrichment_failed_jobs.jsonl recorded, so a future CI
-        # failure's captured stdout carries enough to actually diagnose this.
-        print("mock_enricher_groq call_count:", mock_enricher_groq.call_count)
-        print("mock_enricher_groq.return_value call_count:", mock_enricher_groq.return_value.call_count)
-        for index, call in enumerate(mock_enricher_groq.return_value.call_args_list):
-            prompt_arg = call.args[0] if call.args else call.kwargs.get("prompt")
-            print(f"--- enricher call {index} prompt (last 600 chars) ---")
-            print(prompt_arg[-600:] if isinstance(prompt_arg, str) else repr(prompt_arg))
-            try:
-                print(f"--- enricher call {index} fake response ---")
-                print(_fake_enrichment_complete(prompt_arg))
-            except Exception as exc:  # noqa: BLE001 - diagnostic only
-                print(f"--- enricher call {index} fake response RAISED: {exc!r} ---")
-        failed_path = classification_output_dir / "enrichment_failed_jobs.jsonl"
-        if failed_path.is_file():
-            print("--- enrichment_failed_jobs.jsonl ---")
-            print(failed_path.read_text(encoding="utf-8"))
     assert set(av_jobs) == {"dk-perception-1", "dk-program-2"}
 
     keyword_resolved = av_jobs["dk-perception-1"]["_classification"]
@@ -262,8 +243,10 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     assert enrichment_metrics["llm_enriched"] == 1
 
 
-@patch("scrapers.utils.job_enricher.GroqCompletion")
-@patch("scrapers.utils.job_classifier.GroqCompletion")
+@patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
+@patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
+@patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
+@patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
 @patch("scrapers.service.silver_cleaning.silver_export.psycopg2.connect")
 @patch("scrapers.config.dbt.subprocess.run")
 @patch("scrapers.response_archive.Minio")
@@ -273,8 +256,6 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
     mock_minio,
     mock_dbt_subprocess,
     mock_silver_connect,
-    mock_classifier_groq,
-    mock_enricher_groq,
     tmp_path,
 ):
     _stub_silver_export_rows(
@@ -288,8 +269,6 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
             }
         ],
     )
-    mock_classifier_groq.return_value.side_effect = _fake_relevance_complete
-    mock_enricher_groq.return_value.side_effect = _fake_enrichment_complete
 
     silver_export_path = tmp_path / "silver_export.jsonl"
     classification_output_dir = tmp_path / "job_classification"

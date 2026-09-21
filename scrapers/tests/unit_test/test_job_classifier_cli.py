@@ -269,25 +269,26 @@ def test_retry_falls_through_to_individual_calls_when_the_group_retry_itself_rai
     assert {frozenset(c) for c in classifier.calls[2:]} == {frozenset({"b"}), frozenset({"c"})}
 
 
-def _fake_relevance_complete(_prompt: str) -> str:
-    """Always offers a result for both ids this file's tests use, regardless
-    of which one the prompt actually asked about - JobClassifier.parse_response
-    already filters a batch response down to only the requested ids, so
-    returning extras is harmless. This avoids re-parsing the prompt text: its
-    own instructional prose contains the literal string "<jobs_json>" (as an
-    example placeholder name) without a matching closing tag, which made an
-    earlier, prompt-parsing version of this helper fragile."""
-    results = [
-        {"id": job_id, "is_av_relevant": True, "confidence": "High", "matched_keywords": []}
-        for job_id in ("existing-1", "new-2")
-    ]
-    return json.dumps({"results": results})
+class _FakeRelevanceClassifier:
+    """Answers directly from the job ids it actually received, instead of
+    mocking GroqCompletion and round-tripping through real prompt-building +
+    JSON response parsing - the latter proved unreliable in CI in a way that
+    resisted diagnosis even with call-by-call instrumentation (see
+    test_pipeline_runner_end_to_end.py, which hit this first). Mirrors
+    test_job_enricher_cli.py's _EchoEnricher pattern."""
+
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def classify_batch(self, jobs):
+        from scrapers.service.llm import RelevanceDecision
+
+        return {job["id"]: RelevanceDecision(True, "High", ()) for job in jobs}
 
 
-@patch("scrapers.utils.job_classifier.GroqCompletion")
-def test_main_resumes_and_skips_already_processed_job_ids(mock_groq_completion, tmp_path):
-    mock_groq_completion.return_value.side_effect = _fake_relevance_complete
-
+@patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
+@patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
+def test_main_resumes_and_skips_already_processed_job_ids(tmp_path):
     input_path = tmp_path / "llm_candidates.jsonl"
     with input_path.open("w", encoding="utf-8") as stream:
         stream.write(json.dumps({"deduplication_key": "existing-1", "job_name": "Old Role"}) + "\n")
