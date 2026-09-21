@@ -221,6 +221,27 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
         job["deduplication_key"]: job
         for job in (json.loads(line) for line in av_jobs_path.read_text(encoding="utf-8").splitlines())
     }
+    if set(av_jobs) != {"dk-perception-1", "dk-program-2"}:
+        # Temporary diagnostics: the enrichment stage occasionally drops
+        # dk-program-2 in CI even though the fake completion unconditionally
+        # returns a result for it - print what the mock actually saw/returned
+        # and what enrichment_failed_jobs.jsonl recorded, so a future CI
+        # failure's captured stdout carries enough to actually diagnose this.
+        print("mock_enricher_groq call_count:", mock_enricher_groq.call_count)
+        print("mock_enricher_groq.return_value call_count:", mock_enricher_groq.return_value.call_count)
+        for index, call in enumerate(mock_enricher_groq.return_value.call_args_list):
+            prompt_arg = call.args[0] if call.args else call.kwargs.get("prompt")
+            print(f"--- enricher call {index} prompt (last 600 chars) ---")
+            print(prompt_arg[-600:] if isinstance(prompt_arg, str) else repr(prompt_arg))
+            try:
+                print(f"--- enricher call {index} fake response ---")
+                print(_fake_enrichment_complete(prompt_arg))
+            except Exception as exc:  # noqa: BLE001 - diagnostic only
+                print(f"--- enricher call {index} fake response RAISED: {exc!r} ---")
+        failed_path = classification_output_dir / "enrichment_failed_jobs.jsonl"
+        if failed_path.is_file():
+            print("--- enrichment_failed_jobs.jsonl ---")
+            print(failed_path.read_text(encoding="utf-8"))
     assert set(av_jobs) == {"dk-perception-1", "dk-program-2"}
 
     keyword_resolved = av_jobs["dk-perception-1"]["_classification"]
