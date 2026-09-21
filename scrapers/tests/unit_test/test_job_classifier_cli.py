@@ -269,11 +269,17 @@ def test_retry_falls_through_to_individual_calls_when_the_group_retry_itself_rai
     assert {frozenset(c) for c in classifier.calls[2:]} == {frozenset({"b"}), frozenset({"c"})}
 
 
-def _fake_relevance_complete(prompt: str) -> str:
-    payload = prompt.rsplit("<jobs_json>", 1)[-1].rsplit("</jobs_json>", 1)[0]
-    jobs = json.loads(payload)
+def _fake_relevance_complete(_prompt: str) -> str:
+    """Always offers a result for both ids this file's tests use, regardless
+    of which one the prompt actually asked about - JobClassifier.parse_response
+    already filters a batch response down to only the requested ids, so
+    returning extras is harmless. This avoids re-parsing the prompt text: its
+    own instructional prose contains the literal string "<jobs_json>" (as an
+    example placeholder name) without a matching closing tag, which made an
+    earlier, prompt-parsing version of this helper fragile."""
     results = [
-        {"id": job["id"], "is_av_relevant": True, "confidence": "High", "matched_keywords": []} for job in jobs
+        {"id": job_id, "is_av_relevant": True, "confidence": "High", "matched_keywords": []}
+        for job_id in ("existing-1", "new-2")
     ]
     return json.dumps({"results": results})
 

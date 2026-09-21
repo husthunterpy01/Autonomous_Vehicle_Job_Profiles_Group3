@@ -74,39 +74,36 @@ def _stub_silver_export_rows(mock_connect, rows):
     return connection
 
 
-def _extract_batch_jobs(prompt: str) -> list[dict]:
-    """Pull the `<jobs_json>[...]</jobs_json>` payload build_batch_prompt
-    substitutes into every LLM prompt, so a fake completion can echo back a
-    per-job result keyed by whatever id the real pipeline assigned - instead
-    of hardcoding ids and coupling the test to internal batching order.
+# Every deduplication_key used by any fixture Silver row in this file. The
+# fake completions below always offer a result for every one of these,
+# regardless of which ids the prompt actually asked about - the real
+# JobClassifier/JobEnricher.parse_response already filters a batch response
+# down to only the ids it requested (see parse_batch_response's
+# `if job_id not in expected: continue`), so returning extras is harmless.
+# This sidesteps re-parsing the prompt text to discover the requested ids:
+# the prompt templates' own instructional prose also contains the literal
+# string "<jobs_json>" (as an example placeholder name) without a matching
+# closing tag, which made an earlier, prompt-parsing version of this helper
+# fragile - see the job_classifier prompt for that example text.
+_ALL_TEST_JOB_IDS = ("dk-perception-1", "dk-program-2")
 
-    The prompt templates also *mention* the literal string "<jobs_json>" in
-    their instructional text (without a matching closing tag), so splitting
-    on the *last* opening tag and *last* closing tag is what actually
-    isolates build_batch_prompt's real substitution at the end of the file."""
-    assert "<jobs_json>" in prompt, f"prompt did not contain a <jobs_json> payload: {prompt[:200]}"
-    payload = prompt.rsplit("<jobs_json>", 1)[-1].rsplit("</jobs_json>", 1)[0]
-    return json.loads(payload)
 
-
-def _fake_relevance_complete(prompt: str) -> str:
-    jobs = _extract_batch_jobs(prompt)
+def _fake_relevance_complete(_prompt: str) -> str:
     results = [
-        {"id": job["id"], "is_av_relevant": True, "confidence": "High", "matched_keywords": ["autonomous vehicle"]}
-        for job in jobs
+        {"id": job_id, "is_av_relevant": True, "confidence": "High", "matched_keywords": ["autonomous vehicle"]}
+        for job_id in _ALL_TEST_JOB_IDS
     ]
     return json.dumps({"results": results})
 
 
-def _fake_enrichment_complete(prompt: str) -> str:
-    jobs = _extract_batch_jobs(prompt)
+def _fake_enrichment_complete(_prompt: str) -> str:
     results = [
         {
-            "id": job["id"],
+            "id": job_id,
             "categories": ["System and Safety"],
             "skills": [{"name": "Program Management", "skill_type": "domain_concept"}],
         }
-        for job in jobs
+        for job_id in _ALL_TEST_JOB_IDS
     ]
     return json.dumps({"results": results})
 

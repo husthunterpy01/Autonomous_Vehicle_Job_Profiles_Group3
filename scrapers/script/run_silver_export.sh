@@ -13,7 +13,6 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$REPO_ROOT"
 
 if [[ -z "${VIRTUAL_ENV:-}" && -f ".venv/bin/activate" ]]; then
-    # shellcheck disable=SC1091
     source ".venv/bin/activate"
 fi
 
