@@ -45,6 +45,12 @@ class Settings:
         self.auth_login_window_seconds = int(
             os.getenv("AUTH_LOGIN_WINDOW_SECONDS", "300")
         )
+        job_write_api_key = os.getenv("JOB_WRITE_API_KEY")
+        self.job_write_api_key = (
+            job_write_api_key.strip()
+            if job_write_api_key and job_write_api_key.strip()
+            else None
+        )
         cors_origins = os.getenv("CORS_ORIGINS")
         if cors_origins:
             self.cors_origins = [origin.strip() for origin in cors_origins.split(",")]

@@ -1,16 +1,39 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.job import JobResponse, SalaryPeriod
+from app.dependencies.job_write import require_job_write_key
+from app.schemas.job import JobCreate, JobDetailResponse, JobResponse, SalaryPeriod
 from app.services import job as job_service
 from app.utils.pagination import PageResponse
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 DbSession = Annotated[Session, Depends(get_db)]
+
+
+@router.post(
+    "",
+    response_model=JobDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"description": "Related categories are inconsistent"},
+        401: {"description": "Missing or invalid job-write key"},
+        404: {"description": "Company or related entity does not exist"},
+        409: {"description": "A job with this source key already exists"},
+        422: {"description": "Request fields failed schema validation"},
+        500: {"description": "The job could not be created"},
+        503: {"description": "Job writes are not configured"},
+    },
+)
+def create_job(
+    data: JobCreate,
+    db: DbSession,
+    _write_access: Annotated[None, Depends(require_job_write_key)],
+):
+    return job_service.create_job(db, data)
 
 
 @router.get("", response_model=PageResponse[JobResponse])
@@ -41,14 +64,23 @@ def list_jobs(
             detail="salary_period is required when min_salary or max_salary is set.",
         )
     return job_service.list_jobs(
-        db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
-        employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
+        db,
+        q=q,
+        location=location,
+        skill=skill,
+        category_id=category_id,
+        company_id=company_id,
+        employment_type=employment_type,
+        min_salary=min_salary,
+        max_salary=max_salary,
         salary_period=salary_period.value if salary_period else None,
-        has_salary=has_salary, page=page, page_size=page_size,
+        has_salary=has_salary,
+        page=page,
+        page_size=page_size,
     )
 
 
-@router.get("/{job_id}", response_model=JobResponse)
+@router.get("/{job_id}", response_model=JobDetailResponse)
 def get_job(job_id: UUID, db: DbSession):
     job = job_service.get_job(db, job_id)
     if job is None:
