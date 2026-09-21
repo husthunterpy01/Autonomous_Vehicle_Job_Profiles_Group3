@@ -43,8 +43,10 @@ export default function CategoryGridPanel() {
     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {categories.map((category) => (
         <Link
-          key={category.name}
-          href="/search"
+          // The id, not the name: two taxonomy versions can share a
+          // sub_type name, and the card should open that exact category.
+          key={category.id}
+          href={`/search?category=${encodeURIComponent(category.id)}`}
           className="rounded-[10px] border border-line bg-surface p-6 text-center shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
         >
           <h3 className="font-semibold text-ink">{category.name}</h3>

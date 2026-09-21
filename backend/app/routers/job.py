@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.dependencies.job_write import require_job_write_key
+from app.enums.job_sort_field import JobSortField
+from app.enums.sort_direction import SortDirection
 from app.schemas.job import JobCreate, JobDetailResponse, JobResponse, SalaryPeriod
 from app.services import job as job_service
 from app.utils.pagination import PageResponse
@@ -49,6 +51,8 @@ def list_jobs(
     max_salary: float | None = Query(None, ge=0),
     salary_period: SalaryPeriod | None = None,
     has_salary: bool | None = None,
+    sort: JobSortField = JobSortField.POSTED_DATE,
+    direction: SortDirection | None = None,
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100),
 ):
@@ -75,6 +79,8 @@ def list_jobs(
         max_salary=max_salary,
         salary_period=salary_period.value if salary_period else None,
         has_salary=has_salary,
+        sort=sort,
+        direction=direction,
         page=page,
         page_size=page_size,
     )
