@@ -5,7 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.schemas.job import JobResponse, JobSortField, SalaryPeriod, SortDirection
+from app.enums.job_sort_field import JobSortField
+from app.enums.sort_direction import SortDirection
+from app.schemas.job import JobResponse, SalaryPeriod
 from app.services import job as job_service
 from app.utils.pagination import PageResponse
 

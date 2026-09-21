@@ -3,8 +3,10 @@ from uuid import UUID
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
+from app.enums.job_sort_field import JobSortField
+from app.enums.sort_direction import SortDirection
 from app.models import Category, Company, JobPosting, Location, Skill
-from app.schemas.job import CategoryResponse, JobResponse, JobSortField, SortDirection
+from app.schemas.job import CategoryResponse, JobResponse
 from app.services.category_sync import dominant_categories
 from app.utils.pagination import PageResponse
 
