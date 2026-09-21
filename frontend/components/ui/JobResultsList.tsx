@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { JobSort, JobSortField } from "@/lib/job-sort";
 import { formatPayPeriod } from "@/lib/salary";
 import {
   EMPLOYMENT_TYPE_LABELS,
@@ -15,15 +16,50 @@ import Tag from "./Tag";
    its own per-job button (add to favorites, remove from favorites, ...)
    without this file needing to know what that action does. */
 
-const JOB_TABLE_COLUMNS = [
-  "Role",
-  "Company",
-  "Location",
-  "Salary",
-  "Pay Period",
-  "Type",
-  "Posted",
+/* Each column carries its own sort field, so renaming a header can never
+   quietly make it unsortable. Salary and Pay Period have none on purpose:
+   their values mix pay periods, currencies and levels.fyi estimates, so
+   ordering them against each other would be meaningless. */
+type JobColumn = { label: string; sortField?: JobSortField };
+
+const JOB_TABLE_COLUMNS: JobColumn[] = [
+  { label: "Role", sortField: "title" },
+  { label: "Company", sortField: "company" },
+  { label: "Location" },
+  { label: "Salary" },
+  { label: "Pay Period" },
+  { label: "Type" },
+  { label: "Posted", sortField: "posted_date" },
 ];
+
+function SortableHeader({
+  label,
+  field,
+  sort,
+  onSortChange,
+}: {
+  label: string;
+  field: JobSortField;
+  sort: JobSort;
+  onSortChange: (field: JobSortField) => void;
+}) {
+  const active = sort.field === field;
+  return (
+    <button
+      type="button"
+      onClick={() => onSortChange(field)}
+      className="inline-flex items-center gap-1 font-semibold text-ink-secondary hover:text-ink"
+    >
+      {label}
+      <span
+        aria-hidden="true"
+        className={active ? "text-primary" : "text-ink-muted"}
+      >
+        {active && sort.direction === "asc" ? "▲" : "▼"}
+      </span>
+    </button>
+  );
+}
 
 /** Joined locations, or null when the posting lists none. */
 export function locationLabel(job: JobListItem): string | null {
@@ -158,13 +194,19 @@ export function JobsTable({
   jobs,
   renderAction,
   actionColumnLabel = "",
+  sort,
+  onSortChange,
 }: {
   jobs: JobListItem[];
   renderAction?: (job: JobListItem) => ReactNode;
   actionColumnLabel?: string;
+  /* Both together make the headers sortable; screens without server-side
+     sorting (My Favorites) simply leave them out. */
+  sort?: JobSort;
+  onSortChange?: (field: JobSortField) => void;
 }) {
-  const columns = renderAction
-    ? [...JOB_TABLE_COLUMNS, actionColumnLabel]
+  const columns: JobColumn[] = renderAction
+    ? [...JOB_TABLE_COLUMNS, { label: actionColumnLabel }]
     : JOB_TABLE_COLUMNS;
 
   return (
@@ -172,15 +214,36 @@ export function JobsTable({
       <table className="w-full min-w-[900px] border-collapse text-left">
         <thead>
           <tr className="border-b border-line bg-section/60">
-            {columns.map((label, index) => (
-              <th
-                key={label || `col-${index}`}
-                scope="col"
-                className="px-4 py-4 text-sm font-semibold text-ink-secondary first:pl-5 last:pr-5"
-              >
-                {label}
-              </th>
-            ))}
+            {columns.map(({ label, sortField }, index) => {
+              const active = Boolean(
+                sort && sortField && onSortChange && sort.field === sortField,
+              );
+              return (
+                <th
+                  key={label || `col-${index}`}
+                  scope="col"
+                  aria-sort={
+                    active && sort
+                      ? sort.direction === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : undefined
+                  }
+                  className="px-4 py-4 text-sm font-semibold text-ink-secondary first:pl-5 last:pr-5"
+                >
+                  {sortField && sort && onSortChange ? (
+                    <SortableHeader
+                      label={label}
+                      field={sortField}
+                      sort={sort}
+                      onSortChange={onSortChange}
+                    />
+                  ) : (
+                    label
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

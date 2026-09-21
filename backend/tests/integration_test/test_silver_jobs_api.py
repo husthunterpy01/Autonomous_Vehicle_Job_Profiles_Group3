@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -159,3 +161,55 @@ def test_salary_filters_and_response_fields(db_session):
         assert {item["title"] for item in no_salary_only["items"]} == {"No Salary"}
 
         assert client.get("/jobs?min_salary=-1").status_code == 422
+
+
+def test_sorting_by_posted_date_title_and_company(db_session):
+    rows = [
+        {"deduplication_key": "a", "company_name": "Zoox Systems", "job_name": "perception engineer", "job_description": "d"},
+        {"deduplication_key": "b", "company_name": "Aurora Labs", "job_name": "Controls Engineer", "job_description": "d"},
+        {"deduplication_key": "c", "company_name": "Motional AV", "job_name": "Mapping Engineer", "job_description": "d"},
+        {"deduplication_key": "d", "company_name": "Waabi Inc", "job_name": "No Date Engineer", "job_description": "d"},
+    ]
+    SilverSync(db_session).run(rows)
+    posted = {
+        "perception engineer": datetime(2026, 9, 1, tzinfo=timezone.utc),
+        "Controls Engineer": datetime(2026, 9, 10, tzinfo=timezone.utc),
+        "Mapping Engineer": datetime(2026, 9, 5, tzinfo=timezone.utc),
+    }
+    for job in db_session.query(JobPosting):
+        job.posted_date = posted.get(job.title)
+    db_session.commit()
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db_session
+    with TestClient(app) as client:
+        def titles(**params):
+            return [item["title"] for item in client.get("/jobs", params=params).json()["items"]]
+
+        # Default is unchanged: newest first, and the undated job goes last.
+        assert titles() == ["Controls Engineer", "Mapping Engineer", "perception engineer", "No Date Engineer"]
+        # Oldest first still keeps the undated job last rather than first.
+        assert titles(sort="posted_date", direction="asc") == [
+            "perception engineer", "Mapping Engineer", "Controls Engineer", "No Date Engineer",
+        ]
+        # Title sorting ignores case, so a lowercase title is not pushed to one end.
+        assert titles(sort="title") == [
+            "Controls Engineer", "Mapping Engineer", "No Date Engineer", "perception engineer",
+        ]
+        assert titles(sort="title", direction="desc") == [
+            "perception engineer", "No Date Engineer", "Mapping Engineer", "Controls Engineer",
+        ]
+        # Company sorts on the company name, not on its UUID.
+        assert titles(sort="company") == [
+            "Controls Engineer", "Mapping Engineer", "No Date Engineer", "perception engineer",
+        ]
+        assert titles(sort="company", direction="desc") == [
+            "perception engineer", "No Date Engineer", "Mapping Engineer", "Controls Engineer",
+        ]
+        # Paging a sorted list neither drops nor repeats a job.
+        first = titles(sort="title", page=1, page_size=3)
+        second = titles(sort="title", page=2, page_size=3)
+        assert first + second == titles(sort="title")
+        assert client.get("/jobs", params={"sort": "salary"}).status_code == 422
+        assert client.get("/jobs", params={"sort": "title", "direction": "sideways"}).status_code == 422

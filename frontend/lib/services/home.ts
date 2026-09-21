@@ -1,3 +1,4 @@
+import type { CategoryStat } from "@/lib/category-filter";
 import { apiFetch } from "./api";
 
 type SkillStat = {
@@ -23,14 +24,8 @@ export async function getTopSkills(limit = 8): Promise<SkillDemand[]> {
   }));
 }
 
-type CategoryStat = {
-  category_id: string;
-  sub_type: string;
-  main_type: string | null;
-  job_count: number;
-};
-
 export type CategoryDemand = {
+  id: string;
   name: string;
   jobs: number;
 };
@@ -38,9 +33,17 @@ export type CategoryDemand = {
 /** One card per taxonomy sub_type (Sensing, Perception, ...), ranked by job
  *  count - matches lib/mock-data's AV_CATEGORIES shape used on the
  *  homepage's "Explore Jobs by Category" grid. */
+export function getCategoryStatsRaw(): Promise<CategoryStat[]> {
+  return apiFetch<CategoryStat[]>("/api/v1/home/category-stats");
+}
+
 export async function getCategoryStats(): Promise<CategoryDemand[]> {
-  const stats = await apiFetch<CategoryStat[]>("/api/v1/home/category-stats");
+  const stats = await getCategoryStatsRaw();
   return stats
-    .map((stat) => ({ name: stat.sub_type, jobs: stat.job_count }))
+    .map((stat) => ({
+      id: stat.category_id,
+      name: stat.sub_type,
+      jobs: stat.job_count,
+    }))
     .sort((a, b) => b.jobs - a.jobs);
 }
