@@ -10,7 +10,8 @@ export type JobSort = {
   direction: SortDirection;
 };
 
-/** Matches the API default, so the first page load sends no sort at all. */
+/** Same as the API's own default. It is still sent with every request, but
+ *  left out of the URL so a plain /search link stays unchanged. */
 export const DEFAULT_JOB_SORT: JobSort = {
   field: "posted_date",
   direction: "desc",

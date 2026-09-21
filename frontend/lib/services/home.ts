@@ -25,6 +25,7 @@ export async function getTopSkills(limit = 8): Promise<SkillDemand[]> {
 }
 
 export type CategoryDemand = {
+  id: string;
   name: string;
   jobs: number;
 };
@@ -39,6 +40,10 @@ export function getCategoryStatsRaw(): Promise<CategoryStat[]> {
 export async function getCategoryStats(): Promise<CategoryDemand[]> {
   const stats = await getCategoryStatsRaw();
   return stats
-    .map((stat) => ({ name: stat.sub_type, jobs: stat.job_count }))
+    .map((stat) => ({
+      id: stat.category_id,
+      name: stat.sub_type,
+      jobs: stat.job_count,
+    }))
     .sort((a, b) => b.jobs - a.jobs);
 }

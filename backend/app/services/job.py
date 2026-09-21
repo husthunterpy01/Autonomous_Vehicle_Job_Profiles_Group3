@@ -56,18 +56,20 @@ def job_query(db):
 # default direction plus the column to order by. Company is sorted by the
 # company name rather than its UUID, so the join below is required.
 _SORT_COLUMNS = {
-    JobSortField.POSTED_DATE: (SortDirection.DESC, lambda: JobPosting.posted_date),
-    JobSortField.TITLE: (SortDirection.ASC, lambda: func.lower(JobPosting.title)),
-    JobSortField.COMPANY: (SortDirection.ASC, lambda: func.lower(Company.name)),
+    JobSortField.POSTED_DATE: (SortDirection.DESC, JobPosting.posted_date),
+    JobSortField.TITLE: (SortDirection.ASC, func.lower(JobPosting.title)),
+    JobSortField.COMPANY: (SortDirection.ASC, func.lower(Company.name)),
 }
 
 
 def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
-    default_direction, column_factory = _SORT_COLUMNS[sort]
-    column = column_factory()
+    default_direction, column = _SORT_COLUMNS[sort]
     if sort is JobSortField.COMPANY:
-        # Many-to-one, so this cannot duplicate job rows.
-        query = query.join(Company, JobPosting.company_id == Company.company_id)
+        # LEFT JOIN, not an inner join: company_id is NOT NULL today, but if
+        # that ever changed a job without a company should sort last like any
+        # other missing value instead of silently dropping out of the list.
+        # Many-to-one either way, so this cannot duplicate job rows.
+        query = query.outerjoin(Company, JobPosting.company_id == Company.company_id)
     ordering = column.desc() if (direction or default_direction) is SortDirection.DESC else column.asc()
     # Jobs missing the sorted value go last whichever direction is chosen,
     # so an empty column never occupies the first page. job_id breaks ties
