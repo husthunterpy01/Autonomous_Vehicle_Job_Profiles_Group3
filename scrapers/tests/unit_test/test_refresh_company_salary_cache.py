@@ -7,7 +7,9 @@ import yaml
 from scrapers.service.silver_cleaning.levels_fyi import LevelsFyiAverage
 from scrapers.utils.refresh_company_salary_cache import (
     _company_names,
+    _is_fresh,
     _slugify,
+    main,
     refresh,
 )
 
@@ -29,6 +31,22 @@ def test_company_names_deduplicates_preserving_order(tmp_path):
             f.write(json.dumps(row) + "\n")
 
     assert _company_names([path]) == ["Waymo", "Zoox"]
+
+
+def test_company_names_skips_missing_input_files(tmp_path):
+    present = tmp_path / "av_jobs.jsonl"
+    present.write_text(json.dumps({"company_name": "Waymo"}) + "\n")
+    missing = tmp_path / "does_not_exist.jsonl"
+
+    assert _company_names([missing, present]) == ["Waymo"]
+
+
+def test_is_fresh_is_false_without_a_fetched_at_timestamp():
+    assert _is_fresh({}, max_age_days=30) is False
+
+
+def test_is_fresh_is_false_for_an_unparseable_timestamp():
+    assert _is_fresh({"fetched_at": "not-a-date"}, max_age_days=30) is False
 
 
 @patch("scrapers.utils.refresh_company_salary_cache.fetch_company_average")
@@ -108,3 +126,24 @@ def test_refresh_writes_earlier_fetches_even_when_a_later_one_errors(mock_fetch,
     cache = yaml.safe_load(cache_path.read_text())
     assert set(cache) == {"Company A", "Company C"}
     assert mock_fetch.call_count == 3  # Company C is still attempted after B's error
+
+
+@patch("scrapers.utils.refresh_company_salary_cache.fetch_company_average")
+def test_main_reads_input_files_and_refreshes_the_cache(mock_fetch, tmp_path):
+    mock_fetch.return_value = LevelsFyiAverage(200000.0, "USD", "https://x")
+    input_path = tmp_path / "av_jobs.jsonl"
+    input_path.write_text(json.dumps({"company_name": "Waymo"}) + "\n")
+    cache_path = tmp_path / "company_salary.yaml"
+
+    status = main(
+        [
+            "--input", str(input_path),
+            "--cache", str(cache_path),
+            "--pause-seconds", "0",
+        ]
+    )
+
+    assert status == 0
+    cache = yaml.safe_load(cache_path.read_text())
+    assert cache["Waymo"]["avg_total_comp"] == 200000.0
+    mock_fetch.assert_called_once_with("waymo")

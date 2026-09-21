@@ -1,3 +1,6 @@
+import json
+from unittest.mock import patch
+
 from scrapers.utils.job_classifier import (
     JobClassifierMain,
     _group_by_company_title,
@@ -232,3 +235,74 @@ def test_group_by_company_title_no_duplicates_is_a_noop():
 
     assert len(representatives) == 2
     assert dedup_map == {"id1": ["id1"], "id2": ["id2"]}
+
+
+class _GroupRetryRaisesClassifier:
+    """First call (the full batch) leaves 2 of 3 jobs missing, which should
+    trigger one smaller group retry - and that group retry call itself
+    raises (a second 5xx/connection error), which must fall through to
+    individual retries rather than propagating or giving up."""
+
+    def __init__(self):
+        self.calls: list[list[str]] = []
+
+    def classify_batch(self, jobs):
+        from scrapers.service.llm import RelevanceDecision
+
+        ids = [j["id"] for j in jobs]
+        self.calls.append(ids)
+        if len(self.calls) == 1:
+            return {"a": RelevanceDecision(True, "High", ())}
+        if len(self.calls) == 2:
+            raise ConnectionError("simulated group retry failure")
+        return {jid: RelevanceDecision(True, "High", ()) for jid in ids}
+
+
+def test_retry_falls_through_to_individual_calls_when_the_group_retry_itself_raises():
+    classifier = _GroupRetryRaisesClassifier()
+
+    results = JobClassifierMain._classify_with_retry(classifier, _jobs_by_id("a", "b", "c"), 1, 1)
+
+    assert set(results) == {"a", "b", "c"}
+    assert set(classifier.calls[0]) == {"a", "b", "c"}
+    assert set(classifier.calls[1]) == {"b", "c"}
+    assert {frozenset(c) for c in classifier.calls[2:]} == {frozenset({"b"}), frozenset({"c"})}
+
+
+def _fake_relevance_complete(prompt: str) -> str:
+    payload = prompt.rsplit("<jobs_json>", 1)[-1].rsplit("</jobs_json>", 1)[0]
+    jobs = json.loads(payload)
+    results = [
+        {"id": job["id"], "is_av_relevant": True, "confidence": "High", "matched_keywords": []} for job in jobs
+    ]
+    return json.dumps({"results": results})
+
+
+@patch("scrapers.utils.job_classifier.GroqCompletion")
+def test_main_resumes_and_skips_already_processed_job_ids(mock_groq_completion, tmp_path):
+    mock_groq_completion.return_value.side_effect = _fake_relevance_complete
+
+    input_path = tmp_path / "llm_candidates.jsonl"
+    with input_path.open("w", encoding="utf-8") as stream:
+        stream.write(json.dumps({"deduplication_key": "existing-1", "job_name": "Old Role"}) + "\n")
+        stream.write(json.dumps({"deduplication_key": "new-2", "job_name": "New Role"}) + "\n")
+
+    output_dir = tmp_path / "job_classification"
+    output_dir.mkdir()
+    (output_dir / "av_candidates.jsonl").write_text(
+        json.dumps({"deduplication_key": "existing-1", "_job_id": "existing-1"}) + "\n", encoding="utf-8"
+    )
+
+    status = JobClassifierMain.main(["--input", str(input_path), "--output-dir", str(output_dir)])
+
+    assert status == 0
+    av_lines = (output_dir / "av_candidates.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(av_lines) == 2
+    job_ids = {json.loads(line)["_job_id"] for line in av_lines}
+    assert job_ids == {"existing-1", "new-2"}
+
+    metrics = json.loads((output_dir / "relevance_metrics.json").read_text(encoding="utf-8"))
+    assert metrics["skipped_already_processed"] == 1
+    # av_candidates counts the whole file (pre-existing line included), not
+    # just this run's own additions.
+    assert metrics["av_candidates"] == 2
