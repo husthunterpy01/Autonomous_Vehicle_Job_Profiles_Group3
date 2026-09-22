@@ -9,6 +9,6 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
-    include: ["app/**/*.test.tsx"],
+    include: ["app/**/*.test.tsx", "lib/services/**/*.test.ts"],
   },
 });
