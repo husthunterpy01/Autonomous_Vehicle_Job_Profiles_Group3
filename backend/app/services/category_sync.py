@@ -58,6 +58,38 @@ def category_labels(row):
     return version, canonical
 
 
+def dominant_categories(categories: list[Category]) -> list[Category]:
+    """A job gets exactly one main_type, though it may carry several
+    sub_types that share it: group by (taxonomy_version, main_type) and
+    keep only the largest group, dropping the rest. Without this, a job
+    whose functional_area spans two main_types (e.g. Perception and
+    Planning) would link to both in job_category - the filter in
+    app/services/job.py:list_jobs checks that raw link table directly, so
+    it would match a category the response never shows (job.py's
+    _to_category_response already collapses to one group for display),
+    letting a user filter by a category whose job doesn't visibly have it.
+    Enforcing the same collapse here, at write time, keeps every reader
+    (filter and response alike) consistent by construction.
+
+    Does not sort `categories` before grouping - sync_categories passes
+    them in the order functional_area listed them (the classifier's own
+    order), and on a tie this keeps whichever group's first sub_type the
+    classifier listed earliest, mirroring scrapers/service/llm/
+    category_hierarchy.constrain_to_dominant_main_type's tie-break. An
+    earlier version sorted by normalized_name here, which silently
+    replaced that signal with alphabetical order - discarding real
+    classifier output on every tie for a naming coincidence.
+    """
+    groups: dict[tuple[int, str | None], list[Category]] = {}
+    for category in categories:
+        key = (category.taxonomy_version, category.main_type)
+        groups.setdefault(key, []).append(category)
+    if not groups:
+        return []
+    _, members = max(groups.items(), key=lambda item: len(item[1]))
+    return members
+
+
 def _preload_categories(db, keys: set[tuple[int, str]]) -> dict[tuple[int, str], Category]:
     """One query per distinct taxonomy_version touched by this batch,
     instead of one SELECT per label per job (~15-40k round-trips on a full
@@ -106,7 +138,7 @@ def sync_categories(db, job, row, cache: dict | None = None):
         elif static_main_type and category.main_type != static_main_type:
             category.main_type = static_main_type
         linked.append(category)
-    job.categories = linked
+    job.categories = dominant_categories(linked)
     db.flush()
 
 

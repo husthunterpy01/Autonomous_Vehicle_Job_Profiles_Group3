@@ -1,11 +1,34 @@
 from uuid import UUID
 
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, selectinload
 
+from app.enums.job_sort_field import JobSortField
+from app.enums.sort_direction import SortDirection
 from app.models import Category, Company, JobPosting, Location, Skill
-from app.schemas.job import JobResponse
+from app.schemas.job import CategoryResponse, JobResponse
+from app.services.category_sync import dominant_categories
 from app.utils.pagination import PageResponse
+
+
+def _to_category_response(categories) -> CategoryResponse | None:
+    """Shapes a job's Category rows into the response's one-main-type-with-
+    its-sub_types contract. sync_categories now enforces that invariant at
+    write time (see category_sync.dominant_categories), but this still
+    collapses to the dominant group defensively for any job written before
+    that enforcement existed, rather than misreporting a mixed job as
+    single-main_type-clean.
+    """
+    if not categories:
+        return None
+    members = dominant_categories(categories)
+    if not members:
+        return None
+    return CategoryResponse(
+        main_type=members[0].main_type,
+        taxonomy_version=members[0].taxonomy_version,
+        sub_types=[{"category_id": c.category_id, "sub_type": c.sub_type} for c in members],
+    )
 
 
 def to_response(job):
@@ -14,8 +37,7 @@ def to_response(job):
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
-        categories=[{"category_id": c.category_id, "main_type": c.main_type, "sub_type": c.sub_type, "taxonomy_version": c.taxonomy_version}
-                    for c in sorted(job.categories, key=lambda c: (c.taxonomy_version, c.normalized_name))],
+        category=_to_category_response(job.categories),
         employment_type=job.employment_type, raw_description=job.raw_description,
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
@@ -30,11 +52,37 @@ def job_query(db):
     )
 
 
+# Newest first reads best for dates; A-Z for names. Each entry is the
+# default direction plus the column to order by. Company is sorted by the
+# company name rather than its UUID, so the join below is required.
+_SORT_COLUMNS = {
+    JobSortField.POSTED_DATE: (SortDirection.DESC, JobPosting.posted_date),
+    JobSortField.TITLE: (SortDirection.ASC, func.lower(JobPosting.title)),
+    JobSortField.COMPANY: (SortDirection.ASC, func.lower(Company.name)),
+}
+
+
+def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
+    default_direction, column = _SORT_COLUMNS[sort]
+    if sort is JobSortField.COMPANY:
+        # LEFT JOIN, not an inner join: company_id is NOT NULL today, but if
+        # that ever changed a job without a company should sort last like any
+        # other missing value instead of silently dropping out of the list.
+        # Many-to-one either way, so this cannot duplicate job rows.
+        query = query.outerjoin(Company, JobPosting.company_id == Company.company_id)
+    ordering = column.desc() if (direction or default_direction) is SortDirection.DESC else column.asc()
+    # Jobs missing the sorted value go last whichever direction is chosen,
+    # so an empty column never occupies the first page. job_id breaks ties
+    # so a row cannot drift between pages while paginating.
+    return query.order_by(ordering.nullslast(), JobPosting.job_id)
+
+
 def list_jobs(
     db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
     category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
     min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
-    has_salary: bool | None = None, page: int = 1, page_size: int = 10,
+    has_salary: bool | None = None, sort: JobSortField = JobSortField.POSTED_DATE,
+    direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
 ):
     query = job_query(db)
     if q:
@@ -62,7 +110,7 @@ def list_jobs(
         # deliberately only compare real ranges.
         condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
-    query = query.order_by(JobPosting.posted_date.desc().nullslast(), JobPosting.job_id)
+    query = _apply_sort(query, sort, direction)
     total = query.count()
     jobs = query.offset((page - 1) * page_size).limit(page_size).all()
     return PageResponse(items=[to_response(job) for job in jobs], total=total, page=page, page_size=page_size, total_pages=(total + page_size - 1) // page_size)

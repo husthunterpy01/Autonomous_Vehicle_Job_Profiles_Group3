@@ -23,7 +23,6 @@ _PUBLIC_TABLES = (
     "category",
     "location",
 )
-_EXCLUDED_FROM_DUMP = ("user_account",)
 
 
 def _grant_api_read_access(target_dsn: str) -> None:
@@ -53,9 +52,21 @@ def sync_to_supabase(source_dsn: str, target_dsn: str) -> None:
     with tempfile.NamedTemporaryFile(suffix=".dump", delete=False) as tmp:
         dump_path = Path(tmp.name)
     try:
-        exclude_args = [arg for table in _EXCLUDED_FROM_DUMP for arg in ("-T", f"{SCHEMA}.{table}")]
+        # Explicit per-table selection (-t), not --schema + an exclude list:
+        # dumping the whole schema also dumps its own CREATE SCHEMA
+        # statement, which makes `pg_restore --clean` emit `DROP SCHEMA
+        # public` up front - that fails once Supabase has anything else in
+        # `public` that isn't part of this dump (e.g. user_account, created
+        # independently there), since Postgres refuses to drop a schema out
+        # from under a dependent object without CASCADE. Selecting tables
+        # individually skips the schema-level statements entirely, only
+        # ever touching the exact tables being mirrored - and, as a bonus,
+        # this is an include-list rather than user_account being the only
+        # named exclusion, so a future unrelated table added to the schema
+        # doesn't leak into the mirror by default either.
+        table_args = [arg for table in _PUBLIC_TABLES for arg in ("-t", f"{SCHEMA}.{table}")]
         subprocess.run(
-            ["pg_dump", source_dsn, "--schema", SCHEMA, *exclude_args, "--no-owner", "--no-privileges", "-Fc", "-f", str(dump_path)],
+            ["pg_dump", source_dsn, *table_args, "--no-owner", "--no-privileges", "-Fc", "-f", str(dump_path)],
             check=True, capture_output=True, text=True,
         )
         # --single-transaction: a restore that fails partway through must

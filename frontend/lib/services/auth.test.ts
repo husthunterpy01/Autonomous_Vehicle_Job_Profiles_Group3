@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { it } from "node:test";
+import { it } from "vitest";
 import { API_BASE_URL } from "./api.ts";
 import { getCurrentUser } from "./auth.ts";
 

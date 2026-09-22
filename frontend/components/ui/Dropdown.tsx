@@ -10,11 +10,14 @@ export default function Dropdown({
   onChange,
   options,
   className = "",
+  id,
 }: {
   value: string;
   onChange: (value: string) => void;
   options: DropdownOption[];
   className?: string;
+  /* Lets a visible <label htmlFor=...> point at the control. */
+  id?: string;
 }) {
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value);
@@ -22,6 +25,7 @@ export default function Dropdown({
   return (
     <div className={`relative ${className}`}>
       <button
+        id={id}
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary"

@@ -25,9 +25,12 @@ Table silver.JobPosting {
   department varchar [note: 'nullable - not all sites provide this']
   employment_type varchar [note: 'e.g. full-time/contract; full-time when the source does not state one (defaulted in the Silver model)']
   seniority_level varchar [note: 'nullable - future extension, e.g. Junior/Mid/Senior/Lead']
-  salary_min float [note: 'nullable - future extension']
-  salary_max float [note: 'nullable - future extension']
-  salary_currency varchar [note: 'nullable - future extension']
+  salary_min float [note: 'nullable - lower bound of a salary published for this job (API field or extracted from the description); > 0']
+  salary_max float [note: 'nullable - upper bound of the published range; >= salary_min']
+  salary_average float [note: 'nullable - levels.fyi company-wide estimate only, not per job title; null when a range is published; never derived from a range; > 0']
+  salary_currency varchar [note: 'nullable - currency code as published (e.g. USD, EUR, GBP); no conversion']
+  salary_period varchar [note: 'nullable - yearly / monthly / weekly / daily / hourly; set whenever a salary is imported']
+  salary_source varchar [note: 'nullable - api / regex / levels_fyi_average']
   raw_description text [not null, note: 'always required - fallback for LLM extraction when structured fields are missing']
   posted_date date [note: 'nullable - some sites do not display posting date']
   scraped_date date [not null, note: 'updated on each re-scrape via upsert - simple overwrite, no history tracking needed here']
@@ -55,7 +58,7 @@ Table silver.JobLocation {
 
 Table silver.Category {
   category_id uuid [pk, default: `gen_random_uuid()`]
-  main_type varchar [note: 'nullable; initial functional_area import does not infer a parent']
+  main_type varchar [note: 'derived from a static sub_type -> main_type taxonomy mapping (app/config/category_main_types.yaml), never set per job - one Category row per (taxonomy_version, sub_type)']
   sub_type varchar [not null, note: 'cleaned producer functional_area label']
   normalized_name text [not null, note: 'NFKC, collapsed whitespace, casefold']
   taxonomy_version int [not null, note: 'positive integer; import defaults to version 1']
@@ -72,6 +75,8 @@ Table silver.JobCategory {
   indexes {
     (job_id, category_id) [pk]
   }
+
+  Note: 'A job links to one or more Category rows, but they must all share the same main_type - the scraper enforces exactly one dominant technical area per job (constrain_to_dominant_main_type), so a job can carry multiple sub_types (e.g. Sensing + Perception, both under main_type "Perception & Sensing") but never sub_types spanning two different main_types (e.g. Sensing + Control). main_type is deliberately never spelled the same as one of its own sub_types (e.g. "Perception & Sensing", not "Perception") to avoid a sub_type reading as a duplicate of its own group.'
 }
 
 Enum skill_type_enum {

@@ -36,6 +36,11 @@ logs/
 # Generated scraper/pipeline output, trained model artifacts, DB backups (BE-1)
 /data/
 
+# In-progress diagnostic logs from one-off backend scripts (resumable,
+# regenerated on every run - not a finished audit trail like a completed
+# backfill's own committed log)
+backend/scripts/llm_confidence_log_all_valid_jobs.jsonl
+
 # SetFit/HF Trainer checkpoints (scratch state, not the final saved model) -
 # unanchored since these can land at repo root or under notebooks/ depending
 # on the training tool's cwd

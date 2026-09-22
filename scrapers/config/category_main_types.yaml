@@ -2,12 +2,17 @@
 # main_type is a property of the category (there is one Category row per
 # sub_type), not of any individual job - review this grouping before
 # relying on it, then keep it static rather than regenerating per run.
+# "Perception & Sensing" and "Localization & Mapping" are deliberately not
+# just "Perception"/"Localization" - a sub_type must never share its exact
+# name with its own main_type, since a job whose sub_types are e.g.
+# ["Perception", "Sensing"] would otherwise display as main_type
+# "Perception" containing a sub_type "Perception", reading as a duplicate.
 Control: System
-Localization: Localization
-Mapping: Localization
-Perception: Perception
+Localization: Localization & Mapping
+Mapping: Localization & Mapping
+Perception: Perception & Sensing
 Planning: Decision
 Prediction: Decision
-Sensing: Perception
+Sensing: Perception & Sensing
 System and Safety: System
 Vehicle Interface: System

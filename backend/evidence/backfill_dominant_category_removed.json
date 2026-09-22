@@ -1,0 +1,7118 @@
+[
+  {
+    "job_id": "d5cb0733-f6a8-4923-8d81-8fb57218561c",
+    "title": "Senior Software Engineer - Simulation Infrastructure",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "2675a777-0304-408b-9a60-1e3566306882",
+    "title": "Senior Software Engineer - Autonomy Integration",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "e8db7737-0463-4472-ac96-9730122754d0",
+    "title": "Triage Associate I, Platform Triage - Second Shift (Contract)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "ee71fe9f-0350-48ba-93d4-58154909be3f",
+    "title": "Senior Software Engineer, Embedded Software",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "3ec9cd38-35f2-4ef2-8a18-2a90e923e839",
+    "title": "Principal Engineer, Mapping and Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "6b9493f3-f273-42f1-bdbc-7f5affaf482c",
+    "title": "Software Engineer, Simulation",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "2ff425ed-51fe-47ea-af18-c6316c8c2847",
+    "title": "Senior Software Engineer, Embedded Networking",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "ffffbf48-2954-49d0-974c-77d3aff62f2d",
+    "title": "Embedded Software Engineer II - High Level OS",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "22502106-2c8d-4e73-8227-b7db5b8a8988",
+    "title": "Senior Embedded Software Engineer (C++) - Hardware Safety",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "0fe3199f-5b7e-45e1-8265-4e085e776e10",
+    "title": "Senior Autonomy Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "00fb1790-db7f-44e0-b34b-2f46a745cea3",
+    "title": "Perception Engineer \u2014 Autonomy with dual-use application",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e6446aff-6c22-4edd-9eb0-627caf1e7e31",
+    "title": "Senior / Staff Software Engineer- Unified Modeling (Machine Learning - Perception))",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "28ed8a57-f2b6-458b-9729-d8cd6d59e628",
+    "title": "Winter 2027 Intern, Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "a06112d8-8302-4087-982a-cd1736250dc6",
+    "title": "Software Engineer: Mapping and Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "9a80255a-d015-4a29-9688-cbace2783c7a",
+    "title": "Senior/Staff Machine Learning Engineer, Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "f0da9aee-6bbc-4465-aa4d-4bc5be4e32dd",
+    "title": "Lidar Technical Program Manager",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "30ef671a-ea18-40cc-9d2e-ffde65ff3f4b",
+    "title": "Automotive Service Technician (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "fd45e2f9-ec33-45a8-bb8b-7fbaf1fe2550",
+    "title": "Software Engineer, Routing",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c6c77cd1-e9a3-437f-bfb0-74ff1c53030c",
+    "title": "Software Engineering Manager II - Security & Lifecycle",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "2466386f-bc27-4395-acec-2960d6fd644a",
+    "title": "Senior/Staff Software Engineer (Machine Learning Runtime), Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9607d935-1d09-47fd-959a-5ed315c684b9",
+    "title": "Autonomous Driving Systems Project Manager",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "ce4e6eaf-729b-4d80-9d4e-52ff616e172d",
+    "title": "Software Verification & Validation Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "f8b29e13-3f31-4c8d-ad7e-d3029d42ad81",
+    "title": "Technical Vehicle Test Operator - Long Beach, CA (Contractor)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "d8c0dba8-b6f0-4003-9545-152444ad405f",
+    "title": "Prototyping Service Technician (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "80c23e73-c368-4661-9c10-6cca4ba6983d",
+    "title": "Senior Software Engineering Manager - Multi-Object Tracking & State Estimation",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "8ad6ca4b-e25e-4357-be20-82861816e145",
+    "title": "SW Engineer Intern-aiDrive",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7eccb838-743c-4c45-8e44-44f39bf37a35",
+    "title": "Senior Software Systems Engineer - Autonomy Behavior and Metrics",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e1ac06fe-f6b1-45a3-9586-027e0947a1e6",
+    "title": "Staff Software Engineer, Deep Learning Acceleration",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "95399ccd-d370-4a6c-9c1c-40fc17314c0f",
+    "title": "Staff Functional Safety Systems Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "e0c38d61-f02d-4e20-9736-d996b77f1b59",
+    "title": "Senior Software Systems Engineer - Perception",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "7b477587-62b4-411e-bae3-b3db30066cbd",
+    "title": "Mission Operator - Detroit, MI (Contractor, Overnight Shift)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "16741e63-20ff-4b38-afde-84fdd0e9fd19",
+    "title": "Perception Validation Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "5e2f6444-54df-4a9b-9a11-ee1f32601269",
+    "title": "Senior Software Engineer, Controls (MATLAB)",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "670fdf9b-f801-4960-b795-b0b8cd4e441a",
+    "title": "New Grads 2027 - Software Engineer, Algorithm",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c9888ce4-f6f2-495d-9736-791c7d52d2dd",
+    "title": "Sr. Autonomous Driving Software Engineer (Localization & Mapping)",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "69835291-ea7a-437c-86ef-3db0b1f4f391",
+    "title": "Principal Engineer / Director, Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "df3911f7-dbf1-4175-ac62-beac03bcb80d",
+    "title": "Software Engineer - Mapping & Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7909b190-eaa5-4861-ac53-919d888c8fb3",
+    "title": "Behavior Planning Software Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "71b1c22a-b3ff-4fbe-bc87-88493128ff5c",
+    "title": "General Software Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "4fe6ca65-da17-4a39-b71c-1b1094d26dac",
+    "title": "(Senior) Software Engineer - Behavior",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "7104b8df-d6c3-4707-be21-3867349badd6",
+    "title": "Staff Software Systems Engineer - Advanced Autonomy Systems Engineering Lead",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "7e937d01-2500-485b-ae9e-32689a4f3364",
+    "title": "Triage Associate I, Platform Triage - First Shift (Contract)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "87ea0e4c-49c6-433c-a5b7-306c41f7d1d1",
+    "title": "Staff Software Engineer, Controls",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "79c3b6e7-eb91-45be-bc60-df038b5bc5e6",
+    "title": "New Grads 2027 - Software Engineer - Perception/Computer Vision",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "a9ab80c2-252d-449b-807e-3de9758b8984",
+    "title": "Senior Software Engineer, Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "cfb58f93-5a46-42c1-b995-b6c30f2d7918",
+    "title": "Senior Hardware Engineer, Lidar",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9c965686-ccce-4a3e-9be7-c786e9f77cd5",
+    "title": "Senior Software Engineer - Deploy Infrastructure",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "017486b1-070d-49d1-b08e-d88a429b38c5",
+    "title": "System Engineer - Motion Control",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "5cda3dd0-2bc5-48b5-892b-5c7ec317ae3c",
+    "title": "Embedded Software Engineer II - (C++) Realtime Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b3f6209a-7280-40a4-89cc-e8b4bb5bbc90",
+    "title": "Software Engineer - Low Speed Motion Planning & Control",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "296138d0-d62c-4880-b411-9d87ed678df2",
+    "title": "AI Research Engineer - aiDrive",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "25d33d10-4c1b-473f-b80b-da07421dab66",
+    "title": "Senior Software Engineer - Prediction",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "ec9e21be-cdce-494a-b116-15abaa18c306",
+    "title": "Mission Operator - Long Beach, CA (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "e0d73d41-0e12-4be0-8ed3-01bb5c5ff80b",
+    "title": "Senior Software Engineer - Runtime Infrastructure Frameworks",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "65c0cd2f-e830-40d6-8a76-7711b2a4083c",
+    "title": "Senior Software Engineer, Mapping & Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "c0710602-1534-4032-9740-30f7e97019e8",
+    "title": "Mission Operator - Pittsburgh, PA (Contract - Overnight Shift)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "643cd857-e077-46c1-a192-c193de9b5325",
+    "title": "Solutions Architecture Intern - Summer 2027",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "6add1b7b-66cc-4a24-9556-13157e365205",
+    "title": "Technical Vehicle Test Operator - Wittmann, AZ (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "ec6dd856-9f78-4207-a775-040975f1126d",
+    "title": "1313_\u81ea\u52d5\u904b\u8ee2\u5411\u3051HW\u30d7\u30e9\u30c3\u30c8\u30d5\u30a9\u30fc\u30e0\u7d71\u5408\u30a8\u30f3\u30b8\u30cb\u30a2",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c68ddd8b-3044-40ee-a467-0af6d11bf989",
+    "title": "Integration & Test Engineer II - System Test Strategy & Execution",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "84181de5-9ba2-4b9a-ad18-c7d5413e42ee",
+    "title": "NVIDIA 2027 Internships: Autonomous Vehicles and Robotics",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "2cd2cf1d-ec24-4185-992a-c8904cc3d04c",
+    "title": "Senior Software Engineer, Localization",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "bdd2d1f6-4fbe-4132-b48e-53b52913111a",
+    "title": "Research Intern - Deep Learning",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "04226d90-b83f-43aa-915d-640790ec1359",
+    "title": "Motion Planning Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c2db0ec5-7861-44f3-8e67-06ac09da35ac",
+    "title": "Systems Engineer, Platform Requirements and Verification",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "9b4ea44e-8f29-488c-82f5-3e4a4b3f3889",
+    "title": "Senior Software Engineer, Localization",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "54e9ca74-f2f8-40a0-a38a-34b24de83ab0",
+    "title": "Senior Staff Signal Processing Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "351265e9-82d3-4d05-9321-1f5dd294b70d",
+    "title": "Senior Software Engineer - ML Performance",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "88507c6f-c8b7-4582-b8fa-fe44bab5cb46",
+    "title": "Senior Software Engineer - Vehicle Communication (C++)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7668fcad-9ca3-48b6-82d8-068a60474e9f",
+    "title": "Software Engineer, Embedded",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "1bede9a5-f910-474f-8027-fdaec4514bf8",
+    "title": "Mission Operator - Greenville, SC (Contractor)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "fe1e45ee-42d9-4a1b-8373-6ecf584fdd75",
+    "title": "Senior Cyber Security Engineer - Automation, Data Center & Networking Security",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "51d7f625-883c-4524-b18d-c9a283f2933a",
+    "title": "Senior Research Engineer, Controls",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "30d5f61c-f227-41d1-b997-ca6618033ad5",
+    "title": "Research Scientist, Reinforcement Learning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "53a2f77b-d484-4bcb-a17f-99b21d07cb92",
+    "title": "Staff Software Engineer, Learned & Hybrid Behavior Planning",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "f1f3ca4f-17d8-49a3-8e9e-50d61ae5f498",
+    "title": "Senior Software Engineer, Mapping & Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "a3d2c191-e9f4-4cff-9bc2-47a96a10c9c0",
+    "title": "Software Engineer Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "155fcfac-51dd-4ad8-8122-f716de605ccf",
+    "title": "Senior Hardware Engineer, Radar",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "275384cb-cd36-4fea-acb5-d37709337496",
+    "title": "New Grads 2026 - Algorithm Software Engineer (Beijing/Guangzhou/Shanghai, China)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "2c99cb64-7300-4222-a20e-1eb78577be7f",
+    "title": "Real Estate & Workplace Services Coordinator II (Contract)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "d83d0f2b-545a-4ac2-ba2f-346c0a07ba37",
+    "title": "(Senior) Software Engineer, Deep Learning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "6b0c373c-c30a-48c7-a5e6-7edef2071377",
+    "title": "Senior/Staff Software Engineer, Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "0fb51247-c8b0-4ae2-bf17-dd8ac68e9cbb",
+    "title": "NVIDIA 2027 Internships: Software Engineering",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b2a0d315-95b6-439c-ba95-96ce53510c8d",
+    "title": "Software Engineer - Mapping and Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "10486d81-96ef-495b-828a-d2ab02defc3d",
+    "title": "Senior Software Engineer - Scalable Machine Learning",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "10e2ccd6-afa7-4b78-8430-11780c22b2de",
+    "title": "Bench Technician Associate (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "66419a9b-33b0-4b07-ace0-d3c072862e9b",
+    "title": "Perception Engineer: Object Modeling",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "7736fd40-edb2-4c8d-9476-e9d38489b8f6",
+    "title": "Automotive Service Technician (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "bfc1227d-dd88-4836-bb2b-5ecc8c7af6ec",
+    "title": "Staff Silicon Product Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "72f59997-7811-4ad1-882b-33efa117b727",
+    "title": "FPGA Functional Safety Engineers, Sensors",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "05780453-b040-4b1f-b998-23ec4fea6e27",
+    "title": "Automotive Service Technician (Contract)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "3172fce6-8e7f-401c-8a36-60a1dc52de35",
+    "title": "System Engineer - Driving Behavior",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "080bbcda-d717-4734-ba19-40cb6107b7b8",
+    "title": "Embedded SW Engineer (QNX & Linux)",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "6d4f544f-e0da-42dc-8c8c-0f91babcfd45",
+    "title": "Staff Software Engineer (C++) - Radar Sensors",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "cdd674f0-f2d7-4138-930a-517cae5363af",
+    "title": "Mission Operator - Palo Alto, CA - Third Shift (Contractor)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "159a6cff-efcf-4ec9-8eb4-0b634f9e7b0a",
+    "title": "Senior Algorithm Engineer, Deep Learning & Vision",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "639f6903-132d-4dee-94ca-70e3b9342f24",
+    "title": "Senior / Staff Software Engineer - Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9363b9f1-b9f2-4c34-813f-5e4c8f63aae1",
+    "title": "Senior / Staff Machine Learning Engineer - Perception Mapping",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "da923d06-b833-44f3-9047-d843a8d74de5",
+    "title": "Algorithm Engineer Senior Technical Expert - Objects Perception",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "fbce21ca-6b3b-4719-bcbd-fe54211e88b9",
+    "title": "Senior System Software Engineer - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "26342f58-4c7e-47a2-a8d8-55e40736e122",
+    "title": "Sr. Systems Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b5ed18f9-5eae-4cc9-82f6-6644684badb5",
+    "title": "Manufacturing Test Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c46494d9-0dbf-477a-8025-ff6476f369f4",
+    "title": "Senior System Software Safety Engineer - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9d679c43-bc2c-42a5-8faa-03c98a0894ef",
+    "title": "Controls Engineeer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c3a43bbc-4996-4257-9eaf-c9915224752d",
+    "title": "Research Internship/Co-op",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "63d1766d-4425-4c10-a3eb-ac86faf4ae6a",
+    "title": "Senior, ML Engineer - VLM",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "682a9df9-0afa-4610-94d9-da03b1305139",
+    "title": "Hardware Test and Validation Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9c6bf1cf-8de9-476a-8ea1-043c43324813",
+    "title": "Principal Engineer Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "2f44aae8-10f9-4677-bc73-248fa002e1b8",
+    "title": "Senior System Architect",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "efd43f47-cfe2-4f8b-9fe5-1673797641a5",
+    "title": "Senior/Staff Software Engineer \u2013 Localization & Mapping",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "781ffd1f-7e75-4332-96b2-568402acbfd8",
+    "title": "Senior Failure Analysis Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "0e6af341-d845-4bc7-995b-b6e13ce7a831",
+    "title": "Senior Software Engineer, World Model Systems Engineering - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "f5c6374f-e7b7-4a31-a3a8-86acefb53f35",
+    "title": "Senior Research Manager, World Model Evaluation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "20318398-6e86-4b43-9ce7-dbaa9b8fe55d",
+    "title": "Senior/Staff Engineer, Machine Learning - Online Mapping",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "cb7d181e-c0af-42e2-908b-2672a0396123",
+    "title": "Staff Robotics Engineer, 3D Sensing",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "287a1a9d-6ae1-49f6-8a67-bfa4a424eac4",
+    "title": "Senior Software Engineer - Robot Compute Platform",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "64350bf7-2e91-4a13-bce8-f0fb625e467f",
+    "title": "Research Scientist, Learnable Planner",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "3f52114e-1e61-4562-b720-dbc8e93044fd",
+    "title": "Staff Systems Engineer \u2013 Release Strategy & Validation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "54938ace-2ca2-4a14-be55-1466c936cda5",
+    "title": "Feature Owner, ADAS",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "0011b720-28e5-47be-acfb-4c8aa3da9698",
+    "title": "Model Release Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9213713a-f508-4d9e-8585-07e099ac211d",
+    "title": "Senior Software Engineer - AV Platform",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "4ce338c1-af56-4c37-85ce-fca7b9577091",
+    "title": "Mapping Specialist",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "3495b466-8617-47bf-91fa-0dea237dd156",
+    "title": "Senior Software Engineer, Mapping - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "69d2f921-3489-4554-83ce-54739a63685e",
+    "title": "Research Engineer - Robotic Hardware, Simulation and Data",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "df403597-77de-456a-98e9-c75d80335e30",
+    "title": "Machine Learning Engineer, App SW",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "1ae0c72e-f15b-4caf-8197-f9bc79c2fd21",
+    "title": "Senior AI Architect, Foundation Models and SoC Co-Design \u2013 Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "0da32692-a177-405b-8593-2bf9ac4fc678",
+    "title": "Robotics Generalist",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "b8065fe6-f77a-478d-aba8-fe93e914c50e",
+    "title": "Senior Developer Relations Manager \u2013 GR00T End-to-End Workflow",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "b57540c6-38ba-4b36-9afe-12292ddd7c8e",
+    "title": "Simulation Engineer (Autonomous Driving)",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "d0af7aab-4507-4cea-a563-e50866941c8d",
+    "title": "Outstanding Graduate Algorithm Developer - Vision Localization Group",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "11b1b0f5-aa33-4712-80ae-adacc8018dc8",
+    "title": "Senior Chassis Engineer, Steering Actuation",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "bcc3273d-aa42-4ad2-8c5a-d8606f2da945",
+    "title": "Autonomous Vehicle Test Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "647517f0-7eee-41bf-968f-9a7e98ff15d2",
+    "title": "Sr. Staff Software Engineer, Fleet Orchestration, TLM",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9b2ca939-d1fc-472a-9c93-da1e69d3229d",
+    "title": "Data Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "aca15c09-2603-4336-8178-7e2fde074e58",
+    "title": "Senior System Architect, Infrastructure Reliability",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b05af916-f5b0-4e79-9f4e-bf2363b011fc",
+    "title": "Senior Software Engineer, Longitudinal Planning \u2013 Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "890e7bb6-2bad-424b-9ec2-28a319941e16",
+    "title": "Staff Systems Engineer - Autonomy Behavior",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "74781417-3716-4771-9fa7-b11c2db11ab7",
+    "title": "Senior / Staff Software Engineer, Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "6c6ad9aa-3175-4026-816f-aa6ab4fcda0a",
+    "title": "Senior System Software Architect, Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "636041a3-7bba-44ac-826d-0d0b800d0857",
+    "title": "Virtual Test Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "6193760b-82ab-4cc0-9e5a-8db30ad89f8b",
+    "title": "Customer Program Manager - Automotive",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "56b2699d-be47-4714-b6c5-cb6c24143937",
+    "title": "Senior Software Engineer, Behavior Planning",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "bd3ffda2-4724-4f96-bf22-7375d67d338b",
+    "title": "Systems Engineer (Functional Safety) \u2013 Compute Platform Systems",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "d6d08aa5-c759-417e-a782-85f59ca07fe4",
+    "title": "Principal Machine Learning Engineer, Geometric Vision",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "a28388e5-bbfb-4189-b69d-16f3580bd259",
+    "title": "Senior ML Compiler Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "e2b8b3f7-3656-4a5c-b208-b75500d9dbd2",
+    "title": "Senior Product Manager - AV Data Tools",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "2957bfc1-8c86-44e5-91f0-843721658836",
+    "title": "Automotive System Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "6d8b6f94-22fe-439d-b1ad-12da7060ff6c",
+    "title": "Senior Embedded Software Engineer - AV Platform",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "d44c04b5-28f4-4396-9056-9fe799c03df7",
+    "title": "Senior Software Engineer, Context Fusion and Multi-Vehicle Adaptation - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "97ee6656-7d4a-4ce0-8ccb-0f50a2460aa5",
+    "title": "Senior Staff TLM, Data Mining and Sampling for ML and Evaluation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "2043ba6f-e483-4421-a4b7-a4879fdd7d9b",
+    "title": "Senior/Staff Software Engineer, ML Infrastructure, Optimization",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "95856f2c-fbce-40e1-b876-79a019d49620",
+    "title": "Senior Physical AI Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "52ddb963-e5fe-435b-9780-53c7fa6516d7",
+    "title": "Software Engineer, Offboard Infrastructure",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "0a6545f2-cecb-46bc-be9d-535a05b16965",
+    "title": "Senior System Software Engineer - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "1e1f3b33-e44a-48df-ba31-8848a04cac0d",
+    "title": "Engineering Manager, SRE \u2013 AV Fleet, Japan",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "843fa416-017b-4234-a6cb-804bc5951c57",
+    "title": "Senior Machine Learning Engineer, Perception LLM/VLM",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c4919034-af6b-488c-b3e8-a22b52f4236c",
+    "title": "Software Engineer, Maneuvering Tech",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "79b7b736-ab0b-4673-92ad-c4346bf7313e",
+    "title": "Senior AI/ML Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c00cb2ae-60c0-46d2-85f9-b956de852ee8",
+    "title": "Senior ML Accelerator Engineer - GPU",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "78666a15-cd55-4b32-8d81-5753e30e4767",
+    "title": "Staff, Software Engineer - Motion Planning (Unstructured Environments)",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e1379e79-c061-4fed-a103-57801f9c810d",
+    "title": "Intellectual Property Security Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "e72335c3-d67b-4224-b4f7-05e3940f4e27",
+    "title": "Senior Software Engineer - SimCore",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "f31d21e5-4c4d-498b-8cfb-db807ea37a16",
+    "title": "Staff Machine Learning Engineer, Mapping",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "c647ea49-8354-4bfb-a936-ebb386298bd7",
+    "title": "Senior Engineer",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c77410e6-a9f6-41fb-a37c-2f26bc653074",
+    "title": "Senior Machine Learning Engineer - Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9eebc8f7-f6e5-43de-9e5b-3aa47e32677e",
+    "title": "Data Analyst",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7c789c06-291e-4e05-bbcc-77ea11fa51f5",
+    "title": "Senior V&V Engineer \u2013 Public Road & Fleet Testing",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "6d8cf116-7936-416a-944c-487b96061b6b",
+    "title": "Research Scientist, Wayve Labs",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "1a1003c6-1606-420c-b9af-cfd9b1cc3dbd",
+    "title": "Machine Learning Engineer Perception LLM/VLM (PhD, New Grad)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "b013e002-56b2-42ce-89ee-fa9c110ac33b",
+    "title": "Machine Learning Engineer \u2013 Motion Planning & Prediction",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "f48759f2-09b2-45b6-9c41-df6e1ef97931",
+    "title": "Senior System Software Engineer - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b9650995-71e5-4b4e-8c59-dccfd4c416ec",
+    "title": "Senior/Staff GIS Engineer, HD Mapping",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "dca6043f-704c-4e2f-a389-3cae0b807736",
+    "title": "Staff/Senior Software Engineer, Offboard Infrastructure",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "cbf06bc5-9f00-47e6-8422-1ad3da6b7bf5",
+    "title": "Software Execution Project Manager - Camera Team",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "5532947a-99ea-49a9-9f4b-05cce9f36de3",
+    "title": "Electrical Hardware Engineer \u2013 MCU",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "2f4a1e6f-4017-473d-9a21-fdf2433df1cf",
+    "title": "Senior Fullstack/Frontend Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "1f10b496-e82c-44ef-8a67-1c6ba6f52d6e",
+    "title": "Senior Computer Vision Engineer (Autonomous Driving)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "8f818d08-dfdd-476b-98b3-fb3aa1dfd390",
+    "title": "Senior Software Engineer, Spatial Intelligence and Foundation Models",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "79df78be-8471-4cd4-aec9-e642088fbb70",
+    "title": "Technical Program Manager, Evaluation & Validation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "16a5bf46-d11f-41cf-9785-1570926fd92a",
+    "title": "Senior Software Engineer, Inertial Navigation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "5363c3b7-294d-457c-b37e-d48cdf1c9423",
+    "title": "Senior Staff Autonomy Systems Engineer, Environmental Expansion",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "f88f70b2-288b-49ac-80ee-b4601848665e",
+    "title": "Bayesian Statistician \u2013 Risk & Safety Analysis",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "dcf0d3ba-391e-4ab9-bb0e-e7f53153af46",
+    "title": "Senior Software R&D Engineer, ECO Route - VLSI EDA",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "a5647a4d-196c-447e-b337-a0594339ef06",
+    "title": "Systems Engineer \u2013 AD-Kit Components",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "e0bcd63a-9152-4a23-9ceb-cacea8477b55",
+    "title": "Contract Student Worker - Machine Learning Engineer - Data Mining & VLM (Full-time)",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "c3e1a803-7364-4ce7-ba13-000f936fe7a5",
+    "title": "Senior Machine Learning Perception Engineer - Fallback Driving System",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "e3605762-2bf4-48e5-aeab-1bd763923675",
+    "title": "Senior Machine Learning Engineer - Foundation Model",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "616cb07c-67e1-49e5-9c03-89ecc353ea95",
+    "title": "Lead Machine Learning Engineer - Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "3b19048f-9449-4bc5-b263-8bf808380b81",
+    "title": "Senior Software Engineer - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "51fdddec-374b-4c15-9a31-91fec9aa57b4",
+    "title": "Senior Systems & Safety Engineer \u2013 Hardware",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9631e245-9a13-484c-afd3-9672e51ed03b",
+    "title": "Lead ML Engineer - Mapping",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "c4540269-8960-4941-96e4-156123c1baf4",
+    "title": "Senior ISP Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "5f585d30-7551-43f7-8599-4f20cf27ffcc",
+    "title": "AI Algorithm Engineer - Vision Localization Group",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "47725fea-e1ef-4cb6-b63e-98ed241fe641",
+    "title": "Senior Quality Engineer - Camera Experience",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "14a1340a-4c4e-4b3e-8d9d-6548ae387a32",
+    "title": "Senior Deep Reinforcement Learning Engineer - Autonomous Driving",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "792bd5a0-7113-4ddc-90d0-ca04a5e1eb69",
+    "title": "Algorithm Engineer \u2013 REM",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "1c8bbcff-b5fe-4658-bd9b-491c01407a42",
+    "title": "Systems Engineer, Robotaxi",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "7ec4de4e-0620-4290-be18-b2dd253d3639",
+    "title": "Senior Electrical Integration Engineer",
+    "kept": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7e11ba23-465e-4bf8-b5e4-37f7e49f5747",
+    "title": "Remote Vehicle Assistance Agent",
+    "kept": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "cd71f333-247c-4e93-8aa1-d137c52cf63c",
+    "title": "Software Engineer - Simulation, Game Engine & World Systems (Autonomy)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "aecb79d8-0b22-49d8-be07-768fcfae7b35",
+    "title": "Senior Systems Software Engineer - Autonomous Vehicles Platform",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "61a69d9c-ef53-439b-990f-ba78da8f1abb",
+    "title": "Senior Data Scientist - Metrics",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "2ea3d24c-938f-4495-94be-d87eeef44934",
+    "title": "Senior Software Engineer, ML Evaluation Infra and Efficiency",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "773f8a85-3663-4cc8-bca7-472210fbfaaa",
+    "title": "Software Engineer - Driving Behavior",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "95a6fbe7-1d99-4ab5-98ef-1f3688a4a2ea",
+    "title": "Senior System Software Engineer, DRIVE OS - Linux and QNX",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "0a451d7d-0a62-4dda-808a-5bdb618aadb7",
+    "title": "Principal Software Engineer, Mapping - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "70f8e0f5-834e-4e3a-a7a1-3e791f48353c",
+    "title": "Senior Software Engineer, Maneuvering Tech",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9278278d-611b-4689-8d5f-c941bca0d3e2",
+    "title": "Senior Software Engineer - Scientific Evaluation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "bdcd86b3-3b79-4e82-97d5-aabc0343348f",
+    "title": "Senior Staff Regulatory and Compliance Systems Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c4593c41-b48c-40e0-b628-1bf823b2b8f4",
+    "title": "Senior Staff Machine Learning Engineer, LLM/VLM Model Architecture & Optimization",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "ae932f5e-d44b-4541-81d7-71cf8f02ee94",
+    "title": "Senior, ML Engineer - Auto Tagging",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "3321e393-d940-4e91-8da4-0ab3108a47ae",
+    "title": "Associate Vehicle Test Specialist",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "bca9959c-9adb-4690-ac60-9b1f3e9b9d9c",
+    "title": "Research Engineer, Learnable Planner (Integration)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "3ad13a72-4aac-4cc7-bfad-6a07903b3b23",
+    "title": "Senior Manager, Perception",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "f5aff36e-219c-4721-9ad7-279aa8ad1421",
+    "title": "Software Engineer, AI Platform - New Grad",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7b6c5432-2f17-4cba-b41b-36b4e227db54",
+    "title": "Robotics Controls Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "bfc93085-c3b7-45a6-83c5-a1d98e768863",
+    "title": "Staff Technical Lead Manager, Scenes, Onboard Map Expansion",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "40798f47-da0d-4d8f-b3df-66b9af464e8c",
+    "title": "Software Solutions Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "056c0081-7c97-4ff1-ae38-19d09f4d839e",
+    "title": "Staff Design Reliability Engineer \u2013 Sensor, Compute and EE Systems",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "d5393f1c-9033-43ea-86b0-dc318321aa1f",
+    "title": "Senior Sensor Hardware Safety Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "32702522-367c-4f7e-a4e5-9f455f49d73b",
+    "title": "Solutions Architect",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "f220b8f5-cb9e-4ef3-b3b0-f652e3c60da2",
+    "title": "Senior System Software Architect - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9b11f9f9-15cc-4963-bb4c-2a6f7c59d574",
+    "title": "Senior Computer Vision Data Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "49f451da-4862-4658-8cfa-031d9529dd9c",
+    "title": "Senior Sensor Fusion Engineer - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "598c06c5-8021-4996-83fa-c50084f925f3",
+    "title": "Mechanical Integration Technician",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "51b6848e-b4d6-4e2a-9cf3-52525347d7ad",
+    "title": "Staff, Machine Learning Engineer - BEV/Multi-Modal Perception",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "a5d8cdf1-1ce6-42ee-a97a-8514a0d5ff38",
+    "title": "Staff Software Engineer, Simulator Platform",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "a576c884-3682-4a71-90a9-eeeb6ce0af4b",
+    "title": "Platform Systems Engineer; Motion Planning and Control",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c0465967-84b6-4b36-bc4c-7d6f80565816",
+    "title": "Senior Software Engineer, Onboard Autonomy",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "34827565-4740-4bd8-8678-cae9f4178e6a",
+    "title": "Senior Product Manager (Autonomous Driving)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "745e2b1d-3416-4eaf-ab86-bcef2e0dd68b",
+    "title": "Deep Learning Senior Engineer, End-To-End Autonomous Driving",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "642678a0-5e20-4e6e-a145-c833cdd89063",
+    "title": "Safety Case Lead",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "0fc16056-55a4-48f2-81d8-7c2f39c4f625",
+    "title": "Senior/Staff Software Engineer \u2013 Localization (Visual Odometry)",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "10a4b8d5-5e72-4cfe-a5a1-0fd340818d28",
+    "title": "ML Software Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "e0aaa3ee-04a1-421b-bdde-facbae019c41",
+    "title": "Software Engineer, Robotics",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "71f6032f-77b9-4a80-8d69-cad15c294bda",
+    "title": "Head of Systems Engineering (Sr. Director)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "12db9fa7-81cf-439f-a2d3-8c8b79f4012f",
+    "title": "Principal SoC Architect, Robotics and Automotive",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "1ae73f9a-5702-4ae5-8dc7-4571772e1b7b",
+    "title": "Autonomous Vehicle Test Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "3e167408-dcb7-4bf9-a9c7-6717151e4c6d",
+    "title": "Principal Software Engineer, Perception Architect",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "cd3d98e9-1f0e-4dc9-94e2-e46eab42815b",
+    "title": "Staff / Senior Machine Learning Engineer, Reinforcement Learning",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "7d10ff12-d57f-4477-a101-8364f8da6948",
+    "title": "Senior Systems & Safety Engineer \u2013 Autonomy",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "2d115b05-624b-4279-8681-7205961354a1",
+    "title": "Hardware Systems Engineer, VOS",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "7c1ee6d3-c6ef-41fc-8015-0a13b27aff2b",
+    "title": "Senior SOTIF Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "0c849658-1743-471a-96bb-db3bc9e87f95",
+    "title": "Senior Technical Program Manager - Vehicle Platform & Autonomy Integration",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "f136382a-ba46-428f-b1ff-9a44037aebfb",
+    "title": "Senior Systems Software Engineer - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "97b90bba-21da-4a5c-9e4a-6e59bc472edf",
+    "title": "Senior Software Engineer, Lateral Planning \u2013 Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "290b6055-cdf8-467d-85f6-2c02234bab31",
+    "title": "Senior Firmware Engineer \u2013 CSP Engagements",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "eba0a695-633b-4311-8aab-72d15afc7a37",
+    "title": "Software Engineer, II - Autonomy Data",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "75156a6f-5f4e-4baf-b6b9-f413a909ce37",
+    "title": "Computer Vision Engineer (Autonomous Driving)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "c128732e-5692-44f8-bb00-16cc77a1c4f8",
+    "title": "C++ Software Engineer \u2013 Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e062b289-6e6b-4d1c-877d-7c8421bddd4d",
+    "title": "Senior, ML Engineer - 3D Reconstruction",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "e181dba4-dde5-47c7-bc9f-59768ea379be",
+    "title": "Principal Software Engineer, Distributed Systems Engineer - DGX Cloud",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "97a392bf-9370-4b4e-8056-c0af6f7f02d4",
+    "title": "Staff Graphics Engineer, Rendering (Simulation)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "542f8ef3-f3d8-4b25-babf-d02277f8f552",
+    "title": "Autonomous Vehicle Operations Specialist",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "5275a7f4-1df3-4eba-b7d6-4d8e01ba295b",
+    "title": "Software Engineer - Ride and Fleet Services",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "f2403ab4-466f-4531-8560-a1f7e698b4f6",
+    "title": "Senior Robotics Systems Engineer - Neural Reconstruction and Real2Sim Applications",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "c25ccccc-581f-4f5a-8d43-7b7523e50b07",
+    "title": "Senior Systems Engineer, Vehicle Body Control Systems",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "91d5f533-fdba-4f19-93e8-02914e154ce2",
+    "title": "ML Software Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "6fbdbdaf-3b06-4683-a5dc-b697b812c4d7",
+    "title": "Engineering Manager, Runtime Platform, Robot Software",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "c374d491-9f2d-4a8c-95ad-0ede40dd5458",
+    "title": "Senior/Staff Software Engineer, Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "2a46a404-823a-48c8-b867-9fa441a607fa",
+    "title": "Machine Learning Engineer, Prediction & Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "a6154ef7-e284-44da-b0f6-8d23251e44b9",
+    "title": "Principal Engineer Team Lead, Prediction & ML Planner",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "fcd3f6fe-f163-438f-8631-30177117d9bf",
+    "title": "Senior Motion Planning Engineer - Trajectory Generation",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "da818645-a907-46c6-ad61-1134dcb4fa12",
+    "title": "Machine Learning Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c67c65f1-fc9d-45a9-bdee-85b87a72305c",
+    "title": "Senior / Staff Software Engineer - Learned Trajectory Machine Learning Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "69c5e096-2c39-4e61-930d-01052fa1c4b1",
+    "title": "Technical Lead Manager, Prediction, ML Evaluation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "07f301e3-9709-4c2f-90fb-051e4436897c",
+    "title": "Algorithm Engineer, Deep Learning & Vision (New Grad)",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "dc93810e-bd4f-4191-814d-bc58fb98bf22",
+    "title": "Staff Robotics Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "13c94db0-01a8-4dc9-a446-66676de63b5a",
+    "title": "Senior Software Systems Engineer, L3 and L4 - Autonomous Driving",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "3a6d0afd-7e2e-49c1-b5e9-b65a06189d95",
+    "title": "Systems Integration Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "8d614835-220f-44fb-9be5-76acf588548b",
+    "title": "Senior Frontend Software Engineer - Map Creator",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "68b8bffd-3209-433c-923d-17a9c88b8712",
+    "title": "Senior Controls Engineer- Body Shop",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "fb98e67e-5339-4638-b74f-4c9a361799c4",
+    "title": "Senior, Software Engineer - Autonomy Core Frameworks",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "048cd34b-821e-4f8a-882a-aba0b515d954",
+    "title": "Senior Research Engineer, Robotics Systems",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "93c6ecf4-6889-4dd8-a653-e50db462f03e",
+    "title": "NP System RD Intern",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "473baa5c-568b-4afc-9861-c39d58fe6f2d",
+    "title": "Software Engineer, ML Infrastructure, Optimization",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "84427727-441f-48cb-a355-287db31fb656",
+    "title": "Controls Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "612e71ce-5248-4f36-ba32-14782f9d0dc3",
+    "title": "Staff Robotics Engineer / Tech Lead \u2013 Whole-Body Control & Robot Learning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "d57a8521-c192-49f5-8437-8393dd8b9d8b",
+    "title": "Machine Learning Research Scientist, Behavior Planning and Prediction",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "46604e99-27de-4a31-bc57-491b3f7c54d8",
+    "title": "Software Engineer Low Speed Motion Planning & Control Planning",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "4533513f-babf-4645-ba54-7e7c75de1571",
+    "title": "Senior Applications Software Engineer, Planning and Control",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "6bad8d32-f4f3-4d97-aa94-e1496639fc8a",
+    "title": "Lead Vehicle Controls and Interface Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "6352516c-ff4b-473b-a692-2f7c9ffa6a55",
+    "title": "Senior AI Engineer (Driving VLM/VLA)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "f03d02d2-79d9-48fe-be25-409ea0586c6d",
+    "title": "Software Engineer II, Mission Interface",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "f4fdb8f3-8605-4916-9dc1-5082acae014c",
+    "title": "Senior/Staff Software Engineer, Perception",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "ff9d5cb2-ffb5-458a-8435-ac3493da5e92",
+    "title": "ML Data Operations Lead, Dataset Release and Delivery - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "72e36584-833f-4a57-8e98-972d8a011dfd",
+    "title": "NVIDIA 2027 New College Graduate: Software Engineering - China",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "50382c63-067f-4449-b1ef-b9afd2f28b37",
+    "title": "Senior Software Engineer - Applied Research in Robotics",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "ccde2f5e-c07f-4832-a59a-109608dfbad6",
+    "title": "Software Engineer - Motion Planning (Fallback Stack)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "fd5e89f6-6069-410a-b822-fc9b9d60c22d",
+    "title": "Software Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "9859eb66-58de-4772-97e4-b7a40b21ac36",
+    "title": "Staff Software Engineer, Privacy",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "292a2e04-31a9-4337-95f9-56d9b9423ebf",
+    "title": "Senior Component Systems Engineer, Camera Sensors",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "bc7428ff-f4a8-48db-b47d-083b17f3063e",
+    "title": "Senior Solutions Architect, Robotics Simulation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e315a012-ab81-419f-9d93-b8c97d3fb6bb",
+    "title": "Software Engineer - Controls",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "6276adeb-239e-4e96-9385-533254f97b0b",
+    "title": "Senior Functional Safety Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "764ad142-8eb2-48da-bee6-436cd4de13e3",
+    "title": "Principal Engineer, Team Lead - Behaviors",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "73e9e241-1c13-40d4-a0e3-2fa64f712852",
+    "title": "Research Scientist, Wayve Labs",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "80f6685e-65be-4edf-9883-3e4ae0b6bf92",
+    "title": "Lead ML Engineer - Lane & Route Network Mapping",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "13b4a284-097e-446b-ba61-6117f9a9463e",
+    "title": "Senior Software Engineer: Fleet Enablement & Insights (Map Validation & Annotation Platform)",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "cb5c18fb-961f-48bf-bce2-e95eda9d26bb",
+    "title": "Senior/ Staff Software Engineer, Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "c926dd71-35a4-4af5-8712-f219c0731ae5",
+    "title": "Principal Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "5e5b3f7d-0be4-4ef5-91db-cd06e6254977",
+    "title": "Research Scientist",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9ac5a23d-714f-4401-9e9f-ddbcaf9e9ede",
+    "title": "Principal Engineer, 3D Reconstruction",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "e1160dfe-eb33-4198-adfa-89bc5cec86d9",
+    "title": "Principal AI/ML Engineer",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "bbab9279-b47d-4451-af55-871998422d42",
+    "title": "Sensing and Perception System Safety Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "40a9e02d-2fd7-4d6c-a385-af7711657721",
+    "title": "Senior Software Engineer, Mapping Data & Eval",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "7ce3fa3c-e770-4d7f-9c75-8b7eb803843c",
+    "title": "Staff Validation Systems Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "5f3fa9ba-020f-48af-8eb4-1dcfe50a02a3",
+    "title": "Staff Software Engineer, Manuevering Tech",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "b5945010-cf40-4baf-87c1-f7bb985adc13",
+    "title": "Senior, ML Engineer - 3D Reconstruction",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "2272f442-e345-4c6c-a220-a6d206642950",
+    "title": "Software Engineer - Calibration",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "4dd8d239-aaab-46ae-9c6a-52b969703b31",
+    "title": "Planning - Technical Lead",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "d861de67-53f1-41f0-b04f-e5148165d00c",
+    "title": "Platform Systems Engineer; Sensing and Perception, Maps and Localization",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      },
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "eb66e1a5-70c4-4cd0-ac21-385c3ea40411",
+    "title": "Staff Machine Learning Engineer - Foundation Model",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "45901a5a-67b1-4f5b-b376-e55885d145dd",
+    "title": "Senior Mechanical Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "b04e2a3a-7e94-4f95-852c-312eeb40a9fb",
+    "title": "Senior Machine Learning Engineer, Simulation Evaluation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "00c3fe70-43d7-464e-b6bb-2387db765687",
+    "title": "Principal Machine Learning Scientist - Trajectory Generation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "64c71d1d-1b61-4ec4-884a-4964bc92e138",
+    "title": "Senior Product Manager (Vehicle Vision)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "29450358-fb8d-4ad6-b1a4-6f63996ae3c0",
+    "title": "Autonomous Vehicle Operations Specialist",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "f4591c99-37e9-4446-99d2-be5789c808b9",
+    "title": "Machine Learning Engineer, App SW",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "fd3460bf-09c2-43b3-a1e4-3202f3d15f9d",
+    "title": "Principal Vehicle Integration Lead",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "d822f1c1-4bf4-4597-b5ac-7c2484ab9083",
+    "title": "Senior Software Engineer, Planning and Control Integration \u2013 Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "65653158-7544-49e3-8e63-d09759e45705",
+    "title": "Staff AI / ML Engineer - Embodied AI",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e3c6170e-afe5-4658-82cc-ed42ff39f425",
+    "title": "Staff Systems Engineer \u2013 Sensor Systems Engineering & Architecture",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b2686432-6be9-4de4-b0b9-88768e5c578a",
+    "title": "Outstanding Graduate Algorithm Developer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "072655b4-08f5-4e6c-80f6-f6515851ea01",
+    "title": "Robotics Lead/ System Architect",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "28bcd579-8924-48fc-96dd-9669de70d25e",
+    "title": "Senior Software Engineer, Training Efficiency",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "1cd2683d-a7a9-4bb5-9664-3e19d43843d7",
+    "title": "Senior / Staff Perception Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "b831b415-f3a0-4004-8fd1-a5a8b1c05ff3",
+    "title": "Feature Owner, ADAS",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "aab9e48a-5b4c-4ddd-8265-d9e8debdd296",
+    "title": "Senior Data Scientist",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "77160eaa-4110-42db-851a-557bb23d0140",
+    "title": "Senior System Software Engineer - Halos",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "d2aa92ad-aae1-4356-b82e-c6d7ff9f1173",
+    "title": "Feature Owner, ADAS",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "d7f2cc35-e5d1-497f-9f33-396f74c36a3d",
+    "title": "Software Engineer - Autonomy",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "b8a9c286-3749-406d-a44f-6587aa0238fd",
+    "title": "Software Engineer II - Fleet Enablement & Insights (Annotation Platform)",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "ffe5ddb5-db55-4c00-b608-6befd9d7f150",
+    "title": "Control Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "baa37ea1-f24a-4eb3-9908-15a414662db1",
+    "title": "2026 Intern, PhD Research Scientist",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "5e88bcaf-a245-4020-a90d-449d806d486c",
+    "title": "Autonomous Vehicle Operations Specialist",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "febc0d0d-69a7-43d0-add7-0e82d7889b8e",
+    "title": "Research Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "430c4766-c307-40c4-989a-481845f86261",
+    "title": "Senior ML Data Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "359a7de2-cba6-4274-8a37-88fa1a010474",
+    "title": "Senior AI / ML Engineer - Embodied AI",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "d2eb2cb6-d4dd-4431-904e-75ad273becdc",
+    "title": "Research Scientist, Wayve Labs",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "49bba946-eff1-4a0a-8b35-6a12fd00b95e",
+    "title": "Robotaxi Commercial Manager",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "cde49d9d-dbef-4e65-9d5b-621a3da4f744",
+    "title": "Senior Software Engineer, AV Planner - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "e0da3030-589e-445d-97b8-9f2d7e449493",
+    "title": "Principal Software Engineer, Onboard Infrastructure",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "248a3f58-869b-41b6-a4cd-2ec86b5b7d14",
+    "title": "Senior SoC Architect, RAS",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "a065a997-6ba4-4368-81d0-ae68ef2166a6",
+    "title": "Feature Owner, ADAS",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "9fbf8fa0-cbab-4630-b584-115d1d055d67",
+    "title": "Full-Stack Software Engineer, Model Development Platform",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "2fb9381e-15b6-456c-b650-fad40b201a0e",
+    "title": "Senior Software Engineer - Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "1453ebab-36bb-47ee-a6d8-3d8d15824baa",
+    "title": "Software Engineer, AI Platform - Intern",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "812e254d-4d1f-49a1-8fe6-241ec95cb9fa",
+    "title": "Autonomous Vehicle Test Operator II",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "311f74cd-0d9d-4f0e-8799-2878ecd08332",
+    "title": "Senior Software Engineer - Sensor Systems, Robot Software",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "05c488a5-b7b3-428d-8b66-a9738efe3cee",
+    "title": "Machine Learning Engineer / Applied Scientist, Prediction & Planning",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "0d92717a-f461-4c15-adc8-f7e3fcb2ecf1",
+    "title": "Staff Validation Systems Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "0f73d826-8e3a-4d8a-903a-4ad0d7a064c7",
+    "title": "Mechanical Integration Technician",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "4e1e2736-20b9-4ae8-80eb-0ce12d281210",
+    "title": "Senior ML Data Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "a61434bb-a49f-4802-844e-c69f27431efe",
+    "title": "Software Test Engineer (Virtualization - SIL) - ADAS Virtualization Deployment",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "a369261d-547e-474b-8d20-493295572458",
+    "title": "Senior Systems Engineer - Autonomy Behavior",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "31fecf75-2c71-434c-92bd-25efe00ad93e",
+    "title": "Staff Machine Learning Engineer - Mapping",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "36130f67-a082-4d90-9160-20fbed7ca887",
+    "title": "Staff Software Engineer, Mapping",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "8d470047-abbc-4170-8c47-5bff478f53f3",
+    "title": "Senior Physical Failure Analysis Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "3482406c-c290-4a7d-ae9c-d113924f9099",
+    "title": "Staff Systems Engineer, Driving Behaviors",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "0c857842-c226-4956-8931-9edac8ac18b1",
+    "title": "Machine Learning Internship, Behaviors Research",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      },
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "9d06faba-b8f4-453d-8c5c-77e6e011b3e5",
+    "title": "Technical Lead Manager, Route & Motion Generation",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "5d025b9c-a6ca-4244-9ba9-3b9a5a4f39ac",
+    "title": "Sr. Vehicle Operations & Integration Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "a57c83d4-fd6c-4489-90d2-008668b55c55",
+    "title": "Senior Machine Learning Engineer, Predictive Planner, Systems Arch",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "3d5d3a32-2a37-4b67-af42-bce15c5cf87b",
+    "title": "Senior Technical Program Manager, Operational Excellence",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "1138a2e5-ca9d-40ea-94d3-8b06b6aea48b",
+    "title": "Self-Driving System (SDS) Engineering Head",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "7a12a463-e9e9-47cc-94e3-25c1a7bcd9a5",
+    "title": "Intern, Deep Learning Engineer",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "d44e0f5e-cb04-40f0-acf3-1c2a851f3fa6",
+    "title": "Senior Manager, AI Deployment",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "ac50e902-0aa4-44ae-84fb-ecc39d00296a",
+    "title": "Hardware-in-the-Loop (HIL) Software/Firmware Engineer",
+    "kept": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "6cdb5aba-dc45-4dc3-bc7f-9c1330599cbc",
+    "title": "Research Intern - Robotic Hardware, Simulation and Data",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "574039fa-03b5-47aa-8274-4ee5f0c93468",
+    "title": "Senior Machine Learning Engineer, Perception - Autonomous Driving",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "1f75b29e-1225-4734-a391-9e61beb4f163",
+    "title": "Senior Algorithm Engineer - Objects Perception",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "facf97e6-a385-413d-898a-fa99f94bf87b",
+    "title": "Director, Perception - Autonomous Vehicles",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ]
+  },
+  {
+    "job_id": "357e5af3-2ab2-4a98-a005-b33268dfd5c2",
+    "title": "Robotics Engineer",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "Vehicle Interface",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "14019092-2c1c-4148-9a92-9f15c49093c8",
+    "title": "Software Engineer - Motion Planning",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "f919f685-5437-4b75-b719-dcf65a10125e",
+    "title": "Senior Systems & Safety Engineer \u2013 AI/ML",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "e24dccbf-2226-44be-806c-d002f04436a4",
+    "title": "Principal Engineer Team Lead, AV Behavior",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "eb362bb2-ae0d-4592-bc4c-26da802cf533",
+    "title": "Sr Software Engineer, Telematics",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "7799aa25-9992-4fa9-89fc-c5c59ad2f707",
+    "title": "Senior Frontend Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "49b3a927-b0b5-45ef-925e-57e658ecccd1",
+    "title": "Senior Planning & Control System Engineer (Autonomous Driving)",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "752954ee-cd91-4fac-a108-a876d186a874",
+    "title": "Senior System Software Engineer - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "3df73643-33d5-4a97-a82a-01a0a67ddb2a",
+    "title": "Director, Perception",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "c3b0af16-b93a-4773-a0a1-e370d6951246",
+    "title": "Systems Engineering Manager - Autonomy Behavior",
+    "kept": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "f8227b51-db36-4578-906a-530a1a5b667f",
+    "title": "Senior System Software Engineer - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "8d98d8b3-9a17-4e5f-9c8e-3fec4b6d509d",
+    "title": "Senior System Software Engineer - Halos Core and Robotics Platform",
+    "kept": [
+      {
+        "sub_type": "Mapping",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "10ef5af1-ac06-4dbb-8906-e07da3ce4964",
+    "title": "Machine Learning Engineer",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Prediction",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "277990f9-1b5b-4fab-b2c6-ec8aea329734",
+    "title": "Senior Staff Digital World System Engineer",
+    "kept": [
+      {
+        "sub_type": "Localization",
+        "main_type": "Localization"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  },
+  {
+    "job_id": "24386402-812e-491c-8fa8-5f623a3b66f3",
+    "title": "Autonomous Driving Data Specialist",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "f8c619de-17ed-4790-8b79-a26cf190f5bb",
+    "title": "Senior Applied Research Engineer - Accelerator Programming Model and Compiler",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "9c3d2a46-c251-43ff-acd2-62e778d2c1a4",
+    "title": "Lead AI Engineer \u2013 Enterprise Data & AI",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "30fa8b4e-1b26-41d3-90a1-4692f3e44887",
+    "title": "Software Engineering Manager - Perception Occupancy",
+    "kept": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Sensing",
+        "main_type": "Perception"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ]
+  },
+  {
+    "job_id": "459b1892-9ea9-493f-8011-318cce21b37f",
+    "title": "Technical Training Manager (WRA/RS)",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      },
+      {
+        "sub_type": "Planning",
+        "main_type": "Decision"
+      }
+    ]
+  },
+  {
+    "job_id": "9bb84cd3-3e2d-49a4-b9a6-17b9c155bc38",
+    "title": "Chassis Controls Engineer, Brakes & Steering",
+    "kept": [
+      {
+        "sub_type": "Control",
+        "main_type": "System"
+      },
+      {
+        "sub_type": "System and Safety",
+        "main_type": "System"
+      }
+    ],
+    "removed": [
+      {
+        "sub_type": "Perception",
+        "main_type": "Perception"
+      }
+    ]
+  }
+]
