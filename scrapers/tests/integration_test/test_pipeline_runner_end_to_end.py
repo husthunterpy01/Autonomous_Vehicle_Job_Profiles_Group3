@@ -4,15 +4,14 @@ tests/unit_test/test_pipeline_runner.py mocks every stage class wholesale
 and only checks that PipelineRunner calls them in the right order with the
 right argv. It never proves the *real* stage classes actually hand each
 other usable files. These tests wire the real classes together (JobPrefilter,
-SilverExport, JobPrefilterMain, JobClassifierMain, JobEnricherMain, ...)
+SilverExport, JobPrefilterMain, embedding relevance, JobEnricherMain, ...)
 exactly as pipeline_main does, mocking the true external boundaries: the ATS
 HTTP endpoints, MinIO, Postgres, and the `dbt` subprocess - the same
 boundary the existing scraper integration test (test_scraper_pipeline.py)
 mocks at. The one exception is JobClassifier/JobEnricher themselves (faked
 with a simple classify_batch/enrich_batch, same pattern as
-test_job_enricher_cli.py's _EchoEnricher): mocking one layer lower, at
-GroqCompletion, and round-tripping through real prompt-building + JSON
-response parsing, proved unreliable in CI in a way that resisted diagnosis.
+test_job_enricher_cli.py's _EchoEnricher): JobClassifier only runs when the
+embedding probe puts jobs in the 0.45-0.55 mid-band.
 """
 
 import json
@@ -206,15 +205,20 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     assert sum(company["before_count"] for company in filter_metrics) == 2
     assert sum(company["after_count"] for company in filter_metrics) == 2
 
-    # Relevance -> enrichment handoff.
+    # Embedding relevance -> enrichment handoff. Both jobs scored as confident
+    # AV, so Groq mid-band is skipped and relevance_metrics.json is not written.
     av_candidates_path = classification_output_dir / "av_candidates.jsonl"
     assert av_candidates_path.is_file()
-    relevance_metrics = json.loads(
-        (classification_output_dir / "relevance_metrics.json").read_text(encoding="utf-8")
-    )
-    assert relevance_metrics["av_candidates"] == 2
-    assert relevance_metrics["non_av_count"] == 0
-    assert relevance_metrics["failed_count"] == 0
+    av_candidates = [
+        json.loads(line)
+        for line in av_candidates_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert {row["deduplication_key"] for row in av_candidates} == {"dk-perception-1", "dk-program-2"}
+    assert all(row["_classification"]["_source"] == "classifier" for row in av_candidates)
+    low_confidence_path = classification_output_dir / "low_confidence_jobs.jsonl"
+    assert not any(line.strip() for line in low_confidence_path.read_text(encoding="utf-8").splitlines())
+    assert not (classification_output_dir / "relevance_metrics.json").is_file()
 
     # Final enrichment output: the actual deliverable of the whole pipeline.
     av_jobs_path = classification_output_dir / "av_jobs.jsonl"

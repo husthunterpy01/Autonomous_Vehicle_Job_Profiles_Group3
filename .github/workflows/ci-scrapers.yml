@@ -22,6 +22,9 @@ jobs:
       POSTGRES_USER: av_jobs
       POSTGRES_PASSWORD: ""
       POSTGRES_HOST_AUTH_METHOD: trust
+      # sentence-transformers / huggingface_hub read this; keep it in the
+      # workspace so the cache step below has a stable path.
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
     services:
       postgres:
         image: postgres:16
@@ -46,6 +49,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r scrapers/requirements-test.txt
+      - name: Cache Hugging Face Hub models
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.cache/huggingface
+          key: ${{ runner.os }}-hf-hub-${{ hashFiles('scrapers/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-hf-hub-
       - name: Check convention
         working-directory: scrapers
         run: |

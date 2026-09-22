@@ -3,10 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 
 import joblib
+from huggingface_hub import hf_hub_download
 from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
 
 _MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+# Where `train` publishes the logistic probe (see scrapers/README.md); `load`
+# falls back to this when no local joblib exists, so scoring works on a fresh
+# checkout without training first.
+_HF_REPO_ID = "husthunterpy01/av-job-relevance-embedding"
+_HF_WEIGHTS = "relevance_model_embedding.joblib"
 
 
 class EmbeddingRelevanceClassifier:
@@ -43,5 +49,15 @@ class EmbeddingRelevanceClassifier:
         joblib.dump(self.classifier, path)
 
     @classmethod
-    def load(cls, path: Path) -> EmbeddingRelevanceClassifier:
-        return cls(classifier=joblib.load(path))
+    def load(cls, path: Path, hf_repo_id: str | None = _HF_REPO_ID) -> EmbeddingRelevanceClassifier:
+        """Load the logistic probe from `path` if it exists locally,
+        otherwise download `_HF_WEIGHTS` from the published Hugging Face Hub
+        repo. Pass `hf_repo_id=None` to require a local copy instead."""
+        if Path(path).is_file():
+            return cls(classifier=joblib.load(path))
+        if not hf_repo_id:
+            raise FileNotFoundError(
+                f"No local embedding model at {path} and no Hugging Face repo id to fall back to."
+            )
+        downloaded = hf_hub_download(repo_id=hf_repo_id, filename=_HF_WEIGHTS)
+        return cls(classifier=joblib.load(downloaded))
