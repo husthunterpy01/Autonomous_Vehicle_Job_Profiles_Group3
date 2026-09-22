@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${SUPABASE_DATABASE_URL:?missing, see .env.sample}
+      SEED_ON_STARTUP: "false"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?missing, see .env.sample}
+    ports:
+      - "8000:8000"
+    networks:
+      - app_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - app_net
+
+networks:
+  app_net:
+    driver: bridge
