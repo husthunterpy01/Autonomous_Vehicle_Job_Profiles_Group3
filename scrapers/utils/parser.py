@@ -196,8 +196,8 @@ class ScraperParser:
         parser = argparse.ArgumentParser(
             description=(
                 "Run the full pipeline end to end: scrape -> MinIO -> bronze -> "
-                "Silver (dbt) -> export -> AV pre-filter -> LLM relevance -> "
-                "LLM category/skill enrichment."
+                "Silver (dbt) -> export -> AV pre-filter -> embedding relevance "
+                "(Groq only for the mid-band) -> LLM category/skill enrichment."
             )
         )
         parser.add_argument(
@@ -237,5 +237,13 @@ class ScraperParser:
             type=Path,
             default=None,
             help="Optional YAML config for the pre-filter stage (see job_prefilter.py --config)",
+        )
+        parser.add_argument(
+            "--embedding-hf-repo-id",
+            default="husthunterpy01/av-job-relevance-embedding",
+            help=(
+                "Hugging Face repo for the distilled embedding probe when no local "
+                "relevance_model_embedding.joblib exists (pass '' to require a local file)"
+            ),
         )
         return parser.parse_args(argv)

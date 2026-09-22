@@ -291,9 +291,13 @@ Run all scraper commands from the **repository root**. YAML paths and
 
 - Python 3.10+
 - Docker (for a local MinIO server)
-- Packages in `scrapers/requirements-test.txt`
+- Packages in `scrapers/requirements.txt` (runtime; includes
+  `sentence-transformers` / torch for the default embedding classifier)
+- `scrapers/requirements-test.txt` for pytest (includes runtime)
 
 ```bash
+python3 -m pip install -r scrapers/requirements.txt
+# or, for tests:
 python3 -m pip install -r scrapers/requirements-test.txt
 ```
 
