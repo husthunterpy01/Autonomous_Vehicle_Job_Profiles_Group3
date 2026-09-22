@@ -9,43 +9,52 @@ from scrapers.utils.relevance_classifier_cli import (
 )
 
 
-@patch("scrapers.service.ml.setfit_classifier.SetFitRelevanceClassifier.load")
-def test_load_classifier_defaults_to_published_hf_repo_for_setfit(mock_load, tmp_path):
+def test_load_classifier_defaults_to_published_hf_repo_for_setfit(tmp_path):
     pytest.importorskip("setfit")
-    _load_classifier("setfit", tmp_path / "missing")
-    mock_load.assert_called_once_with(tmp_path / "missing")
+    with patch("scrapers.service.ml.setfit_classifier.SetFitRelevanceClassifier.load") as mock_load:
+        _load_classifier("setfit", tmp_path / "missing")
+        mock_load.assert_called_once_with(tmp_path / "missing")
 
 
-@patch("scrapers.service.ml.setfit_classifier.SetFitRelevanceClassifier.load")
-def test_load_classifier_disables_fallback_when_hf_repo_id_is_empty_string(mock_load, tmp_path):
+def test_load_classifier_disables_fallback_when_hf_repo_id_is_empty_string(tmp_path):
     pytest.importorskip("setfit")
-    _load_classifier("setfit", tmp_path / "missing", hf_repo_id="")
-    mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id=None)
+    with patch("scrapers.service.ml.setfit_classifier.SetFitRelevanceClassifier.load") as mock_load:
+        _load_classifier("setfit", tmp_path / "missing", hf_repo_id="")
+        mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id=None)
 
 
-@patch("scrapers.service.ml.setfit_classifier.SetFitRelevanceClassifier.load")
-def test_load_classifier_passes_through_a_custom_hf_repo_id(mock_load, tmp_path):
+def test_load_classifier_passes_through_a_custom_hf_repo_id(tmp_path):
     pytest.importorskip("setfit")
-    _load_classifier("setfit", tmp_path / "missing", hf_repo_id="someone/other-repo")
-    mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id="someone/other-repo")
+    with patch("scrapers.service.ml.setfit_classifier.SetFitRelevanceClassifier.load") as mock_load:
+        _load_classifier("setfit", tmp_path / "missing", hf_repo_id="someone/other-repo")
+        mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id="someone/other-repo")
 
 
-@patch("scrapers.service.ml.embedding_classifier.EmbeddingRelevanceClassifier.load")
-def test_load_classifier_defaults_to_published_hf_repo_for_embedding(mock_load, tmp_path):
-    _load_classifier("embedding", tmp_path / "missing")
-    mock_load.assert_called_once_with(tmp_path / "missing")
+def test_load_classifier_defaults_to_published_hf_repo_for_embedding(tmp_path):
+    pytest.importorskip("sentence_transformers")
+    with patch(
+        "scrapers.service.ml.embedding_classifier.EmbeddingRelevanceClassifier.load"
+    ) as mock_load:
+        _load_classifier("embedding", tmp_path / "missing")
+        mock_load.assert_called_once_with(tmp_path / "missing")
 
 
-@patch("scrapers.service.ml.embedding_classifier.EmbeddingRelevanceClassifier.load")
-def test_load_classifier_passes_hf_repo_id_for_embedding(mock_load, tmp_path):
-    _load_classifier("embedding", tmp_path / "missing", hf_repo_id="someone/embedding")
-    mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id="someone/embedding")
+def test_load_classifier_passes_hf_repo_id_for_embedding(tmp_path):
+    pytest.importorskip("sentence_transformers")
+    with patch(
+        "scrapers.service.ml.embedding_classifier.EmbeddingRelevanceClassifier.load"
+    ) as mock_load:
+        _load_classifier("embedding", tmp_path / "missing", hf_repo_id="someone/embedding")
+        mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id="someone/embedding")
 
 
-@patch("scrapers.service.ml.embedding_classifier.EmbeddingRelevanceClassifier.load")
-def test_load_classifier_disables_embedding_fallback_when_hf_repo_id_is_empty(mock_load, tmp_path):
-    _load_classifier("embedding", tmp_path / "missing", hf_repo_id="")
-    mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id=None)
+def test_load_classifier_disables_embedding_fallback_when_hf_repo_id_is_empty(tmp_path):
+    pytest.importorskip("sentence_transformers")
+    with patch(
+        "scrapers.service.ml.embedding_classifier.EmbeddingRelevanceClassifier.load"
+    ) as mock_load:
+        _load_classifier("embedding", tmp_path / "missing", hf_repo_id="")
+        mock_load.assert_called_once_with(tmp_path / "missing", hf_repo_id=None)
 
 
 def test_score_subcommand_accepts_hf_repo_id_flag():
