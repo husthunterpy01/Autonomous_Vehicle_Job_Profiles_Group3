@@ -15,6 +15,16 @@ class GroqConfig:
     api_key: str = os.environ.get("GROQ_API_KEY", "")
     api_keys: tuple[str, ...] = ()
     model: str = os.environ.get("GROQ_MODEL", "openai/gpt-oss-20b")
+    # See fallback_completion.py: primary model until its key pool is
+    # rate-limited, then this model for the rest of the run. Empty, or equal
+    # to `model`, disables the wrapper (build_groq_completion returns a
+    # plain GroqCompletion instead of a FallbackCompletion).
+    fallback_model: str = os.environ.get("GROQ_FALLBACK_MODEL", "openai/gpt-oss-120b")
+    # Internal, not env-configurable: set via dataclasses.replace() by
+    # build_groq_completion for the primary half of a fallback pair, so
+    # GroqCompletion raises ProviderRateLimitExhausted (letting the wrapper
+    # switch models) instead of its default long wait-and-retry.
+    fail_after_key_pool_exhausted: bool = False
     temperature: float = float(os.environ.get("GROQ_TEMPERATURE", "0"))
     # gpt-oss models spend part of the completion budget on hidden reasoning
     # tokens before the JSON answer; "low" keeps that from crowding out the

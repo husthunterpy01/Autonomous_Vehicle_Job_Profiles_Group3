@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --experimental-strip-types --test \"lib/**/*.test.ts\" && vitest run",
+    "test": "node --experimental-strip-types --test \"lib/*.test.ts\" && vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },
