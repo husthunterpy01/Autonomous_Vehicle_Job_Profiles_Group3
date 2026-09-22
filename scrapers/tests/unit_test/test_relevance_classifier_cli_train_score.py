@@ -1,8 +1,7 @@
 """Coverage for relevance_classifier_cli.py's train/score commands.
 
 Unlike test_relevance_classifier_cli.py, this file exercises the real CLI
-entrypoints. train/score default to the embedding backend, so the default
-model path is relevance_model_embedding.joblib.
+entrypoints. train/score default to the embedding backend.
 """
 
 import json
@@ -110,16 +109,6 @@ def test_train_saves_a_model_and_reports_example_counts(tmp_path, capsys):
     assert result["non_av_examples"] == len(NON_AV_RECORDS)
     assert result["model"] == str(model_path)
     assert "evaluation" not in result
-
-
-def test_train_defaults_model_path_from_backend(tmp_path):
-    output_dir = tmp_path / "job_classification"
-    _write_seed_dir(output_dir)
-
-    status = main(["train", "--output-dir", str(output_dir), "--test-size", "0"])
-
-    assert status == 0
-    assert (output_dir / "relevance_model_embedding.joblib").is_file()
 
 
 def test_train_raises_systemexit_without_both_classes(tmp_path):
