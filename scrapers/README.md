@@ -70,6 +70,12 @@ present; otherwise weights are downloaded from
 Jobs with p≥0.55 go to `av_candidates.jsonl`, p<0.45 to `non_av_jobs.jsonl`,
 and 0.45–0.55 to `low_confidence_jobs.jsonl` for Groq.
 
+`relevance_classifier_cli train` and `score` default to `--backend embedding`,
+so a flagless CLI run needs `sentence-transformers` (and thus torch), which
+`scrapers/requirements.txt` installs. Use `--backend tfidf` for the
+sklearn-only path; `--backend setfit` also needs the `setfit` package from
+that same file.
+
 ```bash
 python3 -m scrapers.utils.relevance_classifier_cli score \
   --input data/job_prefilter/llm_candidates.jsonl \
