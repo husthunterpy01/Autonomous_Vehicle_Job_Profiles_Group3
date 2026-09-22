@@ -1,5 +1,8 @@
 from scrapers.config.groq import GroqConfig
-from scrapers.service.llm.fallback_completion import FallbackCompletion, build_groq_completion
+from scrapers.service.llm.fallback_completion import (
+    FallbackCompletion,
+    build_groq_completion,
+)
 from scrapers.service.llm.provider_errors import ProviderRateLimitExhausted
 
 
