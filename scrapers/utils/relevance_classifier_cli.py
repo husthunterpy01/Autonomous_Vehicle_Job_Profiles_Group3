@@ -5,21 +5,23 @@ import json
 import logging
 from pathlib import Path
 
-from scrapers.service.llm import JobFilterConfig, JobPostingIO
-from scrapers.service.ml.relevance_classifier import RelevanceClassifier
-from scrapers.service.ml.relevance_classifier import job_text as tfidf_job_text
-from scrapers.utils.job_classifier import (
-    _group_by_company_title,
-    _load_processed_ids,
-    _resolve,
-    _write_line,
-)
 from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
     precision_recall_fscore_support,
 )
 from sklearn.model_selection import train_test_split
+
+from scrapers.service.llm import JobFilterConfig, JobPostingIO
+from scrapers.service.ml.relevance_classifier import RelevanceClassifier
+from scrapers.service.ml.relevance_classifier import job_text as tfidf_job_text
+from scrapers.utils.job_classifier import (
+    _group_by_company_title,
+    _job_key,
+    _load_processed_ids,
+    _resolve,
+    _write_line,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +65,8 @@ def _load_classifier(backend: str, model_path: Path, hf_repo_id: str | None = No
             EmbeddingRelevanceClassifier,
         )
 
-        return EmbeddingRelevanceClassifier.load(model_path)
+        kwargs = {} if hf_repo_id is None else {"hf_repo_id": hf_repo_id or None}
+        return EmbeddingRelevanceClassifier.load(model_path, **kwargs)
     if backend == "setfit":
         from scrapers.service.ml.setfit_classifier import SetFitRelevanceClassifier
 
@@ -193,6 +196,7 @@ def score(args: argparse.Namespace) -> int:
         _load_processed_ids(args.output_dir / "av_candidates.jsonl")
         | _load_processed_ids(args.output_dir / "non_av_jobs.jsonl")
         | _load_processed_ids(args.output_dir / "failed_jobs.jsonl")
+        | _load_processed_ids(args.output_dir / "relevance_failed_jobs.jsonl")
         | _load_processed_ids(args.output_dir / "low_confidence_jobs.jsonl")
     )
 
@@ -200,7 +204,7 @@ def score(args: argparse.Namespace) -> int:
     pending = []
     postings_by_id: dict[str, dict] = {}
     for posting in postings:
-        job_id = _resolve(posting, aliases, "id") or "unknown"
+        job_id = _job_key(posting, aliases)
         if job_id in processed_ids:
             continue
         pending.append((job_id, posting))
@@ -276,13 +280,13 @@ def _build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument(
         "--backend",
         choices=["tfidf", "embedding", "setfit", "zeroshot"],
-        default="tfidf",
+        default="embedding",
         help=(
-            "tfidf: bag-of-words, no extra dependency. embedding: frozen pretrained "
-            "sentence embeddings + logistic regression (generalizes to paraphrases "
-            "TF-IDF can't match). setfit: fine-tunes the transformer's own weights "
-            "on the seed via contrastive learning, not just a frozen-embedding "
-            "linear probe - slower to fit, usually most accurate on a small seed. "
+            "embedding: frozen pretrained sentence embeddings + logistic regression "
+            "(default; generalizes to paraphrases TF-IDF can't match). tfidf: "
+            "bag-of-words, no extra dependency. setfit: fine-tunes the transformer's "
+            "own weights on the seed via contrastive learning, not just a frozen-embedding "
+            "linear probe - slower to fit, overfits the small seed. "
             "embedding/setfit need sentence-transformers/setfit installed."
         ),
     )
@@ -306,16 +310,16 @@ def _build_parser() -> argparse.ArgumentParser:
     score_parser.add_argument("--input", required=True, type=Path)
     score_parser.add_argument("--output-dir", type=Path, default=Path("data/job_classification"))
     score_parser.add_argument("--model", type=Path, default=None, help="Defaults to relevance_model_<backend>.joblib")
-    score_parser.add_argument("--backend", choices=["tfidf", "embedding", "setfit", "zeroshot"], default="tfidf")
+    score_parser.add_argument("--backend", choices=["tfidf", "embedding", "setfit", "zeroshot"], default="embedding")
     score_parser.add_argument("--low-confidence-low", type=float, default=0.35)
     score_parser.add_argument("--low-confidence-high", type=float, default=0.65)
     score_parser.add_argument(
         "--hf-repo-id",
         default=None,
         help=(
-            "--backend setfit only: Hugging Face repo to fall back to when --model has no "
-            "local weights (default: the published husthunterpy01/av-job-relevance-setfit; "
-            "pass '' to require a local model instead)"
+            "--backend embedding or setfit: Hugging Face repo to fall back to when --model "
+            "has no local weights (defaults: husthunterpy01/av-job-relevance-embedding or "
+            "...-setfit; pass '' to require a local model instead)"
         ),
     )
 
