@@ -1,4 +1,5 @@
 import json
+import os
 from unittest.mock import MagicMock, patch
 
 from psycopg2.extras import Json
@@ -477,3 +478,112 @@ def test_html_archive_is_skipped_before_dbt(
     assert status == 0
     mock_execute_values.assert_not_called()
     mock_dbt.assert_called_once()
+
+
+@patch("scrapers.service.fetch.rawfetch.time.sleep")
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
+@patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
+@patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
+@patch("scrapers.response_archive.Minio")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_gm_workday_scrape_paginates_and_attaches_job_details(
+    mock_urlopen, mock_minio, mock_connect, mock_execute_values, mock_dbt, _mock_which, _mock_sleep
+):
+    """Workday is the only ATS with a paginated list POST plus a per-job
+    detail GET carrying its own bot-defence headers (Referer/X-Requested-With)
+    - none of the other per-ATS tests in this file exercise that path."""
+    stored = {}
+    list_payload = {
+        "total": 1,
+        "jobPostings": [
+            {
+                "title": "Staff Software Engineer",
+                "externalPath": "/job/Detroit-MI/Staff-Software-Engineer_R12345",
+                "bulletFields": ["R12345"],
+            }
+        ],
+    }
+    detail_payload = {
+        "jobPostingInfo": {
+            "title": "Staff Software Engineer",
+            "jobDescription": "<p>Build autonomy software at GM.</p>",
+            "location": "Detroit, MI",
+        }
+    }
+    mock_urlopen.side_effect = [_urlopen_json(list_payload), _urlopen_json(detail_payload)]
+    _archive_minio_client(mock_minio, stored)
+    _stub_postgres(mock_connect)
+    mock_dbt.return_value = MagicMock(returncode=0)
+
+    status = main(["--company", "gm"])
+
+    assert status == 0
+    list_request = mock_urlopen.call_args_list[0][0][0]
+    assert list_request.get_method() == "POST"
+    assert list_request.full_url == "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM/jobs"
+    assert json.loads(list_request.data)["offset"] == 0
+
+    detail_request = mock_urlopen.call_args_list[1][0][0]
+    assert detail_request.full_url == (
+        "https://generalmotors.wd5.myworkdayjobs.com/wday/cxs/generalmotors/Careers_GM"
+        "/job/Detroit-MI/Staff-Software-Engineer_R12345"
+    )
+    assert detail_request.get_header("X-requested-with") == "XMLHttpRequest"
+    assert detail_request.get_header("Referer") == "https://generalmotors.wd5.myworkdayjobs.com/Careers_GM"
+
+    # Archive object names/company_slug are derived from the display name
+    # (see ResponseArchive._object_key), not the YAML "key" - "gm" here.
+    assert stored["object_name"].startswith("api/general_motors/")
+    inserted = mock_execute_values.call_args.args[2][0]
+    assert inserted[0] == "General Motors"
+    assert inserted[1] == "general_motors"
+    assert inserted[3] == "workday"
+    assert inserted[4].adapted["jobPostings"][0]["jobPostingDetail"] == detail_payload
+    assert inserted[5] == "US"
+
+
+@patch.dict(os.environ, {"COMEET_TOKEN": "unit-test-token"})
+@patch("scrapers.config.dbt.shutil.which", return_value="/usr/bin/dbt")
+@patch("scrapers.config.dbt.subprocess.run")
+@patch("scrapers.service.bronze_storage.bronze_ingest.execute_values")
+@patch("scrapers.service.bronze_storage.bronze_ingest.psycopg2.connect")
+@patch("scrapers.response_archive.Minio")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_autobrains_comeet_scrape_resolves_token_from_env(
+    mock_urlopen, mock_minio, mock_connect, mock_execute_values, mock_dbt, _mock_which
+):
+    """Comeet is the only ATS whose URL embeds a secret expanded from the
+    environment (`${COMEET_TOKEN}`, see RawFetch._resolve_params) rather than
+    a plain company slug - worth its own coverage since a broken expansion
+    would silently leak the literal "${COMEET_TOKEN}" string into the URL."""
+    stored = {}
+    comeet_payload = {
+        "positions": [
+            {
+                "uid": "pos-1",
+                "name": "Autonomy Software Engineer",
+                "location": {"name": "Tel Aviv"},
+                "url": "https://www.comeet.com/jobs/autobrains/57.004/Autonomy-Software-Engineer/abc",
+            }
+        ]
+    }
+    mock_urlopen.return_value = _urlopen_json(comeet_payload)
+    _archive_minio_client(mock_minio, stored)
+    _stub_postgres(mock_connect)
+    mock_dbt.return_value = MagicMock(returncode=0)
+
+    status = main(["--company", "autobrains"])
+
+    assert status == 0
+    request = mock_urlopen.call_args[0][0]
+    assert request.full_url == (
+        "https://www.comeet.co/careers-api/2.0/company/57.004/positions?token=unit-test-token&details=true"
+    )
+    assert stored["object_name"].startswith("api/autobrains/")
+    inserted = mock_execute_values.call_args.args[2][0]
+    assert inserted[0] == "AutoBrains"
+    assert inserted[1] == "autobrains"
+    assert inserted[3] == "comeet"
+    assert inserted[4].adapted == comeet_payload
+    assert inserted[5] == "IL"

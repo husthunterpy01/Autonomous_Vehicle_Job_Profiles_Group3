@@ -1,0 +1,20 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env
+.env.*
+!.env.sample
+!.env.example
+tests/
+docs/
+# NOT scrapers/data/: that's checked-in config (list_companies.yaml,
+# ats_sources.yaml, company_salary.yaml) the app reads at runtime, not
+# generated output - the pipeline's actual output dir is a separate data/
+# at the repo root (outside this build context entirely).
+dbt/logs/
+dbt/target/
+*.log
