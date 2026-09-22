@@ -165,12 +165,13 @@ def test_company_flag_is_passed_through_to_scrape_stage(
 
 @_patch_stage("JobEnricherMain")
 @_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
 @_patch_stage("JobPrefilterMain")
 @_patch_stage("SilverExport")
 @_patch_stage("SilverIngest")
 @_patch_stage("ScraperRunner")
 def test_stops_when_silver_dbt_build_fails(
-    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_classifier, mock_enricher
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier, mock_enricher
 ):
     mock_scraper_runner.scrape_data_from_sources.return_value = 0
     mock_silver_ingest.return_value.run.return_value = 1
@@ -180,21 +181,47 @@ def test_stops_when_silver_dbt_build_fails(
     assert status == 1
     mock_silver_export.return_value.export.assert_not_called()
     mock_prefilter.main.assert_not_called()
+    mock_score.assert_not_called()
 
 
 @_patch_stage("JobEnricherMain")
 @_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
 @_patch_stage("JobPrefilterMain")
 @_patch_stage("SilverExport")
 @_patch_stage("SilverIngest")
 @_patch_stage("ScraperRunner")
 def test_stops_and_propagates_status_when_prefilter_fails(
-    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_classifier, mock_enricher
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier, mock_enricher
 ):
     mock_scraper_runner.scrape_data_from_sources.return_value = 0
     mock_silver_ingest.return_value.run.return_value = 0
     mock_silver_export.return_value.export.return_value = 5
     mock_prefilter.main.return_value = 1
+
+    status = PipelineRunner.run([])
+
+    assert status == 1
+    mock_score.assert_not_called()
+    mock_classifier.main.assert_not_called()
+    mock_enricher.main.assert_not_called()
+
+
+@_patch_stage("JobEnricherMain")
+@_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
+@_patch_stage("JobPrefilterMain")
+@_patch_stage("SilverExport")
+@_patch_stage("SilverIngest")
+@_patch_stage("ScraperRunner")
+def test_stops_and_propagates_status_when_relevance_classification_fails(
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier, mock_enricher
+):
+    mock_scraper_runner.scrape_data_from_sources.return_value = 0
+    mock_silver_ingest.return_value.run.return_value = 0
+    mock_silver_export.return_value.export.return_value = 5
+    mock_prefilter.main.return_value = 0
+    mock_score.return_value = 1
 
     status = PipelineRunner.run([])
 
@@ -205,38 +232,19 @@ def test_stops_and_propagates_status_when_prefilter_fails(
 
 @_patch_stage("JobEnricherMain")
 @_patch_stage("JobClassifierMain")
-@_patch_stage("JobPrefilterMain")
-@_patch_stage("SilverExport")
-@_patch_stage("SilverIngest")
-@_patch_stage("ScraperRunner")
-def test_stops_and_propagates_status_when_relevance_classification_fails(
-    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_classifier, mock_enricher
-):
-    mock_scraper_runner.scrape_data_from_sources.return_value = 0
-    mock_silver_ingest.return_value.run.return_value = 0
-    mock_silver_export.return_value.export.return_value = 5
-    mock_prefilter.main.return_value = 0
-    mock_classifier.main.return_value = 1
-
-    status = PipelineRunner.run([])
-
-    assert status == 1
-    mock_enricher.main.assert_not_called()
-
-
-@_patch_stage("JobEnricherMain")
-@_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
 @_patch_stage("JobPrefilterMain")
 @_patch_stage("SilverExport")
 @_patch_stage("SilverIngest")
 @_patch_stage("ScraperRunner")
 def test_propagates_status_when_enrichment_fails(
-    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_classifier, mock_enricher
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier, mock_enricher
 ):
     mock_scraper_runner.scrape_data_from_sources.return_value = 0
     mock_silver_ingest.return_value.run.return_value = 0
     mock_silver_export.return_value.export.return_value = 5
     mock_prefilter.main.return_value = 0
+    mock_score.return_value = 0
     mock_classifier.main.return_value = 0
     mock_enricher.main.return_value = 1
 
@@ -247,17 +255,15 @@ def test_propagates_status_when_enrichment_fails(
 
 @_patch_stage("JobEnricherMain")
 @_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
 @_patch_stage("JobPrefilterMain")
 @_patch_stage("SilverExport")
 @_patch_stage("SilverIngest")
 @_patch_stage("ScraperRunner")
 def test_prefilter_config_flag_is_passed_through_to_prefilter_stage(
-    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_classifier, mock_enricher
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier, mock_enricher
 ):
-    mock_scraper_runner.scrape_data_from_sources.return_value = 0
-    mock_silver_ingest.return_value.run.return_value = 0
-    mock_silver_export.return_value.export.return_value = 5
-    mock_prefilter.main.return_value = 0
+    _succeeding_upstream(mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score)
     mock_classifier.main.return_value = 0
     mock_enricher.main.return_value = 0
 
