@@ -1,5 +1,4 @@
 """Opt-in migration check in an isolated schema; never touches public tables."""
-
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -15,17 +14,12 @@ from app.models import JobPosting
 from app.services.silver_sync import SilverSync
 
 
-@pytest.mark.skipif(
-    os.getenv("BE9_TEST_POSTGRES") != "1",
-    reason="Opt-in local PostgreSQL migration test",
-)
+@pytest.mark.skipif(os.getenv("BE9_TEST_POSTGRES") != "1", reason="Opt-in local PostgreSQL migration test")
 def test_migration_is_repeatable_and_preserves_legacy_rows():
     root = Path(__file__).resolve().parents[3]
     database_url = os.getenv("BE9_TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
     if not database_url or not database_url.startswith("postgresql://"):
-        pytest.fail(
-            "Set BE9_TEST_DATABASE_URL to a PostgreSQL test database URL", pytrace=False
-        )
+        pytest.fail("Set BE9_TEST_DATABASE_URL to a PostgreSQL test database URL", pytrace=False)
     try:
         connection = psycopg2.connect(database_url, connect_timeout=5)
     except psycopg2.OperationalError:
@@ -36,9 +30,7 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
     try:
         with connection.cursor() as cursor:
             cursor.execute(sql.SQL("CREATE SCHEMA {}").format(sql.Identifier(schema)))
-            cursor.execute(
-                sql.SQL("SET search_path TO {}").format(sql.Identifier(schema))
-            )
+            cursor.execute(sql.SQL("SET search_path TO {}").format(sql.Identifier(schema)))
             cursor.execute("""
                 CREATE TABLE company (company_id uuid PRIMARY KEY, name text UNIQUE NOT NULL,
                     company_type text NOT NULL, website_url text NOT NULL UNIQUE,
@@ -57,26 +49,16 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
                     '2026-01-01 12:00:00', 'legacy', 0.9,
                     '00000000-0000-0000-0000-000000000001');
             """)
-            migration = (root / "backend/app/sql/be9_migration.sql").read_text(
-                encoding="utf-8"
-            )
-            salary_migration = (
-                root / "backend/app/sql/be10_salary_migration.sql"
-            ).read_text(encoding="utf-8")
+            migration = (root / "backend/app/sql/be9_migration.sql").read_text(encoding="utf-8")
+            salary_migration = (root / "backend/app/sql/be10_salary_migration.sql").read_text(encoding="utf-8")
             cursor.execute(migration)
             cursor.execute(migration)
             cursor.execute(salary_migration)
             cursor.execute(salary_migration)
             sql_dir = root / "backend/app/sql"
-            constraints_migration = (
-                sql_dir / "be13_salary_constraints_migration.sql"
-            ).read_text(encoding="utf-8")
-            constraints_rollback = (
-                sql_dir / "be13_salary_constraints_rollback.sql"
-            ).read_text(encoding="utf-8")
-            salary_rollback = (
-                sql_dir / "be10_salary_migration_rollback.sql"
-            ).read_text(encoding="utf-8")
+            constraints_migration = (sql_dir / "be13_salary_constraints_migration.sql").read_text(encoding="utf-8")
+            constraints_rollback = (sql_dir / "be13_salary_constraints_rollback.sql").read_text(encoding="utf-8")
+            salary_rollback = (sql_dir / "be10_salary_migration_rollback.sql").read_text(encoding="utf-8")
             salary_constraints = "SELECT count(*) FROM pg_constraint WHERE conrelid = 'jobposting'::regclass AND conname LIKE 'ck_jobposting_salary_%'"
             salary_columns = "SELECT column_name FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name LIKE 'salary_%%' ORDER BY column_name"
             # The legacy row has salary_average but no period or source, so the
@@ -84,16 +66,11 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             # left half-applied.
             with pytest.raises(psycopg2.errors.CheckViolation) as legacy:
                 cursor.execute(constraints_migration)
-            assert (
-                legacy.value.diag.constraint_name
-                == "ck_jobposting_salary_details_required"
-            )
+            assert legacy.value.diag.constraint_name == "ck_jobposting_salary_details_required"
             cursor.execute("ROLLBACK")
             cursor.execute(salary_constraints)
             assert cursor.fetchone()[0] == 0
-            cursor.execute(
-                "UPDATE jobposting SET salary_period = 'yearly', salary_source = 'levels_fyi_average'"
-            )
+            cursor.execute("UPDATE jobposting SET salary_period = 'yearly', salary_source = 'levels_fyi_average'")
             cursor.execute(constraints_migration)
             cursor.execute(constraints_migration)
             cursor.execute(salary_constraints)
@@ -104,24 +81,10 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
                     cursor.execute(statement)
                 return violation.value.diag.constraint_name
 
-            assert (
-                rejected_by("UPDATE jobposting SET salary_average = 0")
-                == "ck_jobposting_salary_average_positive"
-            )
-            assert (
-                rejected_by(
-                    "UPDATE jobposting SET salary_average = NULL, salary_min = 200, salary_max = 100"
-                )
-                == "ck_jobposting_salary_range_order"
-            )
-            assert (
-                rejected_by("UPDATE jobposting SET salary_min = 100, salary_max = 200")
-                == "ck_jobposting_salary_range_or_average"
-            )
-            assert (
-                rejected_by("UPDATE jobposting SET salary_period = NULL")
-                == "ck_jobposting_salary_details_required"
-            )
+            assert rejected_by("UPDATE jobposting SET salary_average = 0") == "ck_jobposting_salary_average_positive"
+            assert rejected_by("UPDATE jobposting SET salary_average = NULL, salary_min = 200, salary_max = 100") == "ck_jobposting_salary_range_order"
+            assert rejected_by("UPDATE jobposting SET salary_min = 100, salary_max = 200") == "ck_jobposting_salary_range_or_average"
+            assert rejected_by("UPDATE jobposting SET salary_period = NULL") == "ck_jobposting_salary_details_required"
             # Both rollbacks are repeatable, and the migrations re-apply cleanly after them.
             cursor.execute(constraints_rollback)
             cursor.execute(constraints_rollback)
@@ -132,9 +95,7 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             cursor.execute(salary_columns, (schema,))
             assert cursor.fetchall() == [("salary_average",), ("salary_currency",)]
             cursor.execute(salary_migration)
-            cursor.execute(
-                "UPDATE jobposting SET salary_period = 'yearly', salary_source = 'levels_fyi_average'"
-            )
+            cursor.execute("UPDATE jobposting SET salary_period = 'yearly', salary_source = 'levels_fyi_average'")
             cursor.execute(constraints_migration)
             cursor.execute(salary_constraints)
             assert cursor.fetchone()[0] == 6
@@ -148,75 +109,40 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             assert cursor.fetchone()[0] == 0
             cursor.execute("SELECT count(*) FROM job_skill")
             assert cursor.fetchone()[0] == 0
-            cursor.execute(
-                "SELECT title, job_location, raw_description FROM jobposting"
-            )
-            assert cursor.fetchall() == [
-                ("Legacy Engineer", "Remote", "Original description")
-            ]
-            cursor.execute(
-                "SELECT data_type FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'",
-                (schema,),
-            )
+            cursor.execute("SELECT title, job_location, raw_description FROM jobposting")
+            assert cursor.fetchall() == [("Legacy Engineer", "Remote", "Original description")]
+            cursor.execute("SELECT data_type FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'", (schema,))
             assert cursor.fetchone()[0] == "text"
-            drop_location_migration = (
-                root / "backend/app/sql/be15_drop_job_location_migration.sql"
-            ).read_text(encoding="utf-8")
+            drop_location_migration = (root / "backend/app/sql/be15_drop_job_location_migration.sql").read_text(encoding="utf-8")
             cursor.execute(drop_location_migration)
             cursor.execute(drop_location_migration)
-            job_details_migration = (
-                root / "backend/app/sql/be19_job_details_migration.sql"
-            ).read_text(encoding="utf-8")
+            job_details_migration = (root / "backend/app/sql/be19_job_details_migration.sql").read_text(encoding="utf-8")
             cursor.execute(job_details_migration)
             cursor.execute(job_details_migration)
             # be9 must stay repeatable once the column it used to relax is gone.
             cursor.execute(migration)
-            cursor.execute(
-                "SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'",
-                (schema,),
-            )
+            cursor.execute("SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'", (schema,))
             assert cursor.fetchone()[0] == 0
-            cursor.execute("SELECT title, raw_description FROM jobposting")
-            assert cursor.fetchall() == [("Legacy Engineer", "Original description")]
-            cursor.execute("SELECT requirements FROM jobposting")
-            assert cursor.fetchall() == [(None,)]
-            cursor.execute(
-                "SELECT indexname FROM pg_indexes WHERE schemaname = %s "
-                "AND indexname LIKE 'ix_job%%'",
-                (schema,),
-            )
+            cursor.execute("SELECT title, raw_description, requirements FROM jobposting")
+            assert cursor.fetchall() == [("Legacy Engineer", "Original description", None)]
+            cursor.execute("SELECT indexname FROM pg_indexes WHERE schemaname = %s AND indexname LIKE 'ix_job%%'", (schema,))
             index_names = {row[0] for row in cursor.fetchall()}
             assert {
-                "ix_jobposting_company_id",
-                "ix_jobposting_employment_type",
-                "ix_jobposting_posted_date",
-                "ix_jobposting_salary_period",
-                "ix_job_location_location_id",
-                "ix_job_skill_skill_id",
+                "ix_jobposting_company_id", "ix_jobposting_employment_type",
+                "ix_jobposting_posted_date", "ix_jobposting_salary_period",
+                "ix_job_location_location_id", "ix_job_skill_skill_id",
                 "ix_job_category_category_id",
             } <= index_names
-        test_engine = create_engine(
-            database_url, connect_args={"options": f"-csearch_path={schema}"}
-        )
+        test_engine = create_engine(database_url, connect_args={"options": f"-csearch_path={schema}"})
         locations = [f"Office {i:02d} - Long location name" for i in range(12)]
         with Session(test_engine) as db, db.begin():
-            SilverSync(db).run(
-                [
-                    {
-                        "deduplication_key": "f97c5d29941bfb1b2fdab0874906ab82",
-                        "company_name": "Legacy",
-                        "job_name": "Multi-office Engineer",
-                        "job_description": "Long location regression",
-                        "locations": locations,
-                    }
-                ]
-            )
+            SilverSync(db).run([{
+                "deduplication_key": "f97c5d29941bfb1b2fdab0874906ab82",
+                "company_name": "Legacy", "job_name": "Multi-office Engineer",
+                "job_description": "Long location regression", "locations": locations,
+            }])
         with Session(test_engine) as db:
-            job = (
-                db.query(JobPosting)
-                .filter_by(source_key="silver:f97c5d29941bfb1b2fdab0874906ab82")
-                .one()
-            )
+            job = db.query(JobPosting).filter_by(source_key="silver:f97c5d29941bfb1b2fdab0874906ab82").one()
             assert len(job.locations) == 12
         assert "job_location" not in Base.metadata.tables["jobposting"].c
     finally:
@@ -224,9 +150,5 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             test_engine.dispose()
         with connection.cursor() as cursor:
             cursor.execute("ROLLBACK")
-            cursor.execute(
-                sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(
-                    sql.Identifier(schema)
-                )
-            )
+            cursor.execute(sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(sql.Identifier(schema)))
         connection.close()

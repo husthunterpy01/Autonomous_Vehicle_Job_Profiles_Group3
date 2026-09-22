@@ -260,3 +260,76 @@ curl -X POST http://127.0.0.1:8000/api/v1/companies \
 ```
 
 Note: when `SEED_ON_STARTUP=true`, created rows are replaced on restart because startup reseeds from the SQL file.
+
+## Job management API (BE-19)
+
+Apply the repeatable migration to an existing backend database and configure a
+server-to-server write key:
+
+```bash
+psql "$DATABASE_URL" -f app/sql/be19_job_details_migration.sql
+```
+
+```env
+JOB_WRITE_API_KEY=<generate-a-long-random-secret>
+```
+
+The BE-19 write source is a single system API request. Scheduled bulk ingestion
+continues to use `python -m app.sync_silver`. A caller-supplied `source_key` is
+stored in the isolated `api:` namespace; reusing it returns `409 Conflict`.
+
+Existing locations, skills, and categories can be linked by their ID fields.
+New values can be created atomically with the job through the nested
+`locations`, `skills`, and `categories` fields:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/jobs \
+  -H "Content-Type: application/json" \
+  -H "X-Job-Write-Key: $JOB_WRITE_API_KEY" \
+  -d '{
+    "source_key": "waymo-engineer-123",
+    "company_id": "11111111-1111-1111-1111-111111111035",
+    "title": "Robotics Software Engineer",
+    "description": "Build autonomous driving software.",
+    "requirements": "Python, C++, and robotics experience.",
+    "posted_date": "2026-09-21T08:00:00Z",
+    "salary_min": 140000,
+    "salary_max": 180000,
+    "salary_currency": "USD",
+    "salary_period": "yearly",
+    "salary_source": "api",
+    "locations": ["Mountain View, CA"],
+    "skills": [{"name": "Python", "skill_type": "programming_language"}],
+    "categories": [{
+      "main_type": "Software",
+      "sub_type": "Backend",
+      "taxonomy_version": 1
+    }],
+    "location_ids": [],
+    "skill_ids": [],
+    "category_ids": []
+  }'
+
+curl http://127.0.0.1:8000/api/v1/jobs/<job_id>
+```
+
+Successful create and detail responses contain `job_id`, title, company,
+locations, skills, grouped category, employment and seniority values,
+description, requirements, source metadata, posted date, and salary fields.
+The exact JSON schema and example are available in Swagger at `/docs`.
+
+`GET /api/v1/jobs` supports text, company, location, skill, category,
+employment, salary, sort, direction, and pagination parameters. Unknown IDs
+return `404`, inconsistent category groups return `400`, invalid input returns
+`422`, duplicates return `409`, and an unconfigured write service returns
+`503`.
+
+The normal-load regression test exercises a 100-row page with a two-second
+local/CI budget and a fixed maximum of six `SELECT` statements. Filter indexes
+live only in `app/sql/be19_job_details_migration.sql`, matching the project's
+migration-owned schema policy.
+
+The Silver sync currently maps the complete scraped advertisement into
+`raw_description`; it does not extract a separate requirements section. The
+`requirements` column is therefore populated for API-created records and stays
+`null` for scraped records until the ingestion pipeline produces that field.

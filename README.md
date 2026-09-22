@@ -213,7 +213,6 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/redoc | ReDoc |
 | http://127.0.0.1:8000/health | Health check |
 | http://127.0.0.1:8000/api/v1/companies | Companies API |
-| http://127.0.0.1:8000/api/v1/jobs | Job list and internal job creation API |
 
 </details>
 
@@ -247,97 +246,6 @@ curl -X POST http://127.0.0.1:8000/api/v1/companies \
 ```
 
 When `SEED_ON_STARTUP=true`, created rows are replaced on restart because startup reseeds from the SQL file.
-
-</details>
-
-<details>
-<summary>Job management API (BE-19)</summary>
-
-Apply the repeatable migration to an existing backend database, then configure
-a server-to-server write key:
-
-```bash
-psql "$DATABASE_URL" -f app/sql/be19_job_details_migration.sql
-```
-
-```env
-JOB_WRITE_API_KEY=<generate-a-long-random-secret>
-```
-
-The supported BE-19 write source is a single system/API request. Scheduled bulk
-ingestion continues to use `python -m app.sync_silver`; this avoids duplicating
-the established Silver import and deduplication workflow. `source_key` is a
-required stable identifier from the caller and is stored in the isolated
-`api:` namespace. Sending it again returns `409 Conflict` and does not create a
-duplicate.
-
-**Create and retrieve a job**
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/jobs \
-  -H "Content-Type: application/json" \
-  -H "X-Job-Write-Key: $JOB_WRITE_API_KEY" \
-  -d '{
-    "source_key": "waymo-engineer-123",
-    "company_id": "11111111-1111-1111-1111-111111111035",
-    "title": "Robotics Software Engineer",
-    "description": "Build autonomous driving software.",
-    "requirements": "Python, C++, and robotics experience.",
-    "employment_type": 1,
-    "seniority_level": 3,
-    "posted_date": "2026-09-21T08:00:00Z",
-    "salary_min": 140000,
-    "salary_max": 180000,
-    "salary_currency": "USD",
-    "salary_period": "yearly",
-    "salary_source": "api",
-    "location_ids": [],
-    "skill_ids": [],
-    "category_ids": []
-  }'
-
-curl http://127.0.0.1:8000/api/v1/jobs/<job_id>
-```
-
-Successful create and detail responses use this shape (nullable values omitted
-here only for readability):
-
-```json
-{
-  "job_id": "22222222-2222-2222-2222-222222222222",
-  "title": "Robotics Software Engineer",
-  "company_id": "11111111-1111-1111-1111-111111111035",
-  "company_name": "Example AV Company",
-  "locations": [],
-  "skills": [],
-  "category": null,
-  "employment_type": 1,
-  "department": null,
-  "seniority_level": 3,
-  "raw_description": "Build autonomous driving software.",
-  "requirements": "Python, C++, and robotics experience.",
-  "source_platform": null,
-  "source_job_id": null,
-  "source_url": null,
-  "posted_date": "2026-09-21T08:00:00Z",
-  "salary_min": 140000.0,
-  "salary_max": 180000.0,
-  "salary_average": null,
-  "salary_currency": "USD",
-  "salary_period": "yearly",
-  "salary_source": "api"
-}
-```
-
-`GET /api/v1/jobs` supports `q`, `company_id`, `location`, `skill`,
-`category_id`, `employment_type`, salary filters, and `page`/`page_size`.
-Unknown company/location/skill/category IDs return `404`, inconsistent category
-groups return `400`, invalid field types return `422`, duplicates return `409`,
-and an unconfigured write service returns `503`. The OpenAPI schema and example
-are also available at `/docs`. The normal-load regression test exercises a
-100-row page with a two-second local/CI budget and a fixed maximum of six
-`SELECT` statements; the migration indexes the company, location, skill,
-category, employment-type, posted-date, and salary-period filter paths.
 
 </details>
 

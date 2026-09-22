@@ -35,7 +35,16 @@ def create_job(
     db: DbSession,
     _write_access: Annotated[None, Depends(require_job_write_key)],
 ):
-    return job_service.create_job(db, data)
+    try:
+        return job_service.create_job(db, data)
+    except job_service.InvalidJobDataError as exc:
+        raise HTTPException(status_code=400, detail=exc.detail) from exc
+    except job_service.JobEntityNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=exc.detail) from exc
+    except job_service.DuplicateJobError as exc:
+        raise HTTPException(status_code=409, detail=exc.detail) from exc
+    except job_service.JobPersistenceError as exc:
+        raise HTTPException(status_code=500, detail=exc.detail) from exc
 
 
 @router.get("", response_model=PageResponse[JobResponse])
@@ -68,21 +77,10 @@ def list_jobs(
             detail="salary_period is required when min_salary or max_salary is set.",
         )
     return job_service.list_jobs(
-        db,
-        q=q,
-        location=location,
-        skill=skill,
-        category_id=category_id,
-        company_id=company_id,
-        employment_type=employment_type,
-        min_salary=min_salary,
-        max_salary=max_salary,
+        db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
+        employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
         salary_period=salary_period.value if salary_period else None,
-        has_salary=has_salary,
-        sort=sort,
-        direction=direction,
-        page=page,
-        page_size=page_size,
+        has_salary=has_salary, sort=sort, direction=direction, page=page, page_size=page_size,
     )
 
 

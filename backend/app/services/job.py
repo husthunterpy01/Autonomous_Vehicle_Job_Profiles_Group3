@@ -2,9 +2,8 @@ import logging
 from datetime import datetime, timezone
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy import func, or_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, selectinload
 
 from app.enums.job_sort_field import JobSortField
@@ -12,9 +11,32 @@ from app.enums.sort_direction import SortDirection
 from app.models import Category, Company, JobPosting, Location, Skill
 from app.schemas.job import CategoryResponse, JobCreate, JobDetailResponse, JobResponse
 from app.services.category_sync import dominant_categories
+from app.utils.normalization import normalized
 from app.utils.pagination import PageResponse
 
 logger = logging.getLogger(__name__)
+
+
+class JobManagementError(Exception):
+    def __init__(self, detail: str):
+        self.detail = detail
+        super().__init__(detail)
+
+
+class JobEntityNotFoundError(JobManagementError):
+    pass
+
+
+class DuplicateJobError(JobManagementError):
+    pass
+
+
+class InvalidJobDataError(JobManagementError):
+    pass
+
+
+class JobPersistenceError(JobManagementError):
+    pass
 
 
 def _to_category_response(categories) -> CategoryResponse | None:
@@ -33,31 +55,21 @@ def _to_category_response(categories) -> CategoryResponse | None:
     return CategoryResponse(
         main_type=members[0].main_type,
         taxonomy_version=members[0].taxonomy_version,
-        sub_types=[
-            {"category_id": c.category_id, "sub_type": c.sub_type} for c in members
-        ],
+        sub_types=[{"category_id": c.category_id, "sub_type": c.sub_type} for c in members],
     )
 
 
 def to_response(job):
     return JobResponse(
-        job_id=job.job_id,
-        title=job.title,
-        company_id=job.company_id,
+        job_id=job.job_id, title=job.title, company_id=job.company_id,
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
         category=_to_category_response(job.categories),
-        employment_type=job.employment_type,
-        raw_description=job.raw_description,
-        source_url=job.source_url,
-        posted_date=job.posted_date,
-        salary_min=job.salary_min,
-        salary_max=job.salary_max,
-        salary_average=job.salary_average,
-        salary_currency=job.salary_currency,
-        salary_period=job.salary_period,
-        salary_source=job.salary_source,
+        employment_type=job.employment_type, raw_description=job.raw_description,
+        source_url=job.source_url, posted_date=job.posted_date,
+        salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
+        salary_currency=job.salary_currency, salary_period=job.salary_period, salary_source=job.salary_source,
     )
 
 
@@ -74,10 +86,8 @@ def to_detail_response(job) -> JobDetailResponse:
 
 def job_query(db):
     return db.query(JobPosting).options(
-        selectinload(JobPosting.company),
-        selectinload(JobPosting.locations),
-        selectinload(JobPosting.skills),
-        selectinload(JobPosting.categories),
+        selectinload(JobPosting.company), selectinload(JobPosting.locations), selectinload(JobPosting.skills),
+        selectinload(JobPosting.categories)
     )
 
 
@@ -107,45 +117,23 @@ def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
 
 
 def list_jobs(
-    db: Session,
-    *,
-    q: str | None = None,
-    location: str | None = None,
-    skill: str | None = None,
-    category_id: UUID | None = None,
-    company_id: UUID | None = None,
-    employment_type: int | None = None,
-    min_salary: float | None = None,
-    max_salary: float | None = None,
-    salary_period: str | None = None,
-    has_salary: bool | None = None,
-    sort: JobSortField = JobSortField.POSTED_DATE,
-    direction: SortDirection | None = None,
-    page: int = 1,
-    page_size: int = 10,
+    db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
+    category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
+    min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
+    has_salary: bool | None = None, sort: JobSortField = JobSortField.POSTED_DATE,
+    direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
 ):
     query = job_query(db)
     if q:
-        query = query.filter(
-            or_(
-                JobPosting.title.icontains(q, autoescape=True),
-                JobPosting.company.has(Company.name.icontains(q, autoescape=True)),
-            )
-        )
+        query = query.filter(or_(JobPosting.title.icontains(q, autoescape=True), JobPosting.company.has(Company.name.icontains(q, autoescape=True))))
     if location:
-        query = query.filter(
-            JobPosting.locations.any(Location.name.icontains(location, autoescape=True))
-        )
+        query = query.filter(JobPosting.locations.any(Location.name.icontains(location, autoescape=True)))
     if skill:
-        query = query.filter(
-            JobPosting.skills.any(Skill.skill_name.icontains(skill, autoescape=True))
-        )
+        query = query.filter(JobPosting.skills.any(Skill.skill_name.icontains(skill, autoescape=True)))
     if company_id:
         query = query.filter(JobPosting.company_id == company_id)
     if category_id:
-        query = query.filter(
-            JobPosting.categories.any(Category.category_id == category_id)
-        )
+        query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
         query = query.filter(JobPosting.employment_type == employment_type)
     if min_salary is not None:
@@ -159,20 +147,12 @@ def list_jobs(
         # real disclosed range) - that still counts as "has some salary
         # info" for this flag, even though min_salary/max_salary above
         # deliberately only compare real ranges.
-        condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(
-            None
-        )
+        condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
     query = _apply_sort(query, sort, direction)
     total = query.count()
     jobs = query.offset((page - 1) * page_size).limit(page_size).all()
-    return PageResponse(
-        items=[to_response(job) for job in jobs],
-        total=total,
-        page=page,
-        page_size=page_size,
-        total_pages=(total + page_size - 1) // page_size,
-    )
+    return PageResponse(items=[to_response(job) for job in jobs], total=total, page=page, page_size=page_size, total_pages=(total + page_size - 1) // page_size)
 
 
 def get_job(db: Session, job_id: UUID) -> JobDetailResponse | None:
@@ -187,17 +167,90 @@ def _load_related(db: Session, model, id_column, ids: list[UUID], label: str):
     found = {getattr(row, id_column.key) for row in rows}
     missing = [str(item_id) for item_id in ids if item_id not in found]
     if missing:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Unknown {label} IDs: {', '.join(missing)}",
+        raise JobEntityNotFoundError(
+            f"Unknown {label} IDs: {', '.join(missing)}"
         )
     return rows
 
 
-def _is_unique_violation(exc: IntegrityError) -> bool:
+def _is_duplicate_job_violation(exc: IntegrityError) -> bool:
     original = getattr(exc, "orig", None)
     sqlstate = getattr(original, "sqlstate", None) or getattr(original, "pgcode", None)
-    return sqlstate == "23505" or "unique constraint" in str(original).lower()
+    constraint = getattr(getattr(original, "diag", None), "constraint_name", None)
+    message = str(original).lower()
+    return (
+        sqlstate == "23505"
+        and constraint in {"jobposting_name_key", "jobposting_source_key_key"}
+    ) or (
+        "unique constraint" in message
+        and ("jobposting.name" in message or "jobposting.source_key" in message)
+    )
+
+
+def _merge_locations(db: Session, linked: list[Location], names: list[str]):
+    by_key = {location.normalized_name: location for location in linked}
+    for name in names:
+        key = normalized(name)
+        location = by_key.get(key)
+        if location is None:
+            location = db.query(Location).filter_by(normalized_name=key).one_or_none()
+        if location is None:
+            location = Location(name=name, normalized_name=key)
+            db.add(location)
+            db.flush()
+        by_key[key] = location
+    return list(by_key.values())
+
+
+def _merge_skills(db: Session, linked: list[Skill], specs):
+    by_key = {(skill.normalized_name, skill.skill_type): skill for skill in linked}
+    for spec in specs:
+        key = (normalized(spec.name), spec.skill_type.value)
+        skill = by_key.get(key)
+        if skill is None:
+            skill = db.query(Skill).filter_by(
+                normalized_name=key[0], skill_type=key[1]
+            ).one_or_none()
+        if skill is None:
+            skill = Skill(
+                skill_name=spec.name,
+                normalized_name=key[0],
+                skill_type=key[1],
+            )
+            db.add(skill)
+            db.flush()
+        by_key[key] = skill
+    return list(by_key.values())
+
+
+def _merge_categories(db: Session, linked: list[Category], specs):
+    by_key = {
+        (category.taxonomy_version, category.normalized_name): category
+        for category in linked
+    }
+    for spec in specs:
+        key = (spec.taxonomy_version, normalized(spec.sub_type))
+        category = by_key.get(key)
+        if category is None:
+            category = db.query(Category).filter_by(
+                taxonomy_version=key[0], normalized_name=key[1]
+            ).one_or_none()
+        if category is None:
+            category = Category(
+                main_type=spec.main_type,
+                sub_type=spec.sub_type,
+                normalized_name=key[1],
+                taxonomy_version=key[0],
+            )
+            db.add(category)
+            db.flush()
+        elif category.main_type != spec.main_type:
+            raise InvalidJobDataError(
+                f"Category {spec.sub_type} already belongs to main category "
+                f"{category.main_type}"
+            )
+        by_key[key] = category
+    return list(by_key.values())
 
 
 def create_job(db: Session, data: JobCreate) -> JobDetailResponse:
@@ -209,17 +262,13 @@ def create_job(db: Session, data: JobCreate) -> JobDetailResponse:
     storage_key = f"api:{data.source_key}"
     try:
         if db.get(Company, data.company_id) is None:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Company not found: {data.company_id}",
-            )
+            raise JobEntityNotFoundError(f"Company not found: {data.company_id}")
         if (
             db.query(JobPosting).filter(JobPosting.source_key == storage_key).first()
             is not None
         ):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Job already exists for source_key: {data.source_key}",
+            raise DuplicateJobError(
+                f"Job already exists for source_key: {data.source_key}"
             )
 
         locations = _load_related(
@@ -229,15 +278,15 @@ def create_job(db: Session, data: JobCreate) -> JobDetailResponse:
         categories = _load_related(
             db, Category, Category.category_id, data.category_ids, "category"
         )
+        locations = _merge_locations(db, locations, data.locations)
+        skills = _merge_skills(db, skills, data.skills)
+        categories = _merge_categories(db, categories, data.categories)
         category_groups = {
             (category.taxonomy_version, category.main_type) for category in categories
         }
         if len(category_groups) > 1:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    "category_ids must belong to one taxonomy version and main category"
-                ),
+            raise InvalidJobDataError(
+                "categories must belong to one taxonomy version and main category"
             )
 
         job = JobPosting(
@@ -260,7 +309,7 @@ def create_job(db: Session, data: JobCreate) -> JobDetailResponse:
             salary_average=data.salary_average,
             salary_currency=data.salary_currency,
             salary_period=data.salary_period.value if data.salary_period else None,
-            salary_source=data.salary_source,
+            salary_source=data.salary_source.value if data.salary_source else None,
             ingested_at=datetime.now(timezone.utc),
             locations=locations,
             skills=skills,
@@ -269,26 +318,19 @@ def create_job(db: Session, data: JobCreate) -> JobDetailResponse:
         db.add(job)
         db.commit()
         return get_job(db, job.job_id)
-    except HTTPException:
+    except JobManagementError:
         db.rollback()
         raise
     except IntegrityError as exc:
         db.rollback()
-        if _is_unique_violation(exc):
+        if _is_duplicate_job_violation(exc):
             logger.info("Duplicate job rejected for source_key=%s", data.source_key)
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Job already exists for source_key: {data.source_key}",
+            raise DuplicateJobError(
+                f"Job already exists for source_key: {data.source_key}"
             ) from exc
         logger.exception("Database error creating source_key=%s", data.source_key)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to create job",
-        ) from exc
-    except Exception as exc:
+        raise JobPersistenceError("Unable to create job") from exc
+    except SQLAlchemyError as exc:
         db.rollback()
-        logger.exception("Unable to create job for source_key=%s", data.source_key)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Unable to create job",
-        ) from exc
+        logger.exception("Database error creating source_key=%s", data.source_key)
+        raise JobPersistenceError("Unable to create job") from exc

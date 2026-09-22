@@ -58,3 +58,16 @@ def test_job_create_rejects_duplicate_relation_ids():
         JobCreate.model_validate(
             {**valid_payload(), "location_ids": [location_id, location_id]}
         )
+
+
+def test_job_create_rejects_duplicate_nested_relations():
+    with pytest.raises(ValidationError, match="skills must not contain duplicates"):
+        JobCreate.model_validate(
+            {
+                **valid_payload(),
+                "skills": [
+                    {"name": "Python", "skill_type": "programming_language"},
+                    {"name": " python ", "skill_type": "programming_language"},
+                ],
+            }
+        )

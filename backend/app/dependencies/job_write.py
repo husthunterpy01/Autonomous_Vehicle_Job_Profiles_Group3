@@ -16,7 +16,9 @@ def require_job_write_key(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Job write API is not configured",
         )
-    if write_key is None or not compare_digest(write_key, configured_key):
+    if write_key is None or not compare_digest(
+        write_key.encode("utf-8"), configured_key.encode("utf-8")
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing job write API key",

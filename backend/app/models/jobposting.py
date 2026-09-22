@@ -1,16 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy import (
-    Column,
-    DateTime,
-    Float,
-    ForeignKey,
-    Index,
-    Integer,
-    String,
-    Table,
-    Text,
-)
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -19,63 +9,27 @@ from app.core.database import Base
 job_location = Table(
     "job_location",
     Base.metadata,
-    Column(
-        "job_id",
-        UUID(as_uuid=True),
-        ForeignKey("jobposting.job_id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
-        "location_id",
-        UUID(as_uuid=True),
-        ForeignKey("location.location_id"),
-        primary_key=True,
-    ),
-    Index("ix_job_location_location_id", "location_id"),
+    Column("job_id", UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True),
+    Column("location_id", UUID(as_uuid=True), ForeignKey("location.location_id"), primary_key=True),
 )
 
 job_skill = Table(
     "job_skill",
     Base.metadata,
-    Column(
-        "job_id",
-        UUID(as_uuid=True),
-        ForeignKey("jobposting.job_id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
-        "skill_id", UUID(as_uuid=True), ForeignKey("skill.skill_id"), primary_key=True
-    ),
-    Index("ix_job_skill_skill_id", "skill_id"),
+    Column("job_id", UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True),
+    Column("skill_id", UUID(as_uuid=True), ForeignKey("skill.skill_id"), primary_key=True),
 )
 
 job_category = Table(
     "job_category",
     Base.metadata,
-    Column(
-        "job_id",
-        UUID(as_uuid=True),
-        ForeignKey("jobposting.job_id", ondelete="CASCADE"),
-        primary_key=True,
-    ),
-    Column(
-        "category_id",
-        UUID(as_uuid=True),
-        ForeignKey("category.category_id"),
-        primary_key=True,
-    ),
-    Index("ix_job_category_category_id", "category_id"),
+    Column("job_id", UUID(as_uuid=True), ForeignKey("jobposting.job_id", ondelete="CASCADE"), primary_key=True),
+    Column("category_id", UUID(as_uuid=True), ForeignKey("category.category_id"), primary_key=True),
 )
 
 
 class JobPosting(Base):
     __tablename__ = "jobposting"
-    __table_args__ = (
-        Index("ix_jobposting_company_id", "company_id"),
-        Index("ix_jobposting_employment_type", "employment_type"),
-        Index("ix_jobposting_posted_date", "posted_date"),
-        Index("ix_jobposting_salary_period", "salary_period"),
-    )
 
     job_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     name = Column(String(255), unique=True, nullable=False)

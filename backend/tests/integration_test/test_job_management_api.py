@@ -54,6 +54,15 @@ def test_create_job_links_taxonomy_and_is_immediately_retrievable(
         "salary_currency": "aud",
         "salary_period": "yearly",
         "salary_source": "api",
+        "locations": ["Remote"],
+        "skills": [{"name": "PostgreSQL", "skill_type": "tool"}],
+        "categories": [
+            {
+                "main_type": "Software",
+                "sub_type": "API Platform",
+                "taxonomy_version": 1,
+            }
+        ],
         "location_ids": [str(location.location_id)],
         "skill_ids": [str(skill.skill_id)],
         "category_ids": [str(category.category_id)],
@@ -68,10 +77,19 @@ def test_create_job_links_taxonomy_and_is_immediately_retrievable(
         body = created.json()
         assert body["company_name"] == "Create Job AV"
         assert body["requirements"] == "Python and PostgreSQL"
-        assert body["locations"] == ["Perth, Australia"]
-        assert body["skills"] == ["Python"]
-        assert body["category"]["sub_types"][0]["sub_type"] == "Backend"
+        assert body["locations"] == ["Perth, Australia", "Remote"]
+        assert body["skills"] == ["PostgreSQL", "Python"]
+        assert {
+            item["sub_type"] for item in body["category"]["sub_types"]
+        } == {"Backend", "API Platform"}
         assert body["salary_currency"] == "AUD"
+        assert db_session.query(Location).filter_by(normalized_name="remote").count() == 1
+        assert (
+            db_session.query(Skill)
+            .filter_by(normalized_name="postgresql", skill_type="tool")
+            .count()
+            == 1
+        )
 
         detail = client.get(f"/jobs/{body['job_id']}")
         assert detail.status_code == 200
@@ -94,6 +112,28 @@ def test_create_job_links_taxonomy_and_is_immediately_retrievable(
         )
         assert duplicate.status_code == 409
         assert "source_key" in duplicate.json()["detail"]
+
+
+def test_non_ascii_write_key_is_rejected_without_server_error(
+    db_session, monkeypatch
+):
+    monkeypatch.setattr(settings, "job_write_api_key", "test-write-key")
+    payload = {
+        "source_key": "unicode-key-test",
+        "company_id": str(uuid4()),
+        "title": "Engineer",
+        "description": "Description",
+    }
+
+    with _client(db_session) as client:
+        response = client.post(
+            "/jobs",
+            json=payload,
+            headers={b"X-Job-Write-Key": "café".encode()},
+        )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Invalid or missing job write API key"
 
 
 def test_create_job_reports_missing_relations_and_mixed_categories(

@@ -12,7 +12,9 @@ from pydantic import (
 )
 
 from app.enums.employment_type import EmploymentType
+from app.enums.salary_source import SalarySource
 from app.enums.seniority_type import SeniorityLevel
+from app.enums.skill_type import SkillType
 
 
 class SalaryPeriod(str, Enum):
@@ -76,6 +78,37 @@ class JobDetailResponse(JobResponse):
     source_job_id: str | None
 
 
+class JobSkillCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    name: str = Field(min_length=1)
+    skill_type: SkillType
+
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+
+class JobCategoryCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    main_type: str = Field(min_length=1)
+    sub_type: str = Field(min_length=1)
+    taxonomy_version: int = Field(default=1, gt=0)
+
+    @field_validator("main_type", "sub_type")
+    @classmethod
+    def normalize_name(cls, value: str) -> str:
+        value = " ".join(value.split())
+        if not value:
+            raise ValueError("must not be blank")
+        return value
+
+
 class JobCreate(BaseModel):
     """Validated payload for the internal/system job-write endpoint."""
 
@@ -100,6 +133,17 @@ class JobCreate(BaseModel):
                 "salary_currency": "USD",
                 "salary_period": "yearly",
                 "salary_source": "api",
+                "locations": ["Mountain View, CA"],
+                "skills": [
+                    {"name": "Python", "skill_type": "programming_language"}
+                ],
+                "categories": [
+                    {
+                        "main_type": "Software",
+                        "sub_type": "Backend",
+                        "taxonomy_version": 1,
+                    }
+                ],
                 "location_ids": [],
                 "skill_ids": [],
                 "category_ids": [],
@@ -125,7 +169,10 @@ class JobCreate(BaseModel):
     salary_average: float | None = Field(default=None, gt=0)
     salary_currency: str | None = Field(default=None, min_length=3, max_length=3)
     salary_period: SalaryPeriod | None = None
-    salary_source: str | None = None
+    salary_source: SalarySource | None = None
+    locations: list[str] = Field(default_factory=list)
+    skills: list[JobSkillCreate] = Field(default_factory=list)
+    categories: list[JobCategoryCreate] = Field(default_factory=list)
     location_ids: list[UUID] = Field(default_factory=list)
     skill_ids: list[UUID] = Field(default_factory=list)
     category_ids: list[UUID] = Field(default_factory=list)
@@ -138,7 +185,6 @@ class JobCreate(BaseModel):
         "department",
         "source_platform",
         "source_job_id",
-        "salary_source",
     )
     @classmethod
     def strip_text(cls, value: str | None) -> str | None:
@@ -176,6 +222,29 @@ class JobCreate(BaseModel):
             raise ValueError("must not contain duplicate IDs")
         return values
 
+    @field_validator("locations")
+    @classmethod
+    def normalize_locations(cls, values: list[str]) -> list[str]:
+        normalized_values = [" ".join(value.split()) for value in values]
+        if any(not value for value in normalized_values):
+            raise ValueError("must contain only non-blank names")
+        if len({value.casefold() for value in normalized_values}) != len(values):
+            raise ValueError("must not contain duplicate names")
+        return normalized_values
+
+    @model_validator(mode="after")
+    def reject_duplicate_nested_relations(self):
+        skill_keys = {(skill.name.casefold(), skill.skill_type) for skill in self.skills}
+        if len(skill_keys) != len(self.skills):
+            raise ValueError("skills must not contain duplicates")
+        category_keys = {
+            (category.taxonomy_version, category.sub_type.casefold())
+            for category in self.categories
+        }
+        if len(category_keys) != len(self.categories):
+            raise ValueError("categories must not contain duplicates")
+        return self
+
     @field_validator("posted_date")
     @classmethod
     def require_timezone(cls, value: datetime | None) -> datetime | None:
@@ -202,10 +271,6 @@ class JobCreate(BaseModel):
                 raise ValueError(
                     "salary_currency, salary_period, and salary_source are required "
                     "when salary is provided"
-                )
-            if self.salary_source not in {"api", "regex", "levels_fyi_average"}:
-                raise ValueError(
-                    "salary_source must be api, regex, or levels_fyi_average"
                 )
         elif any(value is not None for value in metadata):
             raise ValueError("salary metadata requires a salary value")
