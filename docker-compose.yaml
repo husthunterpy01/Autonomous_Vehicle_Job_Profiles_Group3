@@ -1,32 +1,13 @@
 services:
-  db:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-appuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing, see .env.sample}
-      POSTGRES_DB: ${POSTGRES_DB:-appdb}
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-appuser} -d ${POSTGRES_DB:-appdb}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app_net
-
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-appuser}:${POSTGRES_PASSWORD:?missing, see .env.sample}@db:5432/${POSTGRES_DB:-appdb}
+      DATABASE_URL: ${SUPABASE_DATABASE_URL:?missing, see .env.sample}
+      SEED_ON_STARTUP: "false"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?missing, see .env.sample}
-    depends_on:
-      db:
-        condition: service_healthy
     ports:
       - "8000:8000"
     networks:
@@ -45,9 +26,6 @@ services:
       - "3000:3000"
     networks:
       - app_net
-
-volumes:
-  db_data:
 
 networks:
   app_net:
