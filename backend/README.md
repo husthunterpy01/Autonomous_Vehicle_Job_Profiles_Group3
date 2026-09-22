@@ -176,6 +176,57 @@ curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/login \
 curl -b cookies.txt http://127.0.0.1:8000/api/v1/auth/me
 ```
 
+### Personal profile and password (BE-18)
+
+Authenticated users can view and modify only their own account. The user ID is
+taken from the signed authentication cookie or bearer token; no user ID is
+accepted in either update path.
+
+| Method | URL | Result |
+|---|---|---|
+| `GET` | `/api/v1/auth/me` | Current user's profile |
+| `PATCH` | `/api/v1/auth/me` | Update email, username, full name, phone, or address |
+| `PATCH` | `/api/v1/auth/me/password` | Change password after checking the current password (`204`) |
+
+Email and username remain unique and are normalized to lowercase. Empty update
+objects, invalid email/username/phone values, weak passwords, an incorrect
+current password, and reusing the current password are rejected. Passwords and
+password hashes are never included in API responses. Profile and password
+changes are recorded in application logs without logging the changed values or
+passwords.
+
+```bash
+curl -b cookies.txt -X PATCH http://127.0.0.1:8000/api/v1/auth/me \
+  -H "Content-Type: application/json" \
+  -d '{
+    "full_name": "Updated Driver",
+    "phone": "+61 412 345 678",
+    "address": "Perth, Western Australia"
+  }'
+
+curl -b cookies.txt -X PATCH \
+  http://127.0.0.1:8000/api/v1/auth/me/password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "current_password": "SecurePassword!123",
+    "new_password": "UpdatedPassword!456"
+  }'
+```
+
+Fresh databases receive the optional `phone` and `address` columns from the ORM.
+For an existing PostgreSQL database, apply the repeatable migration from
+`backend/`:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f app/sql/be18_user_profile_migration.sql
+```
+
+The optional BE-18 session-invalidation enhancement is intentionally not
+included here; the current authenticated session and other unexpired tokens
+remain valid after an in-session password change. BE-20 adds mandatory session
+invalidation for forgotten-password resets.
+
 ## Favorites API (BE-11)
 
 All favorite endpoints require a valid login cookie or bearer token. The user ID
