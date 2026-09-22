@@ -26,7 +26,9 @@ def get_current_user(
         )
 
     try:
-        user_id = SecurityService.decode_access_token(token)
+        user_id, token_version = SecurityService.decode_access_token_with_version(
+            token
+        )
     except ValueError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -34,7 +36,7 @@ def get_current_user(
         ) from error
 
     user = db.get(User, user_id)
-    if not user or not user.is_active:
+    if not user or not user.is_active or user.token_version != token_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or expired authentication",

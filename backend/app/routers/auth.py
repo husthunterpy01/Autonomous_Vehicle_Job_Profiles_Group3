@@ -1,26 +1,83 @@
+import logging
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
-from app.schemas.auth import AuthResponse, LoginRequest, SignUpRequest, UserResponse
+from app.schemas.auth import (
+    AuthResponse,
+    ForgotPasswordRequest,
+    LoginRequest,
+    MessageResponse,
+    PasswordResetRequest,
+    PasswordResetTokenResponse,
+    SignUpRequest,
+    UserResponse,
+)
 from app.services.auth import AuthService, DuplicateUserError
+from app.services.email import (
+    EmailDeliveryError,
+    PasswordResetEmailSender,
+    get_password_reset_email_sender,
+)
+from app.services.password_reset import (
+    ExpiredResetTokenError,
+    InvalidResetTokenError,
+    PasswordResetService,
+    ReusedPasswordError,
+    UsedResetTokenError,
+)
 from app.services.rate_limit import LoginRateLimiter
 from app.utils.security import SecurityService
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 DbSession = Annotated[Session, Depends(get_db)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+PasswordResetSender = Annotated[
+    PasswordResetEmailSender,
+    Depends(get_password_reset_email_sender),
+]
+
+logger = logging.getLogger(__name__)
+GENERIC_RESET_MESSAGE = (
+    "If an account matches that email or username, password reset instructions "
+    "will be sent."
+)
 
 login_rate_limiter = LoginRateLimiter(
     max_attempts=settings.auth_login_max_attempts,
     window_seconds=settings.auth_login_window_seconds,
 )
+password_reset_rate_limiter = LoginRateLimiter(
+    max_attempts=settings.password_reset_max_requests,
+    window_seconds=settings.password_reset_window_seconds,
+)
+
+
+def _raise_reset_token_error(error: Exception) -> None:
+    if isinstance(error, ExpiredResetTokenError):
+        detail = "Password reset token has expired"
+    elif isinstance(error, UsedResetTokenError):
+        detail = "Password reset token has already been used"
+    else:
+        detail = "Password reset token is invalid"
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=detail,
+    ) from error
 
 
 def _set_access_cookie(
@@ -33,7 +90,11 @@ def _set_access_cookie(
         expires_delta = timedelta(minutes=settings.jwt_access_token_minutes)
         max_age = None
 
-    token = SecurityService.create_access_token(user.user_id, expires_delta)
+    token = SecurityService.create_access_token(
+        user.user_id,
+        expires_delta,
+        token_version=user.token_version,
+    )
     response.set_cookie(
         key=settings.auth_cookie_name,
         value=token,
@@ -102,6 +163,112 @@ def sign_out(response: Response):
         samesite="lax",
         path="/",
     )
+
+
+@router.post(
+    "/forgot-password",
+    response_model=MessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+def forgot_password(
+    data: ForgotPasswordRequest,
+    request: Request,
+    db: DbSession,
+    email_sender: PasswordResetSender,
+):
+    client_host = request.client.host if request.client else "unknown"
+    keys = (
+        "ip:" + SecurityService.hash_rate_limit_key(client_host),
+        "identifier:" + SecurityService.hash_rate_limit_key(data.identifier),
+    )
+    retry_values = [
+        retry_after
+        for key in keys
+        if (retry_after := password_reset_rate_limiter.retry_after(key)) is not None
+    ]
+    if retry_values:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many password reset requests. Please try again later",
+            headers={"Retry-After": str(max(retry_values))},
+        )
+    for key in keys:
+        password_reset_rate_limiter.record_failure(key)
+    logger.info(
+        "Password reset request accepted",
+        extra={
+            "client_hash": keys[0],
+            "identifier_hash": keys[1],
+        },
+    )
+
+    issued = PasswordResetService.request_reset(db, data.identifier)
+    if issued:
+        try:
+            email_sender.send_reset_link(issued.user, issued.token)
+        except EmailDeliveryError:
+            PasswordResetService.revoke_token(db, issued.token)
+            logger.exception(
+                "Password reset email delivery failed",
+                extra={"user_id": str(issued.user.user_id)},
+            )
+    return MessageResponse(message=GENERIC_RESET_MESSAGE)
+
+
+@router.get(
+    "/reset-password/verify",
+    response_model=PasswordResetTokenResponse,
+)
+def verify_password_reset_token(
+    db: DbSession,
+    token: Annotated[str, Query(min_length=32, max_length=512)],
+):
+    try:
+        record = PasswordResetService.verify_token(db, token)
+    except (
+        InvalidResetTokenError,
+        ExpiredResetTokenError,
+        UsedResetTokenError,
+    ) as error:
+        _raise_reset_token_error(error)
+    return PasswordResetTokenResponse(expires_at=record.expires_at)
+
+
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+def reset_password(
+    data: PasswordResetRequest,
+    response: Response,
+    db: DbSession,
+    email_sender: PasswordResetSender,
+):
+    try:
+        user = PasswordResetService.reset_password(db, data.token, data.new_password)
+    except (
+        InvalidResetTokenError,
+        ExpiredResetTokenError,
+        UsedResetTokenError,
+    ) as error:
+        _raise_reset_token_error(error)
+    except ReusedPasswordError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password",
+        ) from error
+
+    response.delete_cookie(
+        key=settings.auth_cookie_name,
+        httponly=True,
+        secure=settings.auth_cookie_secure,
+        samesite="lax",
+        path="/",
+    )
+    try:
+        email_sender.send_password_changed(user)
+    except EmailDeliveryError:
+        logger.exception(
+            "Password change confirmation email delivery failed",
+            extra={"user_id": str(user.user_id)},
+        )
 
 
 @router.get("/me", response_model=UserResponse)
