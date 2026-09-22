@@ -2,7 +2,6 @@ import json
 from unittest.mock import patch
 
 import pytest
-
 from scrapers.utils.relevance_classifier_cli import (
     _build_parser,
     _load_classifier,

@@ -5,13 +5,6 @@ import json
 import logging
 from pathlib import Path
 
-from sklearn.metrics import (
-    accuracy_score,
-    confusion_matrix,
-    precision_recall_fscore_support,
-)
-from sklearn.model_selection import train_test_split
-
 from scrapers.service.llm import JobFilterConfig, JobPostingIO
 from scrapers.service.ml.relevance_classifier import RelevanceClassifier
 from scrapers.service.ml.relevance_classifier import job_text as tfidf_job_text
@@ -22,6 +15,12 @@ from scrapers.utils.job_classifier import (
     _resolve,
     _write_line,
 )
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    precision_recall_fscore_support,
+)
+from sklearn.model_selection import train_test_split
 
 logger = logging.getLogger(__name__)
 

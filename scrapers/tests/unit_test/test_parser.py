@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from scrapers.utils.parser import ScraperParser
 
 
