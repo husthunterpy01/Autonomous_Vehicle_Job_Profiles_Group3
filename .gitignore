@@ -72,3 +72,6 @@ pnpm-debug.log*
 
 # Reasonix tool workspace data
 .reasonix/
+
+# Log result file
+.jsonl
