@@ -65,9 +65,23 @@ def test_jwt_contains_only_minimal_authentication_claims():
         algorithms=[settings.jwt_algorithm],
     )
 
-    assert set(payload) == {"sub", "type", "iat", "exp"}
+    assert set(payload) == {"sub", "type", "ver", "iat", "exp"}
     assert payload["sub"] == str(user_id)
+    assert payload["ver"] == 0
     assert SecurityService.decode_access_token(token) == user_id
+
+
+def test_password_reset_tokens_are_random_and_hashed_deterministically():
+    first = SecurityService.generate_password_reset_token()
+    second = SecurityService.generate_password_reset_token()
+
+    assert first != second
+    assert len(first) >= 32
+    assert SecurityService.hash_password_reset_token(first) != first
+    assert (
+        SecurityService.hash_password_reset_token(first)
+        == SecurityService.hash_password_reset_token(first)
+    )
 
 
 def test_rate_limiter_blocks_at_configured_limit_and_can_be_cleared():
@@ -109,6 +123,18 @@ def test_unset_environment_accepts_configured_secret(monkeypatch):
     monkeypatch.delenv("ENVIRONMENT", raising=False)
     monkeypatch.setenv("JWT_SECRET_KEY", "test-only-configured-signing-key-value")
     assert Settings().jwt_secret_key == "test-only-configured-signing-key-value"
+
+
+@pytest.mark.parametrize("minutes", [14, 31])
+def test_password_reset_expiry_must_remain_in_secure_range(monkeypatch, minutes):
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setenv("PASSWORD_RESET_TOKEN_MINUTES", str(minutes))
+
+    with pytest.raises(
+        RuntimeError,
+        match="PASSWORD_RESET_TOKEN_MINUTES must be between 15 and 30",
+    ):
+        Settings()
 
 
 class DatabaseError(Exception):
