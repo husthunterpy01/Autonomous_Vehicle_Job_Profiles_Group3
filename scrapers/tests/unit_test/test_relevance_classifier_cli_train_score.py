@@ -1,9 +1,8 @@
-"""Coverage for relevance_classifier_cli.py's train/score commands using the
-tfidf backend only - unlike test_relevance_classifier_cli.py, this file is
-NOT gated behind `pytest.importorskip("setfit")` (setfit isn't in
-scrapers/requirements-test.txt, only the root requirements.txt, so that
-whole module skips in CI), and train()/score() previously had no coverage
-at all under any backend.
+"""Coverage for relevance_classifier_cli.py's train/score commands.
+
+Unlike test_relevance_classifier_cli.py, this file exercises the real CLI
+entrypoints. train/score default to the embedding backend, so the default
+model path is relevance_model_embedding.joblib.
 """
 
 import json
@@ -120,7 +119,7 @@ def test_train_defaults_model_path_from_backend(tmp_path):
     status = main(["train", "--output-dir", str(output_dir), "--test-size", "0"])
 
     assert status == 0
-    assert (output_dir / "relevance_model_tfidf.joblib").is_file()
+    assert (output_dir / "relevance_model_embedding.joblib").is_file()
 
 
 def test_train_raises_systemexit_without_both_classes(tmp_path):
