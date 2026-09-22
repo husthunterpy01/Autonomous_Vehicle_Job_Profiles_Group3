@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Dropdown from "@/components/ui/Dropdown";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
@@ -59,6 +58,7 @@ export default function SearchClient() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
+  const [listBusy, setListBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -120,38 +120,46 @@ export default function SearchClient() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const handle = setTimeout(
       () => {
-        getJobs({
-          q: keyword.trim() || undefined,
-          category_id: category || undefined,
-          sort,
-          page,
-          page_size: perPage,
-        })
+        setListBusy(true);
+        getJobs(
+          {
+            q: keyword.trim() || undefined,
+            category_id: category || undefined,
+            sort,
+            page,
+            page_size: perPage,
+          },
+          controller.signal,
+        )
           .then((response) => {
-            if (cancelled) return;
             setJobs(response.items);
             setTotal(response.total);
             setTotalPages(Math.max(1, response.total_pages));
             setStatus("success");
           })
           .catch((error: unknown) => {
-            if (cancelled) return;
+            if (error instanceof Error && error.name === "AbortError") {
+              return;
+            }
             setErrorMessage(
               error instanceof ApiError
                 ? error.message
                 : "Something went wrong loading jobs. Please try again.",
             );
             setStatus("error");
+          })
+          .finally(() => {
+            if (!controller.signal.aborted) setListBusy(false);
           });
       },
       keyword ? SEARCH_DEBOUNCE_MS : 0,
     );
 
     return () => {
-      cancelled = true;
+      controller.abort();
       clearTimeout(handle);
     };
   }, [keyword, category, sort, page, perPage, reloadToken]);
@@ -235,24 +243,17 @@ export default function SearchClient() {
         keyword={keyword}
         onKeywordChange={handleKeyword}
         placeholder="Job title, skill or keyword"
+        dropdownId="category-filter"
+        dropdownAriaLabel="Category"
+        dropdownValue={category}
+        onDropdownChange={handleCategoryChange}
+        dropdownOptions={categoryOptionList}
+        dropdownClassName="sm:w-64"
         onSubmit={(e) => {
           e.preventDefault();
           syncUrl(keyword);
         }}
       />
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <label htmlFor="category-filter" className="text-sm text-ink-secondary">
-          Category
-        </label>
-        <Dropdown
-          id="category-filter"
-          className="w-64"
-          value={category}
-          onChange={handleCategoryChange}
-          options={categoryOptionList}
-        />
-      </div>
 
       {status === "loading" && (
         <div
@@ -292,6 +293,7 @@ export default function SearchClient() {
                 <span className="font-semibold text-ink">{total}</span>{" "}
                 {total === 1 ? "job" : "jobs"} found
                 {keyword.trim() !== "" ? ` for "${keyword.trim()}"` : ""}
+                {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}
               </p>
               {hasFilters && (
                 <button
@@ -310,9 +312,13 @@ export default function SearchClient() {
 
           {jobs.length > 0 && (
             <>
-              <div className="mt-4">
+              <div
+                className={`mt-4 ${listBusy ? "pointer-events-none opacity-60" : ""}`}
+                aria-busy={listBusy}
+              >
                 {view === "table" ? (
                   <JobsTable
+                    key={`page-${page}-${jobs[0]?.job_id ?? "empty"}`}
                     jobs={jobs}
                     renderAction={renderFavoriteAction}
                     actionColumnLabel="Favorite"

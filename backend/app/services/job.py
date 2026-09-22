@@ -2,9 +2,9 @@ import logging
 from datetime import datetime, timezone
 from uuid import UUID
 
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session, defer, joinedload, selectinload
 
 from app.enums.job_sort_field import JobSortField
 from app.enums.sort_direction import SortDirection
@@ -59,14 +59,15 @@ def _to_category_response(categories) -> CategoryResponse | None:
     )
 
 
-def to_response(job):
+def to_response(job, *, include_body: bool = True):
     return JobResponse(
         job_id=job.job_id, title=job.title, company_id=job.company_id,
         company_name=job.company.name,
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
         category=_to_category_response(job.categories),
-        employment_type=job.employment_type, raw_description=job.raw_description,
+        employment_type=job.employment_type,
+        raw_description=job.raw_description if include_body else "",
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
         salary_currency=job.salary_currency, salary_period=job.salary_period, salary_source=job.salary_source,
@@ -91,6 +92,24 @@ def job_query(db):
     )
 
 
+# One JOIN query for company + collections. selectinload would be a round
+# trip per relationship, and each of those is ~250ms to the hosted DB.
+_LIST_LOAD = (
+    defer(JobPosting.raw_description),
+    defer(JobPosting.requirements),
+    joinedload(JobPosting.company),
+    joinedload(JobPosting.locations),
+    joinedload(JobPosting.skills),
+    joinedload(JobPosting.categories),
+)
+_DETAIL_LOAD = (
+    joinedload(JobPosting.company),
+    joinedload(JobPosting.locations),
+    joinedload(JobPosting.skills),
+    joinedload(JobPosting.categories),
+)
+
+
 # Newest first reads best for dates; A-Z for names. Each entry is the
 # default direction plus the column to order by. Company is sorted by the
 # company name rather than its UUID, so the join below is required.
@@ -101,19 +120,27 @@ _SORT_COLUMNS = {
 }
 
 
-def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
-    default_direction, column = _SORT_COLUMNS[sort]
+def _sort_join(query, sort: JobSortField):
     if sort is JobSortField.COMPANY:
         # LEFT JOIN, not an inner join: company_id is NOT NULL today, but if
         # that ever changed a job without a company should sort last like any
         # other missing value instead of silently dropping out of the list.
         # Many-to-one either way, so this cannot duplicate job rows.
-        query = query.outerjoin(Company, JobPosting.company_id == Company.company_id)
+        return query.outerjoin(Company, JobPosting.company_id == Company.company_id)
+    return query
+
+
+def _sort_clauses(sort: JobSortField, direction: SortDirection | None):
+    default_direction, column = _SORT_COLUMNS[sort]
     ordering = column.desc() if (direction or default_direction) is SortDirection.DESC else column.asc()
     # Jobs missing the sorted value go last whichever direction is chosen,
     # so an empty column never occupies the first page. job_id breaks ties
     # so a row cannot drift between pages while paginating.
-    return query.order_by(ordering.nullslast(), JobPosting.job_id)
+    return ordering.nullslast(), JobPosting.job_id
+
+
+def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
+    return _sort_join(query, sort).order_by(*_sort_clauses(sort, direction))
 
 
 def list_jobs(
@@ -123,7 +150,7 @@ def list_jobs(
     has_salary: bool | None = None, sort: JobSortField = JobSortField.POSTED_DATE,
     direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
 ):
-    query = job_query(db)
+    query = db.query(JobPosting)
     if q:
         query = query.filter(or_(JobPosting.title.icontains(q, autoescape=True), JobPosting.company.has(Company.name.icontains(q, autoescape=True))))
     if location:
@@ -149,14 +176,55 @@ def list_jobs(
         # deliberately only compare real ranges.
         condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
-    query = _apply_sort(query, sort, direction)
-    total = query.count()
-    jobs = query.offset((page - 1) * page_size).limit(page_size).all()
-    return PageResponse(items=[to_response(job) for job in jobs], total=total, page=page, page_size=page_size, total_pages=(total + page_size - 1) // page_size)
+    # Page of ids + total in one statement (window count, no TOAST columns),
+    # then one joined load of those rows. Two round-trips instead of a
+    # count + page + four selectinload queries.
+    id_rows = (
+        _apply_sort(query, sort, direction)
+        .with_entities(
+            JobPosting.job_id,
+            func.count(JobPosting.job_id).over().label("total"),
+        )
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    if not id_rows:
+        return PageResponse(
+            items=[], total=0, page=page, page_size=page_size, total_pages=0,
+        )
+    job_ids = [row.job_id for row in id_rows]
+    total = int(id_rows[0].total)
+    order = {job_id: index for index, job_id in enumerate(job_ids)}
+    jobs = (
+        db.execute(
+            select(JobPosting)
+            .options(*_LIST_LOAD)
+            .where(JobPosting.job_id.in_(job_ids))
+        )
+        .unique()
+        .scalars()
+        .all()
+    )
+    jobs.sort(key=lambda job: order[job.job_id])
+    return PageResponse(
+        items=[to_response(job, include_body=False) for job in jobs],
+        total=total, page=page, page_size=page_size,
+        total_pages=(total + page_size - 1) // page_size,
+    )
 
 
 def get_job(db: Session, job_id: UUID) -> JobDetailResponse | None:
-    job = job_query(db).filter(JobPosting.job_id == job_id).one_or_none()
+    job = (
+        db.execute(
+            select(JobPosting)
+            .options(*_DETAIL_LOAD)
+            .where(JobPosting.job_id == job_id)
+        )
+        .unique()
+        .scalars()
+        .one_or_none()
+    )
     return to_detail_response(job) if job is not None else None
 
 

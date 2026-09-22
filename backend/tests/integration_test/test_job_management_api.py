@@ -226,5 +226,5 @@ def test_list_query_count_is_constant_as_page_size_grows(db_session, seeded_comp
         for statement in statements
         if statement.lstrip().upper().startswith("SELECT")
     ]
-    assert len(selects) <= 6
+    assert len(selects) <= 3
     assert elapsed < 2.0
