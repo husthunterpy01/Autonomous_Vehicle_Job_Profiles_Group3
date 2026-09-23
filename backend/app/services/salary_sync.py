@@ -2,13 +2,14 @@
 touches only the salary_* columns, nothing else on the job - safe to run
 against a handoff that only carries identity + salary.
 """
+from app.enums.salary_source import SalarySource
 from app.schemas.job import SalaryPeriod
 from app.services.job_identity import resolve_job
 
 # Derived from SalaryPeriod (app/schemas/job.py) so the write path (here) and
 # the read path (the /jobs salary_period query param) can never drift apart.
 SALARY_PERIODS = {period.value for period in SalaryPeriod}
-SALARY_SOURCES = {"api", "regex", "levels_fyi_average"}
+SALARY_SOURCES = {source.value for source in SalarySource}
 
 
 def sync_salary(db, job, row):

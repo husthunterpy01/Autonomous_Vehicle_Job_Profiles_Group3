@@ -11,6 +11,8 @@ export default function SearchBar({
   onDropdownChange,
   dropdownOptions,
   dropdownClassName = "",
+  dropdownId,
+  dropdownAriaLabel,
   className = "",
   onSubmit,
 }: {
@@ -21,13 +23,15 @@ export default function SearchBar({
   onDropdownChange?: (value: string) => void;
   dropdownOptions?: DropdownOption[];
   dropdownClassName?: string;
+  dropdownId?: string;
+  dropdownAriaLabel?: string;
   className?: string;
   onSubmit: (e: FormEvent) => void;
 }) {
   return (
     <form
       onSubmit={onSubmit}
-      className={`mt-8 flex flex-col gap-3 rounded-xl border border-primary/40 bg-surface p-3 shadow-sm transition-shadow focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 lg:flex-row lg:items-center ${className}`}
+      className={`mt-8 flex flex-col gap-1 rounded-xl border border-primary/40 bg-surface px-3 py-1.5 shadow-sm transition-shadow focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 sm:flex-row sm:items-center sm:gap-2 ${className}`}
     >
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <svg
@@ -54,12 +58,18 @@ export default function SearchBar({
         />
       </div>
       {dropdownOptions && onDropdownChange && (
-        <Dropdown
-          value={dropdownValue ?? ""}
-          onChange={onDropdownChange}
-          options={dropdownOptions}
-          className={dropdownClassName}
-        />
+        <>
+          <div className="hidden h-8 w-px shrink-0 bg-line sm:block" />
+          <Dropdown
+            id={dropdownId}
+            aria-label={dropdownAriaLabel}
+            variant="plain"
+            value={dropdownValue ?? ""}
+            onChange={onDropdownChange}
+            options={dropdownOptions}
+            className={`sm:w-56 ${dropdownClassName}`}
+          />
+        </>
       )}
     </form>
   );

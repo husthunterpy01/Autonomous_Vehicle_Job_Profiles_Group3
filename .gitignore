@@ -35,6 +35,7 @@ logs/
 
 # Generated scraper/pipeline output, trained model artifacts, DB backups (BE-1)
 /data/
+scrapers/data/train_result/train_test_accuracy_by_iteration.json
 
 # In-progress diagnostic logs from one-off backend scripts (resumable,
 # regenerated on every run - not a finished audit trail like a completed

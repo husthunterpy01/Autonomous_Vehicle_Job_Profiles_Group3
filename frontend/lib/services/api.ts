@@ -27,14 +27,23 @@ export async function apiFetch<T>(
 ): Promise<T> {
   let response: Response;
   try {
+    const headers: Record<string, string> = {
+      ...(init?.headers as Record<string, string> | undefined),
+    };
+    // JSON Content-Type on GET/HEAD forces a CORS preflight. Only send it
+    // when there is a body (POST/PATCH/PUT).
+    if (init?.body != null && headers["Content-Type"] == null) {
+      headers["Content-Type"] = "application/json";
+    }
     response = await fetch(`${API_BASE_URL}${path}`, {
+      cache: "no-store",
       ...init,
-      headers: {
-        "Content-Type": "application/json",
-        ...init?.headers,
-      },
+      headers,
     });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     throw new ApiError(
       "Unable to reach the server. Check your connection and try again.",
       0,

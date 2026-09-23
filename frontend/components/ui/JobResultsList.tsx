@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import type { JobSort, JobSortField } from "@/lib/job-sort";
 import { formatPayPeriod } from "@/lib/salary";
 import {
   EMPLOYMENT_TYPE_LABELS,
+  jobDetailHref,
   jobSalary,
   type JobListItem,
 } from "@/lib/services/job";
@@ -165,26 +167,26 @@ export function JobRow({
 }) {
   const type = typeLabel(job);
   const location = locationLabel(job);
+  const href = jobDetailHref(job.job_id);
   return (
-    // Not a Link: job detail pages are still mock-only (static export
-    // requires every dynamic route known at build time), so a real job id
-    // would 404/crash. Re-enable once /jobs/[id] is wired to the real API.
-    <div className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5">
-      <CompanyLogo text={job.company_name.charAt(0)} />
-      <div className="min-w-0 flex-1">
-        <h3 className="font-semibold text-ink">{job.title}</h3>
-        <p className="mt-1 text-sm text-ink-secondary">
-          {job.company_name}
-          {location ? ` · ${location}` : ""}
-        </p>
-        <Salary className="mt-1" {...jobSalary(job)} />
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {type && <Tag label={type} />}
-          <span className="text-xs text-ink-muted">
-            Posted {postedLabel(job)}
-          </span>
+    <div className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md">
+      <Link href={href} className="flex min-w-0 flex-1 items-start gap-4">
+        <CompanyLogo text={job.company_name.charAt(0)} />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold text-ink">{job.title}</h3>
+          <p className="mt-1 text-sm text-ink-secondary">
+            {job.company_name}
+            {location ? ` · ${location}` : ""}
+          </p>
+          <Salary className="mt-1" {...jobSalary(job)} />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {type && <Tag label={type} />}
+            <span className="text-xs text-ink-muted">
+              Posted {postedLabel(job)}
+            </span>
+          </div>
         </div>
-      </div>
+      </Link>
       {action}
     </div>
   );
@@ -253,7 +255,12 @@ export function JobsTable({
               className="border-b border-line last:border-b-0 hover:bg-section/40"
             >
               <td className="px-4 py-4 pl-5 align-middle font-semibold text-ink last:pr-5">
-                {job.title}
+                <Link
+                  href={jobDetailHref(job.job_id)}
+                  className="hover:text-primary hover:underline"
+                >
+                  {job.title}
+                </Link>
               </td>
               <td className="px-4 py-4 text-sm text-ink-secondary last:pr-5">
                 {job.company_name}
