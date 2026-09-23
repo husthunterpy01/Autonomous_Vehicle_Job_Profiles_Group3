@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import DetailHeaderCard from "@/components/ui/DetailHeaderCard";
 import JobCardRow from "@/components/ui/JobCardRow";
 import { JobRow } from "@/components/ui/JobResultsList";
+import Pagination from "@/components/ui/Pagination";
 import { ApiError } from "@/lib/services/api";
 import {
   companyTypeLabel,
@@ -14,9 +15,19 @@ import {
   type CompanyDetail,
 } from "@/lib/services/company";
 import { getJobs, type JobListItem } from "@/lib/services/job";
-import { getCompanyById, getJobsByCompanyId, type Company, type Job } from "@/lib/mock-data";
+import {
+  getCompanyById,
+  getJobsByCompanyId,
+  type Company,
+  type Job,
+} from "@/lib/mock-data";
 
 type Status = "loading" | "ready" | "notfound" | "error";
+
+/* Matches the backend's default page size (see GET /jobs). Some companies
+   already have 100+ open postings (NVIDIA, Waymo), so the job list needs
+   real pagination rather than a single capped fetch. */
+const JOBS_PAGE_SIZE = 10;
 
 function companyIdFromPath(pathname: string, fallback: string): string {
   const fromPath = pathname.match(/\/companies\/([^/]+)\/?$/)?.[1];
@@ -37,10 +48,20 @@ export default function CompanyDetailClient({ id = "" }: { id?: string }) {
   const [jobs, setJobs] = useState<JobListItem[]>([]);
   const [mockJobs, setMockJobs] = useState<Job[]>([]);
   const [jobCount, setJobCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageCount, setPageCount] = useState(1);
   const [reloadToken, setReloadToken] = useState(0);
+
+  // Tracks the last companyId this effect ran for, so a brand-new company
+  // always fetches page 1 of its jobs even if `page` still holds a stale
+  // value left over from paging through a previous company's list.
+  const prevCompanyIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+    const isNewCompany = prevCompanyIdRef.current !== companyId;
+    prevCompanyIdRef.current = companyId;
+    const pageToFetch = isNewCompany ? 1 : page;
 
     async function load() {
       if (!companyId) {
@@ -55,12 +76,18 @@ export default function CompanyDetailClient({ id = "" }: { id?: string }) {
         try {
           const [detail, jobsPage] = await Promise.all([
             getCompany(companyId),
-            getJobs({ company_id: companyId, page_size: 50 }),
+            getJobs({
+              company_id: companyId,
+              page: pageToFetch,
+              page_size: JOBS_PAGE_SIZE,
+            }),
           ]);
           if (cancelled) return;
           setCompany(detail);
           setJobs(jobsPage.items);
           setJobCount(jobsPage.total);
+          setPageCount(Math.max(1, jobsPage.total_pages));
+          if (isNewCompany) setPage(1);
           setStatus("ready");
         } catch (error) {
           if (cancelled) return;
@@ -92,7 +119,7 @@ export default function CompanyDetailClient({ id = "" }: { id?: string }) {
     return () => {
       cancelled = true;
     };
-  }, [companyId, reloadToken]);
+  }, [companyId, page, reloadToken]);
 
   if (status === "loading") {
     return (
@@ -208,8 +235,8 @@ export default function CompanyDetailClient({ id = "" }: { id?: string }) {
             <div className="mt-4 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
               <p className="font-semibold text-ink">No jobs found</p>
               <p className="mt-2 text-sm text-ink-secondary">
-                {mockCompany.name} doesn&apos;t have any open positions
-                listed right now.
+                {mockCompany.name} doesn&apos;t have any open positions listed
+                right now.
               </p>
             </div>
           )}
@@ -236,7 +263,9 @@ export default function CompanyDetailClient({ id = "" }: { id?: string }) {
         title={detail.name}
         subtitle={type ?? "Company"}
         action={
-          careersUrl ? { href: careersUrl, label: "View careers page" } : undefined
+          careersUrl
+            ? { href: careersUrl, label: "View careers page" }
+            : undefined
         }
         description={detail.description}
         footer={
@@ -266,6 +295,16 @@ export default function CompanyDetailClient({ id = "" }: { id?: string }) {
               {detail.name} doesn&apos;t have any open positions listed right
               now.
             </p>
+          </div>
+        )}
+
+        {jobs.length > 0 && (
+          <div className="mt-8">
+            <Pagination
+              page={page}
+              pageCount={pageCount}
+              onPageChange={setPage}
+            />
           </div>
         )}
       </section>

@@ -26,6 +26,7 @@ def test_list_companies_returns_all_ordered_by_name(client, seeded_companies):
         "website_url",
         "career_page_url",
         "datasource_status",
+        "description",
     }
 
 
