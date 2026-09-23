@@ -261,6 +261,16 @@ curl -X POST http://127.0.0.1:8000/api/v1/companies \
 
 Note: when `SEED_ON_STARTUP=true`, created rows are replaced on restart because startup reseeds from the SQL file.
 
+### Company descriptions
+
+`CompanyResponse.description` is a short "About" blurb shown on the company
+profile page. Apply the repeatable migration to an existing database before
+it will populate:
+
+```bash
+psql "$DATABASE_URL" -f app/sql/company_description_migration.sql
+```
+
 ## Job management API (BE-19)
 
 Apply the repeatable migration to an existing backend database and configure a

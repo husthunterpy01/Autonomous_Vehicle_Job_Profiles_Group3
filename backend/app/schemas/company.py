@@ -9,6 +9,7 @@ class CompanyCreate(BaseModel):
     career_page_url: str
     company_type: str
     datasource_status: str
+    description: str | None = None
 
     @validator("name", "website_url", "career_page_url", "company_type", "datasource_status")
     def normalize_required_str(cls, value):
@@ -25,6 +26,7 @@ class CompanyResponse(BaseModel):
     career_page_url: str | None = None
     company_type: str | None = None
     datasource_status: str | None = None
+    description: str | None = None
 
 
 class CompanyUpdate(BaseModel):

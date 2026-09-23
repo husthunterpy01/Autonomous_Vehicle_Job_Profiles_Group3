@@ -329,6 +329,7 @@ export default function JobDetailClient({ id = "" }: { id?: string }) {
               id: c.company_id,
               name: c.name,
               type,
+              about: c.description,
               careersUrl: c.career_page_url ?? c.website_url,
             });
           }
