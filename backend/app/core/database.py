@@ -88,31 +88,28 @@ class Database:
         def _mark_checkin(_dbapi_connection, connection_record):
             connection_record.info["last_ok"] = monotonic()
 
+    def init_db(self) -> None:
+        self.Base.metadata.create_all(bind=self.engine)
+
+    def seed_db(self) -> None:
+        """Inject company seed SQL on every server start."""
+        sql = (_SQL_DIR / "seed_companies.sql").read_text(encoding="utf-8")
+        with self.engine.begin() as conn:
+            conn.exec_driver_sql(sql)
+
+    def get_db(self) -> Generator[Session, None, None]:
+        db = self.SessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
 
 _db = Database()
 
-# Every model/router/script does `from app.core.database import Base` (etc.)
-# rather than going through the Database instance - keep these as plain
-# module-level aliases so none of those call sites need to change.
 engine = _db.engine
 SessionLocal = _db.SessionLocal
 Base = _db.Base
-
-
-def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
-
-
-def seed_db() -> None:
-    """Inject company seed SQL on every server start."""
-    sql = (_SQL_DIR / "seed_companies.sql").read_text(encoding="utf-8")
-    with engine.begin() as conn:
-        conn.exec_driver_sql(sql)
-
-
-def get_db() -> Generator[Session, None, None]:
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+init_db = _db.init_db
+seed_db = _db.seed_db
+get_db = _db.get_db

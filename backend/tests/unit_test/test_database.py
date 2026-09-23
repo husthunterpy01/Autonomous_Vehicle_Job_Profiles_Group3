@@ -1,8 +1,11 @@
 """Coverage for app/core/database.py's init_db/seed_db/get_db - previously
-untested at all. init_db/seed_db touch the module-level `engine`, which is
-bound to whatever settings.database_url points to, so these mock that engine
-rather than hitting a real database (the same reason app.main's own tests
-patch init_db/seed_db instead of calling them for real)."""
+untested at all. init_db/seed_db are bound methods on the singleton
+Database instance (`_db`), reading self.engine/self.Base rather than a
+module global, so mocking them means patching those attributes on `_db`
+itself - not on the module-level `engine`/`Base` aliases, which the bound
+methods never look up. This mocks that engine rather than hitting a real
+database (the same reason app.main's own tests patch init_db/seed_db
+instead of calling them for real)."""
 
 from unittest.mock import patch
 
@@ -21,7 +24,7 @@ def test_get_db_yields_a_session_and_closes_it_after_use():
         next(generator)
 
 
-@patch("app.core.database.Base")
+@patch("app.core.database._db.Base")
 def test_init_db_creates_all_tables_against_the_configured_engine(mock_base):
     from app.core.database import engine, init_db
 
@@ -30,7 +33,7 @@ def test_init_db_creates_all_tables_against_the_configured_engine(mock_base):
     mock_base.metadata.create_all.assert_called_once_with(bind=engine)
 
 
-@patch("app.core.database.engine")
+@patch("app.core.database._db.engine")
 def test_seed_db_executes_the_seed_companies_sql_file(mock_engine):
     from app.core.database import seed_db
 
