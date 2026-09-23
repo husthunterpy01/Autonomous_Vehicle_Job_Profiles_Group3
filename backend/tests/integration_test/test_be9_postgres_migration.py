@@ -133,6 +133,11 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
                 "ix_job_location_location_id", "ix_job_skill_skill_id",
                 "ix_job_category_category_id",
             } <= index_names
+            description_migration = (root / "backend/app/sql/company_description_migration.sql").read_text(encoding="utf-8")
+            cursor.execute(description_migration)
+            cursor.execute(description_migration)
+            cursor.execute("SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'company' AND column_name = 'description'", (schema,))
+            assert cursor.fetchone()[0] == 1
         test_engine = create_engine(database_url, connect_args={"options": f"-csearch_path={schema}"})
         locations = [f"Office {i:02d} - Long location name" for i in range(12)]
         with Session(test_engine) as db, db.begin():
