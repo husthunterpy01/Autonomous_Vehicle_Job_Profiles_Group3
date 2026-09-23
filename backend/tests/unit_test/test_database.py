@@ -58,3 +58,26 @@ def test_database_refuses_a_second_instance():
 
     with pytest.raises(RuntimeError, match="already initialized"):
         Database()
+
+
+def test_database_releases_its_claim_when_init_fails(monkeypatch):
+    """__new__ claims cls._instance before __init__ runs, so a failed
+    __init__ (e.g. DATABASE_URL unset) must release that claim - otherwise
+    that one failed attempt permanently blocks every later, correctly
+    configured Database() for the rest of the process."""
+    from app.core.config import settings
+    from app.core.database import Database
+
+    original_instance = Database._instance
+    Database._instance = None
+    try:
+        monkeypatch.setattr(settings, "database_url", None)
+        with pytest.raises(RuntimeError, match="DATABASE_URL is not set"):
+            Database()
+        assert Database._instance is None
+
+        monkeypatch.setattr(settings, "database_url", "sqlite:///:memory:")
+        retried = Database()
+        assert isinstance(retried, Database)
+    finally:
+        Database._instance = original_instance

@@ -35,6 +35,17 @@ class Database:
         return cls._instance
 
     def __init__(self) -> None:
+        # __new__ already claimed cls._instance so a second, concurrent
+        # Database() raises immediately - but if setup below fails, release
+        # the claim so a later, correctly-configured retry isn't permanently
+        # blocked by this failed attempt.
+        try:
+            self._configure()
+        except Exception:
+            Database._instance = None
+            raise
+
+    def _configure(self) -> None:
         url = settings.database_url
         if not url:
             # Without this, create_engine(None) fails with an opaque
@@ -42,10 +53,10 @@ class Database:
             # the actual missing setting.
             raise RuntimeError("DATABASE_URL is not set")
 
-        self.is_postgres = url.startswith("postgres")
+        self._is_postgres = url.startswith("postgres")
 
         engine_kwargs: dict = {}
-        if self.is_postgres:
+        if self._is_postgres:
             engine_kwargs = {
                 "pool_pre_ping": False,
                 "pool_recycle": 300,
@@ -55,7 +66,7 @@ class Database:
             }
         self.engine = create_engine(url, **engine_kwargs)
 
-        if self.is_postgres:
+        if self._is_postgres:
             self._register_idle_ping_listeners()
 
         self.SessionLocal = sessionmaker(
