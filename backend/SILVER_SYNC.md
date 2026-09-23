@@ -155,6 +155,10 @@ separate work. A later curated taxonomy needs explicit mapping/version migration
 Response fields: `job_id`, `title`, `company_id`, `company_name`, `locations`,
 `skills`, `employment_type` (existing integer enum), `raw_description`, `source_url`,
 `posted_date`, `categories` (category_id, main_type, sub_type, taxonomy_version).
+`raw_description` is `null` on `GET /jobs` list items (the body is skipped there
+for speed) and always a string on `GET /jobs/{job_id}` - not the same thing as a
+job whose description is genuinely empty, which `GET /jobs/{job_id}` still
+reports as `""`.
 Pagination is `{items,total,page,page_size,total_pages}`.
 Location/skill filters use EXISTS semantics so multiple associations do not inflate
 counts. Ordering is posted date descending then UUID for stable page boundaries.

@@ -28,6 +28,9 @@ def test_synced_jobs_search_filter_pagination_and_detail(db_session):
         assert data["total"] == 3
         assert data["total_pages"] == 2
         assert len(data["items"]) == 2
+        # None (not "") on a list item, distinguishing "not fetched for this
+        # response" from a job whose description is genuinely blank.
+        assert data["items"][0]["raw_description"] is None
         second = client.get("/jobs?page=2&page_size=2").json()
         assert len(second["items"]) == 1
         assert second["items"][0]["job_id"] not in {item["job_id"] for item in data["items"]}
@@ -35,6 +38,7 @@ def test_synced_jobs_search_filter_pagination_and_detail(db_session):
         assert job["locations"] == ["Pittsburgh", "Remote"]
         assert job["skills"] == ["Python"]
         assert job["source_url"] is None
+        assert job["raw_description"] == "Python autonomy"
         assert client.get("/jobs?q=missing").json()["total"] == 0
         categorized = next(item for item in data["items"] + second["items"] if item["category"])
         category_id = categorized["category"]["sub_types"][0]["category_id"]

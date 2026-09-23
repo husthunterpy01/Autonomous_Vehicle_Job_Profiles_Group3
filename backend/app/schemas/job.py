@@ -57,7 +57,10 @@ class JobResponse(BaseModel):
     locations: list[str]
     skills: list[str]
     employment_type: int | None
-    raw_description: str
+    # None on a list response (to_response(include_body=False) never fetched
+    # the body) vs "" for a job whose description really is empty - the two
+    # are not the same thing, and collapsing them lost that distinction.
+    raw_description: str | None
     source_url: str | None
     posted_date: datetime | None
     salary_min: float | None

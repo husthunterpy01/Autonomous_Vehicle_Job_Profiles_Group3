@@ -41,7 +41,9 @@ export type JobListItem = {
   locations: string[];
   skills: string[];
   employment_type: number | null;
-  raw_description: string;
+  /** null on a list response (the backend omits the body there for speed);
+   *  always a string on a job detail response - see JobDetail below. */
+  raw_description: string | null;
   source_url: string | null;
   posted_date: string | null;
   /** Posted pay (a single figure arrives as min === max). Optional so the
@@ -63,6 +65,7 @@ export type JobCategory = {
 
 /** Matches backend JobDetailResponse (GET /api/v1/jobs/{job_id}). */
 export type JobDetail = JobListItem & {
+  raw_description: string;
   category: JobCategory | null;
   department: string | null;
   seniority_level: number | null;

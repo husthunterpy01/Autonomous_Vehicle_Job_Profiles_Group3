@@ -67,7 +67,7 @@ def to_response(job, *, include_body: bool = True):
         skills=sorted(skill.skill_name for skill in job.skills),
         category=_to_category_response(job.categories),
         employment_type=job.employment_type,
-        raw_description=job.raw_description if include_body else "",
+        raw_description=job.raw_description if include_body else None,
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
         salary_currency=job.salary_currency, salary_period=job.salary_period, salary_source=job.salary_source,
