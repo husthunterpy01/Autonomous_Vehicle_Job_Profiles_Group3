@@ -88,13 +88,6 @@ def to_detail_response(job) -> JobDetailResponse:
     )
 
 
-def job_query(db):
-    return db.query(JobPosting).options(
-        selectinload(JobPosting.company), selectinload(JobPosting.locations), selectinload(JobPosting.skills),
-        selectinload(JobPosting.categories)
-    )
-
-
 # One JOIN query for company + collections. selectinload would be a round
 # trip per relationship, and each of those is ~250ms to the hosted DB.
 _LIST_LOAD = (
