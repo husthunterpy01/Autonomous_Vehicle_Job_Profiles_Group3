@@ -44,3 +44,14 @@ def test_seed_db_executes_the_seed_companies_sql_file(mock_engine):
     mock_connection.exec_driver_sql.assert_called_once()
     executed_sql = mock_connection.exec_driver_sql.call_args.args[0]
     assert "TRUNCATE TABLE company" in executed_sql
+
+
+def test_database_refuses_a_second_instance():
+    """The module already built one Database at import time; a second
+    real instantiation would mean two connection pools racing against the
+    database from the same process, so it must fail loudly instead of
+    silently creating one."""
+    from app.core.database import Database
+
+    with pytest.raises(RuntimeError, match="already initialized"):
+        Database()
