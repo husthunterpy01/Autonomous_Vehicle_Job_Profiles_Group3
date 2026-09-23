@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from pathlib import Path
 from time import monotonic
 
 from sqlalchemy import create_engine, event, exc
@@ -7,12 +8,13 @@ from sqlalchemy.orm import Session, declarative_base, sessionmaker
 from app.core.config import settings
 
 SQLALCHEMY_DATABASE_URL = settings.database_url
+if not SQLALCHEMY_DATABASE_URL:
+    # Without this, create_engine(None) fails with an opaque
+    # "Expected string or URL object, got None" instead of naming the
+    # actual missing setting.
+    raise RuntimeError("DATABASE_URL is not set")
 
-# Hosted Postgres is ~250ms away; pinging on every checkout added a full
-# round-trip to each API request. Recycle idle sockets and only ping when
-# a connection has sat unused long enough that the pooler may have dropped it.
-_IDLE_PING_AFTER_SECONDS = 30
-_IS_POSTGRES = (SQLALCHEMY_DATABASE_URL or "").startswith(("postgresql", "postgres"))
+_IS_POSTGRES = SQLALCHEMY_DATABASE_URL.startswith("postgres")
 
 _engine_kwargs: dict = {}
 if _IS_POSTGRES:
@@ -26,9 +28,13 @@ if _IS_POSTGRES:
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, **_engine_kwargs)
 
+# Hosted Postgres is ~250ms away; pinging on every checkout added a full
+# round-trip to each API request. Recycle idle sockets and only ping when
+# a connection has sat unused long enough that the pooler may have dropped it.
+_IDLE_PING_AFTER_SECONDS = 30
 
-if _IS_POSTGRES:
 
+def _register_idle_ping_listeners(engine) -> None:
     @event.listens_for(engine, "checkout")
     def _ping_if_idle(dbapi_connection, connection_record, _connection_proxy):
         last_ok = connection_record.info.get("last_ok")
@@ -49,6 +55,10 @@ if _IS_POSTGRES:
     def _mark_checkin(_dbapi_connection, connection_record):
         connection_record.info["last_ok"] = monotonic()
 
+
+if _IS_POSTGRES:
+    _register_idle_ping_listeners(engine)
+
 SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
@@ -57,6 +67,8 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
+_SQL_DIR = Path(__file__).resolve().parent.parent / "sql"
+
 
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
@@ -64,8 +76,7 @@ def init_db() -> None:
 
 def seed_db() -> None:
     """Inject company seed SQL on every server start."""
-    with open("app/sql/seed_companies.sql", encoding="utf-8") as seed_file:
-        sql = seed_file.read()
+    sql = (_SQL_DIR / "seed_companies.sql").read_text(encoding="utf-8")
     with engine.begin() as conn:
         conn.exec_driver_sql(sql)
 
