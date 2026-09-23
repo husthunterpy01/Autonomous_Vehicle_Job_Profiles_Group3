@@ -1,0 +1,28 @@
+# vercel CLI deploys the raw local working directory and does not reliably
+# fall back to .gitignore (especially nested ones like frontend/.gitignore)
+# the way `git` itself does - `vercel --prod` from source uploaded ~900MB
+# and hit the 100MB per-file limit on .venv's bundled CUDA/torch libraries
+# before this file existed. Everything here is either multi-GB ML tooling
+# unrelated to the deployed app, or a build output Vercel regenerates
+# itself from source during the build step.
+
+.git/
+.venv/
+node_modules/
+.next/
+out/
+
+# ML/data tooling - not part of the deployed frontend or API
+notebooks/
+checkpoints/
+data/
+scrapers/data/train_result/
+scrapers/data/snapshots/
+
+# Local caches/artifacts
+.pytest_cache/
+.ruff_cache/
+.coverage
+app.log
+*.log
+.vercel/
