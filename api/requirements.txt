@@ -1,1 +1,14 @@
--r ../backend/requirements.txt
+# Kept in sync by hand with backend/requirements.txt (minus pytest, a
+# test-only dependency the runtime never imports) - Vercel's Python
+# requirements parser doesn't support pip's `-r <file>` include syntax, so
+# this can't just reference the backend copy directly.
+fastapi==0.141.1
+uvicorn==0.52.1
+sqlalchemy==2.0.51
+psycopg2-binary==2.9.12
+python-dotenv==1.2.2
+httpx==0.28.1
+PyJWT==2.10.1
+pwdlib[argon2]==0.3.0
+email-validator==2.3.0
+PyYAML==6.0.2
