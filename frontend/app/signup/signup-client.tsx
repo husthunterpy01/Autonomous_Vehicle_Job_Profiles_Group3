@@ -177,7 +177,7 @@ export default function SignUpClient() {
     try {
       await signUp({
         full_name: name.trim(),
-        username: username.trim(),
+        username: username.trim().toLowerCase(),
         email: email.trim(),
         password,
       });

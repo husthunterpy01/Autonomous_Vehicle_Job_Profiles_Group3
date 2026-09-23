@@ -180,14 +180,14 @@ describe("sign-up form validation", () => {
     expect(signUpMock).not.toHaveBeenCalled();
   });
 
-  it("calls the registration boundary for a valid form", async () => {
+  it("calls the registration boundary with a lowercase username", async () => {
     signUpMock.mockResolvedValueOnce({});
-    submitForm();
+    submitForm({ Username: "Alex.Driver" });
 
     await waitFor(() => {
       expect(signUpMock).toHaveBeenCalledWith({
         full_name: "Avery Chen",
-        username: "avery.chen",
+        username: "alex.driver",
         email: "avery@example.com",
         password: "SecurePassword!123",
       });
@@ -206,7 +206,7 @@ describe("sign-up form validation", () => {
 
     await waitFor(() => {
       expect(signUpMock).toHaveBeenCalledWith(
-        expect.objectContaining({ username }),
+        expect.objectContaining({ username: username.toLowerCase() }),
       );
     });
   });
