@@ -4,13 +4,16 @@ from uuid import UUID
 
 from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.orm import Session, defer, joinedload, selectinload
+from sqlalchemy.orm import Session, defer, joinedload
 
 from app.enums.job_sort_field import JobSortField
 from app.enums.sort_direction import SortDirection
 from app.models import Category, Company, JobPosting, Location, Skill
 from app.schemas.job import CategoryResponse, JobCreate, JobDetailResponse, JobResponse
-from app.services.category_sync import dominant_categories
+from app.services.category_sync import (
+    _MAIN_TYPES_BY_NORMALIZED_NAME,
+    dominant_categories,
+)
 from app.utils.normalization import normalized
 from app.utils.pagination import PageResponse
 
@@ -304,8 +307,20 @@ def _merge_categories(db: Session, linked: list[Category], specs):
                 taxonomy_version=key[0], normalized_name=key[1]
             ).one_or_none()
         if category is None:
+            # category_main_types.yaml is the source of truth for an
+            # established sub_type (see category_sync.sync_categories) - a
+            # caller's main_type only fills in a sub_type the YAML doesn't
+            # know about, and is rejected outright if it contradicts one
+            # the YAML does.
+            static_main_type = _MAIN_TYPES_BY_NORMALIZED_NAME.get(key[1])
+            if static_main_type and spec.main_type != static_main_type:
+                raise InvalidJobDataError(
+                    f"Category {spec.sub_type} belongs to main category "
+                    f"{static_main_type} per category_main_types.yaml, not "
+                    f"{spec.main_type}"
+                )
             category = Category(
-                main_type=spec.main_type,
+                main_type=static_main_type or spec.main_type,
                 sub_type=spec.sub_type,
                 normalized_name=key[1],
                 taxonomy_version=key[0],

@@ -190,6 +190,76 @@ def test_create_job_reports_missing_relations_and_mixed_categories(
         assert "one taxonomy version" in mixed.json()["detail"]
 
 
+def test_create_job_rejects_a_new_category_contradicting_main_types_yaml(
+    db_session, company_factory, monkeypatch
+):
+    """#119: main_type is a property of the category, defined once in
+    category_main_types.yaml (see category_sync.py) - a caller creating a
+    brand-new category can't override it with a contradicting value, the
+    same way an existing category already refuses to be re-pointed at a
+    different main_type (test_create_job_reports_missing_relations_and_
+    mixed_categories's `mixed` case, one layer up)."""
+    monkeypatch.setattr(settings, "job_write_api_key", "test-write-key")
+    company = company_factory("Taxonomy AV")
+    db_session.add(company)
+    db_session.commit()
+    headers = {"X-Job-Write-Key": "test-write-key"}
+    base = {
+        "source_key": "taxonomy-job",
+        "company_id": str(company.company_id),
+        "title": "Engineer",
+        "description": "Description",
+    }
+
+    with _client(db_session) as client:
+        # "Perception" is a sub_type the YAML maps to "Perception & Sensing"
+        # (backend/app/config/category_main_types.yaml) - no Category row
+        # for it exists yet, so this is the create-a-new-category path.
+        wrong = client.post(
+            "/jobs",
+            json={
+                **base,
+                "categories": [
+                    {
+                        "main_type": "Not The Real Main Type",
+                        "sub_type": "Perception",
+                        "taxonomy_version": 1,
+                    }
+                ],
+            },
+            headers=headers,
+        )
+        assert wrong.status_code == 400
+        assert "Perception & Sensing" in wrong.json()["detail"]
+        assert (
+            db_session.query(Category)
+            .filter_by(normalized_name="perception")
+            .one_or_none()
+            is None
+        )
+
+        right = client.post(
+            "/jobs",
+            json={
+                **base,
+                "source_key": "taxonomy-job-2",
+                "categories": [
+                    {
+                        "main_type": "Perception & Sensing",
+                        "sub_type": "Perception",
+                        "taxonomy_version": 1,
+                    }
+                ],
+            },
+            headers=headers,
+        )
+        assert right.status_code == 201
+        stored = db_session.query(Category).filter_by(
+            normalized_name="perception"
+        ).one()
+        assert stored.main_type == "Perception & Sensing"
+
+
 def test_list_query_count_is_constant_as_page_size_grows(db_session, seeded_companies):
     """Protect the normal-load list endpoint from latency and N+1 regressions."""
     company = seeded_companies["alpha"]
