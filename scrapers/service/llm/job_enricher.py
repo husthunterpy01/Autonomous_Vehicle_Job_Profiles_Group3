@@ -25,6 +25,7 @@ ALLOWED_CATEGORIES = frozenset(
         "Vehicle Interface",
         "Mapping",
         "System and Safety",
+        "Infrastructure",
     }
 )
 

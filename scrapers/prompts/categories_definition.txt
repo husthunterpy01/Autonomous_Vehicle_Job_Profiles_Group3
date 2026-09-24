@@ -1,38 +1,55 @@
 UNIFIED JOB-PROFILE CATEGORY TAXONOMY
-These jobs have already been confirmed AV-relevant. Do not re-decide relevance.
-The 9 categories below group into 4 technical areas:
+These jobs have already been confirmed AV-relevant. Do not re-decide relevance: every job gets a category from this list, including one whose real work is platform/compute rather than the driving stack (see Infrastructure below) - never a reason to withhold a category or treat the job as out of scope.
+The 10 categories below group into 5 technical areas:
 - Perception & Sensing area: Sensing, Perception
 - Localization & Mapping area: Localization, Mapping
 - Decision area: Planning, Prediction
 - System area: Control, Vehicle Interface, System and Safety
+- Platform area: Infrastructure
 Pick the ONE technical area that best matches the posting's primary responsibilities, then assign one or more categories from that area only - a posting may span multiple categories when responsibilities overlap, but only within that single area. Do not mix categories from different areas on the same posting. Weight multi-word, platform-specific phrases more heavily than broad single words.
+DECIDE FROM THE TITLE FIRST. Read the job title before anything else: if it names one of the 10 categories or an unambiguous synonym of one (e.g. "Motion Planning Engineer", "Perception & Fusion Engineer", "Localization Engineer", "GNC Engineer" for Control, "Sensor Validation Engineer" for Sensing), that IS the category - assign it and stop, regardless of what the company's boilerplate "about us" paragraph says elsewhere in the posting. A title-named category is only overridden by the body text when the body describes clearly different day-to-day responsibilities than the title implies (e.g. a "Perception Engineer" posting whose actual duties are entirely about the cloud training pipeline, not detection/tracking work) - overriding on boilerplate mission language is never valid grounds. Only when the title itself is generic (e.g. "Software Engineer", "Staff Engineer II") or names no category do you move to the body text: read the responsibilities/requirements section for what the role does day to day, using each category's Context below - not just its Keywords - to judge the real fit. A posting can genuinely span two categories: "LiDAR sensor calibration and point-cloud object detection" is both Sensing (the calibration work) and Perception (the object detection work).
+A company's self-description of its own business - "we build the infrastructure/platform/tools for X", "we're powering the future of physical AI" - describes the company, not this specific role, and must never be read as evidence for Infrastructure (or any category) on its own. This is the same failure mode as generic AI/ML language below, and it is worth naming separately because several real companies' mission statements happen to contain the literal word "infrastructure" - a "Perception Engineer" at such a company is still Perception, not Infrastructure, no matter how the company describes itself. Infrastructure is earned by the role's own responsibilities (cloud/compute/MLOps/CI/CD/data-pipeline/chip work), the same as every other category.
+Generic AI/ML terminology - "machine learning", "deep learning", "neural network", "AI" - appears across nearly every category here (Prediction models are ML, Planning can be learned, even Control can use learned MPC) and in almost any modern AV job's boilerplate company description, regardless of the actual role. Perception is not "the ML category": never assign a category on the strength of generic AI/ML language alone. The same goes for a dataset or benchmark name (nuScenes, KITTI, Argoverse, Waymo Open Dataset, BDD100K) - useful supporting evidence that a posting is real AV/ML engineering work, never sufficient by itself to decide which of the 10 categories applies, since the same dataset shows up in Perception, Prediction, and general ML work alike. Only the category's actual responsibilities - its Context and Keywords below - should drive that decision.
 
 Sensing — sensor integration, calibration, and raw data acquisition from vehicle sensors.
 Keywords: camera_driver, lidar_driver, radar_driver, gnss_driver, imu_driver, LiDAR, camera, radar, point cloud, velodyne, distortion correction, ring_outlier_filter, sensor calibration, sensor integration, data acquisition
+Context: Works with the physical sensor hardware and its raw data feed - writing or maintaining camera/LiDAR/radar drivers, calibrating sensors against each other and the vehicle frame, and getting clean, synchronized point clouds and images out to the rest of the stack. This is upstream of Perception: Sensing gets the raw data flowing and calibrated; Perception is what makes sense of it.
 
 Localization — determining the vehicle's own pose within its environment.
 Keywords: ndt_scan_matcher, ekf_localizer, gyro_odometer, NDT (Normal Distributions Transform), pose estimation, dead reckoning, twist estimator, SLAM, HD-map-relative localization
+Context: Answers "where is the vehicle right now, precisely" - matching live sensor data against a known map (NDT, SLAM) or fusing GPS/IMU/odometry to estimate pose. Distinct from Mapping, which builds the map itself rather than locating the vehicle within it.
 
 Perception — detecting and understanding objects and the scene around the vehicle.
-Keywords: object_recognition, object detection, object tracking, multi_object_tracker, euclidean_cluster, roi_cluster_fusion, camera-lidar fusion, sensor fusion, semantic segmentation, panoptic segmentation, traffic light recognition, YOLO, YOLOX, TensorRT, computer vision, machine learning, deep learning, neural network, obstacle detection, 2D/3D object detection
+Keywords: object_recognition, object detection, object tracking, multi_object_tracker, euclidean_cluster, roi_cluster_fusion, camera-lidar fusion, sensor fusion, semantic segmentation, panoptic segmentation, traffic light recognition, YOLO, YOLOX, TensorRT, computer vision, obstacle detection, 2D/3D object detection
+Context: Turns sensor data into an understanding of the scene - detecting, classifying, and tracking dynamic and static objects (vehicles, pedestrians, cyclists, traffic lights, lane markings) from camera/LiDAR/radar input, often with a learned model. The category-deciding signal is WHAT is being detected or understood, not that a model or "AI" is involved - Prediction and Planning also use learned models, but for forecasting behavior and choosing a path, not scene understanding itself.
 
 Prediction — forecasting the future behavior or trajectory of other agents.
 Keywords: trajectory prediction, motion forecasting, interaction prediction, behavior modeling, Lane Sequence Predictor, Inter-TNT, Free Move Predictor
+Context: Forecasts what OTHER agents (vehicles, pedestrians, cyclists) will do next - their future trajectory or behavior - so the planner can react to it. Downstream of Perception, which says what is there right now; upstream of Planning, which decides what the ego vehicle should do about it.
 
 Planning — deciding the vehicle's intended path or maneuver.
 Keywords: mission_planner, behavior_path_planner, motion_velocity_planner, lane change, lane following, obstacle avoidance, path smoother, path optimizer, scenario selector, freespace planner, motion planning, trajectory generation, EM Planner
+Context: Decides the ego vehicle's own intended path or maneuver - lane changes, merges, the route through an intersection - given the current scene and the predicted behavior of others. Distinct from Control, which executes that chosen path through actuation rather than deciding it.
 
 Control — executing the planned trajectory through vehicle actuation.
 Keywords: trajectory_follower, lateral controller, longitudinal controller, MPC, model predictive control, PID control, vehicle_cmd_gate, throttle, brake, steering
+Context: Takes an already-decided trajectory and computes the actual steering/throttle/brake commands to follow it (PID, MPC). The last software step before Vehicle Interface hardware actuation: Control decides WHAT commands to send, Vehicle Interface delivers them to the hardware.
 
 Vehicle Interface — embedded integration between software and vehicle hardware/actuators.
 Keywords: vehicle_interface, raw_vehicle_cmd_converter, drive-by-wire, CAN bus, pacmod, CanBus, embedded vehicle integration
+Context: Builds the embedded, low-level bridge between the software stack's commands and the vehicle's physical actuators - CAN bus messaging, drive-by-wire integration, hardware abstraction. Distinct from Control, which decides the commands rather than delivering them to hardware.
 
 Mapping — building or consuming HD maps and geospatial map data.
 Keywords: lanelet2, HD map, vector map, pointcloud map, map projection, mapping, map engineering, geospatial systems
+Context: Builds or maintains the HD map itself - lane geometry, map layers, vector or point-cloud maps - that Localization and Planning consume. Distinct from Localization, which uses the map to determine where the vehicle is rather than building the map.
 
 System and Safety — fault handling, diagnostics, functional safety, and system-level monitoring.
 Keywords: diagnostics, emergency_handler, fail-safe, system monitor, safety monitoring, autoware_state, functional safety, HMI
+Context: Cross-cutting reliability work spanning the whole stack - fault detection, diagnostics, functional-safety compliance, fail-safe behavior, system-level health monitoring - rather than any single perception, planning, or control function.
+
+Infrastructure — cloud, compute, and MLOps platform work supporting AV development, not the driving stack itself.
+Keywords: cloud infrastructure, AWS, GCP, Azure, Kubernetes, Docker, CI/CD, MLOps, ML platform, model serving, distributed training, GPU cluster, data pipeline, data infrastructure, DevOps, build system, compute infrastructure, developer tooling, chip design, ASIC, FPGA, compiler, GPU driver
+Context: Builds and operates the compute, data, and deployment platform AV engineering runs on - cloud/on-prem infrastructure, ML training or serving platforms, CI/CD and build systems, data pipelines, developer tooling, or the underlying chip/hardware compute stack (GPU/ASIC/FPGA design, drivers, compilers) - rather than any part of the vehicle's own sensing-to-actuation software stack. This is the category for a role that is genuinely AV-company engineering work (already confirmed AV-relevant) whose actual day-to-day responsibilities are platform, tooling, or hardware-compute work rather than one of the 9 driving-stack categories above: use it instead of forcing a weak fit into an unrelated stack category, and instead of treating the job as out of scope.
 
 SKILL NORMALIZATION
 Normalize extracted skill names while keeping them recognizable. Examples:

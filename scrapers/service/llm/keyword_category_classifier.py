@@ -42,9 +42,8 @@ class KeywordCategoryClassifier:
     def __init__(self) -> None:
         self._categories = _load_category_patterns()
 
-    def classify(self, text: str) -> tuple[str, ...]:
-        matched = []
-        weights = {}
+    def _match_counts(self, text: str) -> dict[str, int]:
+        counts = {}
         for name, patterns in self._categories:
             # Count of distinct keyword phrases that matched at least once -
             # not total occurrences, so a phrase repeated five times still
@@ -52,6 +51,25 @@ class KeywordCategoryClassifier:
             # instead of just how many sub_types matched.
             match_count = sum(1 for pattern in patterns if pattern.search(text))
             if match_count:
-                matched.append(name)
-                weights[name] = match_count
-        return constrain_to_dominant_main_type(tuple(matched), weights=weights)
+                counts[name] = match_count
+        return counts
+
+    def classify(self, text: str, title: str | None = None) -> tuple[str, ...]:
+        """`title`, when given, is checked on its own first: a category
+        named in the title decides the result outright, the same
+        title-decides-first rule the LLM prompt follows (categories_definition
+        .txt) - otherwise a long description's incidental keyword hits (e.g.
+        several "infrastructure"/"cloud" mentions in company boilerplate)
+        could outvote the one keyword that actually named the role, by sheer
+        count. Falls through to whole-text matching when the title alone is
+        empty or matches nothing, same as before this parameter existed.
+        """
+        if title:
+            title_weights = self._match_counts(title)
+            if title_weights:
+                title_matched = constrain_to_dominant_main_type(tuple(title_weights), weights=title_weights)
+                if title_matched:
+                    return title_matched
+
+        weights = self._match_counts(text)
+        return constrain_to_dominant_main_type(tuple(weights), weights=weights)

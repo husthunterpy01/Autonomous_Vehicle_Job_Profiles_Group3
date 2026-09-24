@@ -170,7 +170,7 @@ class JobEnricherMain:
                 _resolve(posting, aliases, "description"),
                 args.max_description_chars,
             )
-            categories = keyword_classifier.classify(f"{title} {description}")
+            categories = keyword_classifier.classify(f"{title} {description}", title=title)
             if not categories:
                 needs_llm.append((rep_id, posting))
                 continue
