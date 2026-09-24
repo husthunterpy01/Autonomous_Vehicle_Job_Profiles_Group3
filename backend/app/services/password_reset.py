@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
+from app.services.email import AuthenticationEmailRecipient
 from app.utils.security import SecurityService
 
 logger = logging.getLogger(__name__)
@@ -25,13 +26,17 @@ class UsedResetTokenError(Exception):
     pass
 
 
+class InvalidatedResetTokenError(Exception):
+    pass
+
+
 class ReusedPasswordError(Exception):
     pass
 
 
 @dataclass(frozen=True)
 class IssuedPasswordReset:
-    user: User
+    recipient: AuthenticationEmailRecipient
     token: str
 
 
@@ -51,6 +56,8 @@ class PasswordResetService:
             raise InvalidResetTokenError
         if record.used_at is not None:
             raise UsedResetTokenError
+        if record.invalidated_at is not None:
+            raise InvalidatedResetTokenError
         if PasswordResetService._utc(record.expires_at) <= now:
             raise ExpiredResetTokenError
         return record
@@ -74,7 +81,11 @@ class PasswordResetService:
         db.query(PasswordResetToken).filter(
             PasswordResetToken.user_id == user.user_id,
             PasswordResetToken.used_at.is_(None),
-        ).update({PasswordResetToken.used_at: now}, synchronize_session=False)
+            PasswordResetToken.invalidated_at.is_(None),
+        ).update(
+            {PasswordResetToken.invalidated_at: now},
+            synchronize_session=False,
+        )
 
         token = SecurityService.generate_password_reset_token()
         record = PasswordResetToken(
@@ -88,7 +99,14 @@ class PasswordResetService:
             "Password reset requested for account",
             extra={"user_id": str(user.user_id)},
         )
-        return IssuedPasswordReset(user=user, token=token)
+        return IssuedPasswordReset(
+            recipient=AuthenticationEmailRecipient(
+                user_id=user.user_id,
+                email=user.email,
+                full_name=user.full_name,
+            ),
+            token=token,
+        )
 
     @staticmethod
     def revoke_token(db: Session, token: str) -> None:
@@ -97,7 +115,11 @@ class PasswordResetService:
         db.query(PasswordResetToken).filter(
             PasswordResetToken.token_hash == token_hash,
             PasswordResetToken.used_at.is_(None),
-        ).update({PasswordResetToken.used_at: now}, synchronize_session=False)
+            PasswordResetToken.invalidated_at.is_(None),
+        ).update(
+            {PasswordResetToken.invalidated_at: now},
+            synchronize_session=False,
+        )
         db.commit()
 
     @staticmethod
@@ -132,10 +154,16 @@ class PasswordResetService:
 
         user.password_hash = SecurityService.hash_password(new_password)
         user.token_version += 1
+        record.used_at = now
         db.query(PasswordResetToken).filter(
             PasswordResetToken.user_id == user.user_id,
+            PasswordResetToken.reset_id != record.reset_id,
             PasswordResetToken.used_at.is_(None),
-        ).update({PasswordResetToken.used_at: now}, synchronize_session=False)
+            PasswordResetToken.invalidated_at.is_(None),
+        ).update(
+            {PasswordResetToken.invalidated_at: now},
+            synchronize_session=False,
+        )
         db.commit()
         db.refresh(user)
         logger.info(

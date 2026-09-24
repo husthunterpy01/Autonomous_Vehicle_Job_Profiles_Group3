@@ -228,7 +228,7 @@ Configure email delivery and reset controls in `.env`:
 PASSWORD_RESET_TOKEN_MINUTES=20
 PASSWORD_RESET_MAX_REQUESTS=5
 PASSWORD_RESET_WINDOW_SECONDS=900
-PASSWORD_RESET_FRONTEND_URL=http://localhost:5173/reset-password
+PASSWORD_RESET_FRONTEND_URL=http://localhost:3000/reset-password
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USERNAME=example-user
@@ -242,6 +242,13 @@ limited independently by hashed identifier and client IP. Like the existing
 login limiter, the bundled limiter is process-local; use a shared store such as
 Redis when running multiple API instances. Logs contain user IDs or hashed
 request keys, never raw reset tokens or passwords.
+
+The reset URL targets the Next.js frontend on port `3000`. The frontend must
+provide `/reset-password` and submit its token to the backend reset endpoint.
+Until that frontend route is implemented, the backend endpoints can still be
+verified through Swagger UI or the `curl` examples above. The backend emits a
+startup warning when `SMTP_HOST` is missing because reset emails cannot be
+delivered without an SMTP provider.
 
 Fresh databases receive the table and token-version column through ORM startup.
 For an existing PostgreSQL database, apply the repeatable migration from

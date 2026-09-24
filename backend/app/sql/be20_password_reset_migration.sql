@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS password_reset_token (
     token_hash varchar(64) NOT NULL UNIQUE,
     expires_at timestamptz NOT NULL,
     used_at timestamptz,
+    invalidated_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS ix_password_reset_token_user_id

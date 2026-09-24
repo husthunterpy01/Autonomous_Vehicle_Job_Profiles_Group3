@@ -69,6 +69,11 @@ class Settings:
             "http://localhost:3000/reset-password",
         )
         self.smtp_host = os.getenv("SMTP_HOST")
+        if not self.smtp_host and self.environment != "test":
+            warnings.warn(
+                "SMTP_HOST is not set; password-reset emails cannot be delivered",
+                stacklevel=2,
+            )
         self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
         self.smtp_username = os.getenv("SMTP_USERNAME")
         self.smtp_password = os.getenv("SMTP_PASSWORD")

@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     HTTPException,
     Query,
@@ -14,7 +15,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.core.database import get_db
+from app.core.database import SessionLocal, get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
 from app.schemas.auth import (
@@ -29,12 +30,14 @@ from app.schemas.auth import (
 )
 from app.services.auth import AuthService, DuplicateUserError
 from app.services.email import (
+    AuthenticationEmailRecipient,
     EmailDeliveryError,
     PasswordResetEmailSender,
     get_password_reset_email_sender,
 )
 from app.services.password_reset import (
     ExpiredResetTokenError,
+    InvalidatedResetTokenError,
     InvalidResetTokenError,
     PasswordResetService,
     ReusedPasswordError,
@@ -72,12 +75,51 @@ def _raise_reset_token_error(error: Exception) -> None:
         detail = "Password reset token has expired"
     elif isinstance(error, UsedResetTokenError):
         detail = "Password reset token has already been used"
+    elif isinstance(error, InvalidatedResetTokenError):
+        detail = "Password reset token was superseded by a newer request"
     else:
         detail = "Password reset token is invalid"
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
         detail=detail,
     ) from error
+
+
+def _deliver_reset_email(
+    email_sender: PasswordResetEmailSender,
+    recipient: AuthenticationEmailRecipient,
+    token: str,
+) -> None:
+    try:
+        email_sender.send_reset_link(recipient, token)
+    except EmailDeliveryError:
+        task_db = SessionLocal()
+        try:
+            PasswordResetService.revoke_token(task_db, token)
+        except Exception:
+            logger.exception(
+                "Failed to invalidate an undeliverable password reset token",
+                extra={"user_id": str(recipient.user_id)},
+            )
+        finally:
+            task_db.close()
+        logger.exception(
+            "Password reset email delivery failed",
+            extra={"user_id": str(recipient.user_id)},
+        )
+
+
+def _deliver_password_changed_email(
+    email_sender: PasswordResetEmailSender,
+    recipient: AuthenticationEmailRecipient,
+) -> None:
+    try:
+        email_sender.send_password_changed(recipient)
+    except EmailDeliveryError:
+        logger.exception(
+            "Password change confirmation email delivery failed",
+            extra={"user_id": str(recipient.user_id)},
+        )
 
 
 def _set_access_cookie(
@@ -173,6 +215,7 @@ def sign_out(response: Response):
 def forgot_password(
     data: ForgotPasswordRequest,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: DbSession,
     email_sender: PasswordResetSender,
 ):
@@ -204,14 +247,12 @@ def forgot_password(
 
     issued = PasswordResetService.request_reset(db, data.identifier)
     if issued:
-        try:
-            email_sender.send_reset_link(issued.user, issued.token)
-        except EmailDeliveryError:
-            PasswordResetService.revoke_token(db, issued.token)
-            logger.exception(
-                "Password reset email delivery failed",
-                extra={"user_id": str(issued.user.user_id)},
-            )
+        background_tasks.add_task(
+            _deliver_reset_email,
+            email_sender,
+            issued.recipient,
+            issued.token,
+        )
     return MessageResponse(message=GENERIC_RESET_MESSAGE)
 
 
@@ -228,6 +269,7 @@ def verify_password_reset_token(
     except (
         InvalidResetTokenError,
         ExpiredResetTokenError,
+        InvalidatedResetTokenError,
         UsedResetTokenError,
     ) as error:
         _raise_reset_token_error(error)
@@ -238,6 +280,7 @@ def verify_password_reset_token(
 def reset_password(
     data: PasswordResetRequest,
     response: Response,
+    background_tasks: BackgroundTasks,
     db: DbSession,
     email_sender: PasswordResetSender,
 ):
@@ -246,6 +289,7 @@ def reset_password(
     except (
         InvalidResetTokenError,
         ExpiredResetTokenError,
+        InvalidatedResetTokenError,
         UsedResetTokenError,
     ) as error:
         _raise_reset_token_error(error)
@@ -262,13 +306,15 @@ def reset_password(
         samesite="lax",
         path="/",
     )
-    try:
-        email_sender.send_password_changed(user)
-    except EmailDeliveryError:
-        logger.exception(
-            "Password change confirmation email delivery failed",
-            extra={"user_id": str(user.user_id)},
-        )
+    background_tasks.add_task(
+        _deliver_password_changed_email,
+        email_sender,
+        AuthenticationEmailRecipient(
+            user_id=user.user_id,
+            email=user.email,
+            full_name=user.full_name,
+        ),
+    )
 
 
 @router.get("/me", response_model=UserResponse)

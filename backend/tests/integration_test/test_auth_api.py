@@ -285,7 +285,7 @@ def test_new_reset_request_invalidates_the_previous_token(client):
     )
 
     assert first.status_code == 400
-    assert "already been used" in first.json()["detail"]
+    assert "superseded by a newer request" in first.json()["detail"]
     assert second.status_code == 200
 
 

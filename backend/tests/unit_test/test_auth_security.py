@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
 import jwt
@@ -9,8 +9,10 @@ from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 
 from app.core.config import Settings, settings
+from app.routers.auth import _deliver_reset_email
 from app.schemas.auth import SignUpRequest
 from app.services.auth import AuthService, DuplicateUserError
+from app.services.email import AuthenticationEmailRecipient, EmailDeliveryError
 from app.services.rate_limit import LoginRateLimiter
 from app.utils.security import SecurityService
 
@@ -135,6 +137,34 @@ def test_password_reset_expiry_must_remain_in_secure_range(monkeypatch, minutes)
         match="PASSWORD_RESET_TOKEN_MINUTES must be between 15 and 30",
     ):
         Settings()
+
+
+def test_missing_smtp_configuration_emits_startup_warning(monkeypatch):
+    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.delenv("SMTP_HOST", raising=False)
+
+    with pytest.warns(UserWarning, match="password-reset emails cannot be delivered"):
+        assert Settings().smtp_host is None
+
+
+def test_reset_email_failure_is_handled_in_background_and_revokes_token():
+    sender = MagicMock()
+    sender.send_reset_link.side_effect = EmailDeliveryError("unavailable")
+    recipient = AuthenticationEmailRecipient(
+        user_id=uuid4(),
+        email="driver@example.com",
+        full_name="Driver Engineer",
+    )
+    task_db = MagicMock()
+
+    with (
+        patch("app.routers.auth.SessionLocal", return_value=task_db),
+        patch("app.routers.auth.PasswordResetService.revoke_token") as revoke,
+    ):
+        _deliver_reset_email(sender, recipient, "opaque-reset-token")
+
+    revoke.assert_called_once_with(task_db, "opaque-reset-token")
+    task_db.close.assert_called_once_with()
 
 
 class DatabaseError(Exception):
