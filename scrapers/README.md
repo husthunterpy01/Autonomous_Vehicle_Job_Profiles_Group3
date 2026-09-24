@@ -110,7 +110,7 @@ python3 -m scrapers.utils.job_enricher \
 Each job is first run through `KeywordCategoryClassifier` - deterministic,
 zero-LLM category matching against the same curated vocabulary in
 `categories_definition.txt`. Only jobs its vocabulary doesn't cover (an empty
-result) fall back to Groq (default 10/request) against the 9-category
+result) fall back to Groq (default 10/request) against the 10-category
 taxonomy, extracting categories and skills. Writes `av_jobs.jsonl` - **the
 final, complete Silver-layer output** with `categories` and `skills` per job,
 each tagged `category_source: "keyword_resolved"` or `"llm_enriched"` - plus

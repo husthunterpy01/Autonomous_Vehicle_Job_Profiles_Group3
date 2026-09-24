@@ -33,7 +33,7 @@ class KeywordCategoryClassifier:
     This regex approach, using the same hand-curated per-category vocabulary
     that already works well for skill extraction, matched the true category
     correctly (plus one defensible extra) on the same example. Recall is
-    bounded by that vocabulary's coverage - jobs matching none of the 9
+    bounded by that vocabulary's coverage - jobs matching none of the
     categories' keywords return an empty tuple and should fall back to the
     LLM (job_enricher.py), since every AV-relevant job needs at least one
     category by the taxonomy's own rule.

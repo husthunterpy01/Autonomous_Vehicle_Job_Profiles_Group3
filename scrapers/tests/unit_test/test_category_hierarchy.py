@@ -2,6 +2,7 @@ from scrapers.service.llm.category_hierarchy import (
     constrain_to_dominant_main_type,
     load_main_types,
 )
+from scrapers.service.llm.job_enricher import ALLOWED_CATEGORIES
 
 MAIN_TYPES = {
     "Sensing": "Perception",
@@ -97,4 +98,6 @@ def test_load_main_types_returns_the_real_checked_in_mapping():
     mapping = load_main_types()
     assert mapping["Sensing"] == "Perception & Sensing"
     assert mapping["Control"] == "System"
-    assert len(mapping) == 9
+    assert mapping["Infrastructure"] == "Platform"
+    # the checked-in YAML and the enricher's allowed list must cover the same categories
+    assert set(mapping) == ALLOWED_CATEGORIES

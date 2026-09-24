@@ -185,7 +185,7 @@ def test_keyword_resolvable_job_never_reaches_the_llm(tmp_path):
 
 
 def test_keyword_unresolvable_job_falls_back_to_the_llm(tmp_path):
-    # A description matching none of the 9 categories' keywords must still
+    # A description matching none of the categories' keywords must still
     # fall back to Groq, per KeywordCategoryClassifier's own documented
     # contract (empty result = "not covered, ask the LLM").
     candidates = [
