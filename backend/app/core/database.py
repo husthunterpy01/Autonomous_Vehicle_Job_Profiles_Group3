@@ -70,7 +70,7 @@ class Database:
                 # invocations; it just can't open several in parallel.
                 **(
                     {"pool_size": 1, "max_overflow": 0}
-                    if os.getenv("VERCEL")
+                    if os.getenv("VERCEL") is not None
                     else {"pool_size": 5, "max_overflow": 5}
                 ),
             }

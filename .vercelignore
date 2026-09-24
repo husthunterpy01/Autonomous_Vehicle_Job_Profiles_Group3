@@ -15,7 +15,7 @@ out/
 # ML/data tooling - not part of the deployed frontend or API
 notebooks/
 checkpoints/
-data/
+/data/
 scrapers/data/train_result/
 scrapers/data/snapshots/
 
