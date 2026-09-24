@@ -15,7 +15,6 @@ from app.schemas.auth import (
     SignUpRequest,
     UserProfileResponse,
     UserProfileUpdate,
-    UserResponse,
 )
 from app.services.auth import (
     AuthService,
