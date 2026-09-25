@@ -47,3 +47,26 @@ export async function getCategoryStats(): Promise<CategoryDemand[]> {
     }))
     .sort((a, b) => b.jobs - a.jobs);
 }
+
+export type TopPaidJob = {
+  job_id: string;
+  title: string;
+  company_id: string;
+  company_name: string;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_average: number | null;
+  salary_currency: string;
+  salary_period: string;
+  salary_source: string;
+  /** USD, annualized - the ranking key only. Never shown as the posted
+   *  figure; the salary_* fields above stay exactly as posted for display. */
+  estimated_annual_usd: number;
+};
+
+/** Backend already orders by estimated_annual_usd desc, so this is a
+ *  straight pass-through - see SalaryStatsService for how the ranking key
+ *  is derived. */
+export function getTopPaidJobs(limit = 5): Promise<TopPaidJob[]> {
+  return apiFetch<TopPaidJob[]>(`/api/v1/home/top-paid-jobs?limit=${limit}`);
+}
