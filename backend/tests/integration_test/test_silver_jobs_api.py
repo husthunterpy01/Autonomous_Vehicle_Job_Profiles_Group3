@@ -164,6 +164,18 @@ def test_salary_filters_and_response_fields(db_session):
         no_salary_only = client.get("/jobs", params={"has_salary": False}).json()
         assert {item["title"] for item in no_salary_only["items"]} == {"No Salary"}
 
+        # salary_disclosed keeps only ranges the employer published, in any
+        # pay period - the levels.fyi estimate is excluded, unlike has_salary.
+        disclosed = client.get("/jobs", params={"salary_disclosed": True}).json()
+        assert {item["title"] for item in disclosed["items"]} == {"Yearly Low", "Yearly High", "Hourly"}
+
+        undisclosed = client.get("/jobs", params={"salary_disclosed": False}).json()
+        assert {item["title"] for item in undisclosed["items"]} == {"Estimated Only", "No Salary"}
+
+        # The two flags combine: some salary info, but not a published range.
+        estimate_only = client.get("/jobs", params={"has_salary": True, "salary_disclosed": False}).json()
+        assert {item["title"] for item in estimate_only["items"]} == {"Estimated Only"}
+
         assert client.get("/jobs?min_salary=-1").status_code == 422
 
 
