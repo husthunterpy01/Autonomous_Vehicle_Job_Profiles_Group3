@@ -1,19 +1,21 @@
--- DOC-13: skill demand over time (Gold trend mart). Design draft for review.
--- Repeatable and non-destructive: creates new objects only, touches no
--- existing table. Rollback: doc13_skill_trend_rollback.sql.
+-- DOC-13: skill demand over time - Gold layer star schema. Design draft for review.
+-- Repeatable and non-destructive: creates the gold schema and new objects
+-- only, touching no existing table. Rollback: doc13_skill_trend_rollback.sql.
 --
--- These tables deliberately have NO foreign key to jobposting or skill:
--- a full re-import recreates every job (new job_id), and
--- seed_companies.sql runs TRUNCATE company CASCADE. Keying the history on
--- the Silver deduplication_key and the skill's normalized name keeps it
--- intact through both. See document/gold-trend-mart/README.md.
+-- Gold is its own schema, loaded from each scrape run's pipeline output,
+-- not from the backend's tables. It has no foreign keys into them, so
+-- re-importing jobs (new job_id values) or seed_companies.sql's
+-- TRUNCATE company CASCADE never touches it. Foreign keys only exist
+-- inside the star (fact -> dimensions). See document/gold-trend-mart/README.md.
 BEGIN;
 
--- One row per scrape run, live or backfilled from MinIO. Only a completed
--- run writes observations; a failed or partial run is registered with
+CREATE SCHEMA IF NOT EXISTS gold;
+
+-- Load log: one row per scrape run, live or backfilled from MinIO. Only a
+-- completed run writes facts; a failed or partial run is registered with
 -- completed = false and nothing else, so it can never become a month's
 -- snapshot or move last_seen_at.
-CREATE TABLE IF NOT EXISTS scrape_run (
+CREATE TABLE IF NOT EXISTS gold.scrape_run (
     run_id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     scraped_at timestamptz NOT NULL UNIQUE,
     source varchar(16) NOT NULL DEFAULT 'live',
@@ -24,88 +26,129 @@ CREATE TABLE IF NOT EXISTS scrape_run (
     CONSTRAINT ck_scrape_run_source CHECK (source IN ('live', 'backfill')),
     CONSTRAINT ck_scrape_run_jobs_seen CHECK (jobs_seen IS NULL OR jobs_seen >= 0)
 );
--- Columns added after the first draft, so re-running upgrades an early copy.
-ALTER TABLE scrape_run ADD COLUMN IF NOT EXISTS completed boolean NOT NULL DEFAULT false;
-ALTER TABLE scrape_run ADD COLUMN IF NOT EXISTS classifier_version text;
 
--- One row per (month, AV job, skill): "this job listed this skill in this
--- month", with the first and last completed run that saw it. Repeated runs
--- in the same month only move first/last seen, so rows grow with
--- jobs x skills per month, not with the number of runs.
-CREATE TABLE IF NOT EXISTS job_skill_observation (
-    month date NOT NULL,
-    deduplication_key text NOT NULL,
-    skill_normalized_name text NOT NULL,
-    skill_type varchar(64) NOT NULL,
-    first_seen_at timestamptz NOT NULL,
-    last_seen_at timestamptz NOT NULL,
-    PRIMARY KEY (month, deduplication_key, skill_normalized_name, skill_type),
-    CONSTRAINT ck_job_skill_observation_month_start
-        CHECK (month = date_trunc('month', month)::date),
-    CONSTRAINT ck_job_skill_observation_key
-        CHECK (deduplication_key ~ '^[0-9a-f]{32}$'),
-    CONSTRAINT ck_job_skill_observation_seen_order
-        CHECK (first_seen_at <= last_seen_at),
-    CONSTRAINT ck_job_skill_observation_seen_in_month
-        CHECK (
-            date_trunc('month', first_seen_at AT TIME ZONE 'UTC')::date = month
-            AND date_trunc('month', last_seen_at AT TIME ZONE 'UTC')::date = month
-        )
+-- Dimension: calendar month (UTC). month_key is yyyymm, e.g. 202608.
+CREATE TABLE IF NOT EXISTS gold.dim_month (
+    month_key integer PRIMARY KEY,
+    month_start date NOT NULL UNIQUE,
+    year smallint NOT NULL,
+    month smallint NOT NULL,
+    label text NOT NULL,
+    CONSTRAINT ck_dim_month_start CHECK (month_start = date_trunc('month', month_start)::date),
+    CONSTRAINT ck_dim_month_parts CHECK (
+        year = extract(year FROM month_start)
+        AND month = extract(month FROM month_start)
+        AND month_key = year * 100 + month
+    )
 );
 
-CREATE INDEX IF NOT EXISTS ix_job_skill_observation_skill_month
-    ON job_skill_observation (skill_normalized_name, skill_type, month);
-CREATE INDEX IF NOT EXISTS ix_job_skill_observation_month_last_seen
-    ON job_skill_observation (month, last_seen_at);
+-- Dimension: skill. Natural key (normalized_name, skill_type), normalized the
+-- same way as the backend's skill table.
+CREATE TABLE IF NOT EXISTS gold.dim_skill (
+    skill_key bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    normalized_name text NOT NULL,
+    skill_type varchar(64) NOT NULL,
+    display_name text NOT NULL,
+    CONSTRAINT uq_dim_skill_natural_key UNIQUE (normalized_name, skill_type)
+);
+
+-- Dimension: company. Natural key company_name.
+CREATE TABLE IF NOT EXISTS gold.dim_company (
+    company_key bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    company_name text NOT NULL UNIQUE,
+    company_type text
+);
+
+-- Dimension: job. Natural key deduplication_key (md5 hex from the pipeline's
+-- dedup step), which stays the same across scrapes and re-imports. Attributes
+-- are type-1 (latest value wins); first/last seen let an out-of-order backfill
+-- keep the newest attributes.
+CREATE TABLE IF NOT EXISTS gold.dim_job (
+    job_key bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    deduplication_key text NOT NULL UNIQUE,
+    title text NOT NULL,
+    main_type text,
+    first_seen_at timestamptz NOT NULL,
+    last_seen_at timestamptz NOT NULL,
+    CONSTRAINT ck_dim_job_key CHECK (deduplication_key ~ '^[0-9a-f]{32}$'),
+    CONSTRAINT ck_dim_job_seen_order CHECK (first_seen_at <= last_seen_at)
+);
+
+-- Fact: one row per (month, AV job, skill), "this job listed this skill in
+-- this month", with the first and last completed run that saw it. Repeated
+-- runs in a month only move first/last seen, so rows grow with
+-- jobs x skills per month, not with the number of runs.
+CREATE TABLE IF NOT EXISTS gold.fact_job_skill_month (
+    month_key integer NOT NULL REFERENCES gold.dim_month (month_key),
+    job_key bigint NOT NULL REFERENCES gold.dim_job (job_key),
+    skill_key bigint NOT NULL REFERENCES gold.dim_skill (skill_key),
+    company_key bigint NOT NULL REFERENCES gold.dim_company (company_key),
+    first_seen_at timestamptz NOT NULL,
+    last_seen_at timestamptz NOT NULL,
+    PRIMARY KEY (month_key, job_key, skill_key),
+    CONSTRAINT ck_fact_seen_order CHECK (first_seen_at <= last_seen_at),
+    CONSTRAINT ck_fact_seen_in_month CHECK (
+        extract(year FROM first_seen_at AT TIME ZONE 'UTC') * 100
+            + extract(month FROM first_seen_at AT TIME ZONE 'UTC') = month_key
+        AND extract(year FROM last_seen_at AT TIME ZONE 'UTC') * 100
+            + extract(month FROM last_seen_at AT TIME ZONE 'UTC') = month_key
+    )
+);
+
+CREATE INDEX IF NOT EXISTS ix_fact_job_skill_month_snapshot
+    ON gold.fact_job_skill_month (month_key, last_seen_at);
+CREATE INDEX IF NOT EXISTS ix_fact_job_skill_month_skill
+    ON gold.fact_job_skill_month (skill_key, month_key);
+CREATE INDEX IF NOT EXISTS ix_fact_job_skill_month_company
+    ON gold.fact_job_skill_month (company_key);
 
 -- Monthly skill demand from a month-end snapshot: each month is compared by
--- the jobs in its latest completed run, as agreed in review. A job belongs to
--- that snapshot exactly when its last_seen_at equals the run's scraped_at.
--- Recreated rather than replaced so the column list can change between drafts.
-DROP VIEW IF EXISTS skill_trend_monthly;
-CREATE VIEW skill_trend_monthly AS
+-- the jobs in its latest completed run. A fact belongs to that snapshot
+-- exactly when its last_seen_at equals the run's scraped_at.
+DROP VIEW IF EXISTS gold.skill_trend_monthly;
+CREATE VIEW gold.skill_trend_monthly AS
 WITH month_snapshot AS (
-    SELECT date_trunc('month', scraped_at AT TIME ZONE 'UTC')::date AS month,
+    SELECT (extract(year FROM scraped_at AT TIME ZONE 'UTC') * 100
+            + extract(month FROM scraped_at AT TIME ZONE 'UTC'))::integer AS month_key,
            max(scraped_at) AS snapshot_at
-    FROM scrape_run
+    FROM gold.scrape_run
     WHERE completed
     GROUP BY 1
 ),
-snapshot_rows AS (
-    SELECT o.month, o.deduplication_key, o.skill_normalized_name, o.skill_type,
-           s.snapshot_at
-    FROM job_skill_observation AS o
+snapshot_facts AS (
+    SELECT f.month_key, f.job_key, f.skill_key, s.snapshot_at
+    FROM gold.fact_job_skill_month AS f
     JOIN month_snapshot AS s
-      ON s.month = o.month
-     AND o.last_seen_at = s.snapshot_at
+      ON s.month_key = f.month_key
+     AND f.last_seen_at = s.snapshot_at
 ),
 per_skill AS (
-    SELECT month, snapshot_at, skill_normalized_name, skill_type,
-           count(DISTINCT deduplication_key) AS job_count
-    FROM snapshot_rows
-    GROUP BY month, snapshot_at, skill_normalized_name, skill_type
+    SELECT month_key, snapshot_at, skill_key, count(DISTINCT job_key) AS job_count
+    FROM snapshot_facts
+    GROUP BY month_key, snapshot_at, skill_key
 ),
 per_month AS (
-    SELECT month, count(DISTINCT deduplication_key) AS jobs_with_skills
-    FROM snapshot_rows
-    GROUP BY month
+    SELECT month_key, count(DISTINCT job_key) AS jobs_with_skills
+    FROM snapshot_facts
+    GROUP BY month_key
 )
-SELECT s.month,
-       s.snapshot_at,
-       coalesce(sk.skill_name, s.skill_normalized_name) AS skill_name,
-       s.skill_normalized_name,
-       s.skill_type,
-       s.job_count,
-       m.jobs_with_skills,
-       round(s.job_count::numeric / m.jobs_with_skills, 4) AS share,
+SELECT p.month_key,
+       m.month_start AS month,
+       m.label AS month_label,
+       p.snapshot_at,
+       k.display_name AS skill_name,
+       k.normalized_name AS skill_normalized_name,
+       k.skill_type,
+       p.job_count,
+       t.jobs_with_skills,
+       round(p.job_count::numeric / t.jobs_with_skills, 4) AS share,
        row_number() OVER (
-           PARTITION BY s.month
-           ORDER BY s.job_count DESC, s.skill_normalized_name, s.skill_type
+           PARTITION BY p.month_key
+           ORDER BY p.job_count DESC, k.normalized_name, k.skill_type
        ) AS rank
-FROM per_skill AS s
-JOIN per_month AS m USING (month)
-LEFT JOIN skill AS sk
-       ON sk.normalized_name = s.skill_normalized_name
-      AND sk.skill_type = s.skill_type;
+FROM per_skill AS p
+JOIN per_month AS t USING (month_key)
+JOIN gold.dim_month AS m USING (month_key)
+JOIN gold.dim_skill AS k USING (skill_key);
 
 COMMIT;
