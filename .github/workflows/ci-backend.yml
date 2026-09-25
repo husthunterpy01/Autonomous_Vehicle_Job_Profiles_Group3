@@ -24,6 +24,8 @@ jobs:
       BE9_TEST_DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
       BE11_TEST_POSTGRES: '1'
       BE11_TEST_DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
+      BE20_TEST_POSTGRES: '1'
+      BE20_TEST_DATABASE_URL: postgresql://team3@localhost:5432/autojobdatabase
     services:
       postgres:
         image: postgres:16

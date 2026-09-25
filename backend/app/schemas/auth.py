@@ -7,6 +7,21 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 USERNAME_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+$")
 
 
+def validate_password_strength(value: str) -> str:
+    requirements = (
+        (r"[a-z]", "a lowercase letter"),
+        (r"[A-Z]", "an uppercase letter"),
+        (r"\d", "a number"),
+        (r"[^A-Za-z0-9]", "a special character"),
+    )
+    missing = [
+        label for pattern, label in requirements if not re.search(pattern, value)
+    ]
+    if missing:
+        raise ValueError("password must contain " + ", ".join(missing))
+    return value
+
+
 class SignUpRequest(BaseModel):
     email: EmailStr
     username: str = Field(min_length=3, max_length=50)
@@ -42,16 +57,7 @@ class SignUpRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def validate_password(cls, value: str) -> str:
-        requirements = (
-            (r"[a-z]", "a lowercase letter"),
-            (r"[A-Z]", "an uppercase letter"),
-            (r"\d", "a number"),
-            (r"[^A-Za-z0-9]", "a special character"),
-        )
-        missing = [label for pattern, label in requirements if not re.search(pattern, value)]
-        if missing:
-            raise ValueError("password must contain " + ", ".join(missing))
-        return value
+        return validate_password_strength(value)
 
 
 class LoginRequest(BaseModel):
@@ -76,6 +82,41 @@ class UserResponse(BaseModel):
     username: str
     full_name: str
     created_at: datetime
+
+
+class ForgotPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    identifier: str = Field(min_length=1, max_length=320)
+
+    @field_validator("identifier")
+    @classmethod
+    def normalize_identifier(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if not normalized:
+            raise ValueError("email or username is required")
+        return normalized
+
+
+class PasswordResetRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    token: str = Field(min_length=32, max_length=512)
+    new_password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, value: str) -> str:
+        return validate_password_strength(value)
+
+
+class PasswordResetTokenResponse(BaseModel):
+    valid: bool = True
+    expires_at: datetime
+
+
+class MessageResponse(BaseModel):
+    message: str
 
 
 class AuthResponse(BaseModel):

@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, String
+from sqlalchemy import Boolean, Column, DateTime, Integer, String, text
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.core.database import Base
@@ -15,6 +15,12 @@ class User(Base):
     username = Column(String(50), unique=True, index=True, nullable=False)
     full_name = Column(String(120), nullable=False)
     password_hash = Column(String(255), nullable=False)
+    token_version = Column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default=text("0"),
+    )
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(
         DateTime(timezone=True),

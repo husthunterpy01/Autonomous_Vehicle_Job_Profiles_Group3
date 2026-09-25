@@ -51,6 +51,39 @@ class Settings:
             if job_write_api_key and job_write_api_key.strip()
             else None
         )
+        self.password_reset_token_minutes = int(
+            os.getenv("PASSWORD_RESET_TOKEN_MINUTES", "20")
+        )
+        if not 15 <= self.password_reset_token_minutes <= 30:
+            raise RuntimeError(
+                "PASSWORD_RESET_TOKEN_MINUTES must be between 15 and 30"
+            )
+        self.password_reset_max_requests = int(
+            os.getenv("PASSWORD_RESET_MAX_REQUESTS", "5")
+        )
+        self.password_reset_window_seconds = int(
+            os.getenv("PASSWORD_RESET_WINDOW_SECONDS", "900")
+        )
+        self.password_reset_frontend_url = os.getenv(
+            "PASSWORD_RESET_FRONTEND_URL",
+            "http://localhost:3000/reset-password",
+        )
+        self.smtp_host = os.getenv("SMTP_HOST")
+        if not self.smtp_host and self.environment != "test":
+            warnings.warn(
+                "SMTP_HOST is not set; password-reset emails cannot be delivered",
+                stacklevel=2,
+            )
+        self.smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        self.smtp_username = os.getenv("SMTP_USERNAME")
+        self.smtp_password = os.getenv("SMTP_PASSWORD")
+        self.smtp_from_email = os.getenv("SMTP_FROM_EMAIL", "no-reply@example.com")
+        self.smtp_starttls = os.getenv("SMTP_STARTTLS", "true").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
         cors_origins = os.getenv("CORS_ORIGINS")
         if cors_origins:
             self.cors_origins = [origin.strip() for origin in cors_origins.split(",")]
