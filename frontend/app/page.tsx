@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { AV_COMPANIES } from "@/lib/mock-data";
 import CategoryGridPanel from "@/components/CategoryGridPanel";
-import CompanyLogo from "@/components/ui/CompanyLogo";
 import TopSkillsPanel from "@/components/TopSkillsPanel";
 import {
   FeaturedJobsGrid,
   LatestJobsGrid,
   LatestOpportunitiesList,
-} from "./home-jobs";
+  TopCategoryHighlight,
+  TopCompaniesGrid,
+} from "./home-sections";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -98,16 +98,7 @@ function Hero() {
           <div className="relative mx-auto max-w-md">
             <div className="relative rounded-2xl border border-line bg-surface p-6 shadow-lg">
               <LatestOpportunitiesList />
-
-              <div className="mt-5 flex items-center justify-between rounded-xl bg-primary-light px-4 py-3">
-                <div>
-                  <p className="text-xs font-medium text-primary">Trending</p>
-                  <p className="text-sm font-semibold text-ink">
-                    Perception Engineer
-                  </p>
-                </div>
-                <span className="text-sm font-bold text-primary">+32%</span>
-              </div>
+              <TopCategoryHighlight />
             </div>
           </div>
         </div>
@@ -195,25 +186,12 @@ function TopCompanies() {
         <SectionHeader
           title="AV"
           highlight="Companies Hiring"
-          subtitle="Open roles at the AV companies tracked by this platform."
+          subtitle="The AV companies with the most open roles right now."
           linkHref="/companies"
           linkLabel="View all companies"
         />
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {AV_COMPANIES.slice(0, 8).map((company) => (
-            <Link
-              key={company.id}
-              href={`/companies/${company.id}`}
-              className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
-            >
-              <CompanyLogo text={company.name.charAt(0)} size="h-9 w-9" />
-              <span className="truncate font-semibold text-ink">
-                {company.name}
-              </span>
-            </Link>
-          ))}
-        </div>
+        <TopCompaniesGrid />
       </div>
     </section>
   );

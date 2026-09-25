@@ -7,11 +7,16 @@ import {
   locationLabel,
 } from "@/components/ui/JobResultsList";
 import Salary from "@/components/ui/Salary";
+import type { CategoryStat } from "@/lib/category-filter";
+import {
+  companyDetailHref,
+  type CompanyWithJobCount,
+} from "@/lib/services/company";
 import { jobDetailHref, jobSalary, type JobListItem } from "@/lib/services/job";
 
-/* Presentational parts of the homepage job sections. Data loading lives in
-   home-jobs.tsx, so these render from a plain state and can be tested
-   without a network call. */
+/* Presentational parts of the homepage's data-driven sections. Data loading
+   lives in home-sections.tsx, so these render from a plain state and can be
+   tested without a network call. */
 
 export type JobListState =
   | { status: "loading" }
@@ -121,6 +126,93 @@ export function FeaturedJobsView({ state }: { state: JobListState }) {
       {state.jobs.map((job) => (
         <JobColumn key={job.job_id} job={job} />
       ))}
+    </div>
+  );
+}
+
+/* The companies with the most open jobs, busiest first; companies with no
+   open jobs are left out of a "Companies Hiring" section. */
+export function topHiringCompanies(
+  companies: CompanyWithJobCount[],
+  count: number,
+): CompanyWithJobCount[] {
+  return companies
+    .filter((company) => company.number_of_jobs > 0)
+    .sort(
+      (a, b) =>
+        b.number_of_jobs - a.number_of_jobs || a.name.localeCompare(b.name),
+    )
+    .slice(0, count);
+}
+
+export type CompanyListState =
+  | { status: "loading" }
+  | { status: "error" }
+  | { status: "success"; companies: CompanyWithJobCount[] };
+
+export function TopCompaniesView({ state }: { state: CompanyListState }) {
+  if (state.status === "loading") return <Notice title="Loading companies…" />;
+  if (state.status === "error") {
+    return (
+      <Notice title="Couldn't load companies right now">
+        Please try again in a moment.
+      </Notice>
+    );
+  }
+  if (state.companies.length === 0) {
+    return <Notice title="No companies are hiring right now" />;
+  }
+  return (
+    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      {state.companies.map((company) => (
+        <Link
+          key={company.company_id}
+          href={companyDetailHref(company.company_id)}
+          className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
+        >
+          <CompanyLogo text={company.name.charAt(0)} size="h-9 w-9" />
+          <div className="min-w-0">
+            <p className="truncate font-semibold text-ink">{company.name}</p>
+            <p className="text-xs text-ink-muted">
+              {company.number_of_jobs.toLocaleString("en-US")} open{" "}
+              {company.number_of_jobs === 1 ? "position" : "positions"}
+            </p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/* The category with the most jobs right now, or null when there are none. */
+export function busiestCategory(stats: CategoryStat[]): CategoryStat | null {
+  return stats.reduce<CategoryStat | null>(
+    (best, stat) =>
+      stat.job_count > 0 && (!best || stat.job_count > best.job_count)
+        ? stat
+        : best,
+    null,
+  );
+}
+
+/* Hero highlight. We have no hiring-over-time data, so this states a
+   current fact (most openings) rather than a trend, and renders nothing
+   until there is one to show. */
+export function TopCategoryView({
+  category,
+}: {
+  category: CategoryStat | null;
+}) {
+  if (!category) return null;
+  return (
+    <div className="mt-5 flex items-center justify-between rounded-xl bg-primary-light px-4 py-3">
+      <div>
+        <p className="text-xs font-medium text-primary">Most openings</p>
+        <p className="text-sm font-semibold text-ink">{category.sub_type}</p>
+      </div>
+      <span className="text-sm font-bold text-primary">
+        {category.job_count.toLocaleString("en-US")} jobs
+      </span>
     </div>
   );
 }

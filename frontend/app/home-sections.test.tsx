@@ -1,12 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import type { CategoryStat } from "../lib/category-filter";
+import type { CompanyWithJobCount } from "../lib/services/company";
 import type { JobListItem } from "../lib/services/job";
 import {
+  busiestCategory,
   FeaturedJobsView,
   LatestJobsView,
   LatestOpportunitiesView,
-} from "./home-jobs-view";
+  TopCategoryView,
+  TopCompaniesView,
+  topHiringCompanies,
+} from "./home-sections-view";
 
 function job(overrides: Partial<JobListItem>): JobListItem {
   return {
@@ -116,5 +122,104 @@ describe("FeaturedJobsView", () => {
       <FeaturedJobsView state={{ status: "error" }} />,
     );
     assert.match(html, /Couldn(&#x27;|')t load jobs right now/);
+  });
+});
+
+function company(
+  name: string,
+  numberOfJobs: number,
+  id = name,
+): CompanyWithJobCount {
+  return {
+    company_id: id,
+    name,
+    company_type: "AV_Startup",
+    location: null,
+    number_of_jobs: numberOfJobs,
+  };
+}
+
+describe("topHiringCompanies", () => {
+  it("keeps the busiest companies first and drops those not hiring", () => {
+    const top = topHiringCompanies(
+      [
+        company("Bosch", 1),
+        company("Waymo", 331),
+        company("Apollo / Baidu", 0),
+        company("Aurora", 12),
+        company("Avride", 12),
+      ],
+      3,
+    );
+    assert.deepEqual(
+      top.map((c) => c.name),
+      ["Waymo", "Aurora", "Avride"],
+    );
+  });
+});
+
+describe("TopCompaniesView", () => {
+  it("links each company to its profile and shows its open positions", () => {
+    const html = renderToStaticMarkup(
+      <TopCompaniesView
+        state={{
+          status: "success",
+          companies: [
+            company("Aurora", 12, "11111111-1111-1111-1111-111111111003"),
+            company("Bosch", 1),
+          ],
+        }}
+      />,
+    );
+    assert.match(
+      html,
+      /href="\/companies\/profile\?id=11111111-1111-1111-1111-111111111003"/,
+    );
+    assert.match(html, /12 open positions/);
+    assert.match(html, /1 open position</);
+  });
+
+  it("shows an empty state when no company is hiring", () => {
+    const html = renderToStaticMarkup(
+      <TopCompaniesView state={{ status: "success", companies: [] }} />,
+    );
+    assert.match(html, /No companies are hiring right now/);
+  });
+});
+
+describe("TopCategoryView", () => {
+  const stats: CategoryStat[] = [
+    {
+      category_id: "a",
+      sub_type: "Planning",
+      main_type: "Decision",
+      job_count: 82,
+    },
+    {
+      category_id: "b",
+      sub_type: "Perception",
+      main_type: null,
+      job_count: 95,
+    },
+    { category_id: "c", sub_type: "Mapping", main_type: null, job_count: 0 },
+  ];
+
+  it("picks the category with the most jobs", () => {
+    assert.equal(busiestCategory(stats)?.sub_type, "Perception");
+    assert.equal(busiestCategory([]), null);
+  });
+
+  it("states the current count rather than a trend", () => {
+    const html = renderToStaticMarkup(
+      <TopCategoryView category={busiestCategory(stats)} />,
+    );
+    assert.match(html, /Most openings/);
+    assert.match(html, /Perception/);
+    assert.match(html, /95 jobs/);
+    assert.doesNotMatch(html, /Trending|%/);
+  });
+
+  it("renders nothing without a category", () => {
+    assert.equal(renderToStaticMarkup(<TopCategoryView category={null} />), "");
   });
 });
