@@ -2,7 +2,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.category import Category
-from app.models.jobposting import JobPosting, job_category
+from app.models.jobposting import job_category
 from app.schemas.category import CategoryStatResponse
 
 
@@ -19,8 +19,6 @@ class CategoryService:
                 func.count(job_category.c.job_id).label("job_count"),
             )
             .join(job_category, job_category.c.category_id == Category.category_id)
-            .join(JobPosting, JobPosting.job_id == job_category.c.job_id)
-            .filter(JobPosting.is_av_relevant.is_(True))
             .group_by(Category.category_id)
             .order_by(func.count(job_category.c.job_id).desc())
             .all()

@@ -42,7 +42,6 @@ class CompanyService:
                 JobPosting.company_id.label("company_id"),
                 func.count(JobPosting.job_id).label("job_count"),
             )
-            .filter(JobPosting.is_av_relevant.is_(True))
             .group_by(JobPosting.company_id)
             .subquery()
         )

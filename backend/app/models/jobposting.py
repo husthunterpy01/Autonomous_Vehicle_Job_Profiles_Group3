@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table, Text
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Table, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -53,13 +53,6 @@ class JobPosting(Base):
     bronze_id = Column(Text, nullable=True)
     source_url = Column(Text, nullable=True)
     ingested_at = Column(DateTime(timezone=True), nullable=True)
-    # A row only ever reaches jobposting after passing AV-relevance
-    # screening, so this defaults true - it exists to soft-exclude a job
-    # later found to not be AV engineering work (an operations/business
-    # function that slipped past screening) without deleting the row, so
-    # the correction is reversible and auditable. See be20_is_av_relevant_
-    # migration.sql.
-    is_av_relevant = Column(Boolean, nullable=False, default=True, server_default="true")
     company_id = Column(
         UUID(as_uuid=True),
         ForeignKey("company.company_id"),
