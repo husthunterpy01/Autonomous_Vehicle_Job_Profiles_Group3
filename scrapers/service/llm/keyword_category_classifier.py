@@ -57,19 +57,33 @@ class KeywordCategoryClassifier:
     def classify(self, text: str, title: str | None = None) -> tuple[str, ...]:
         """`title`, when given, is checked on its own first: a category
         named in the title decides the result outright, the same
-        title-decides-first rule the LLM prompt follows (categories_definition
-        .txt) - otherwise a long description's incidental keyword hits (e.g.
-        several "infrastructure"/"cloud" mentions in company boilerplate)
-        could outvote the one keyword that actually named the role, by sheer
-        count. Falls through to whole-text matching when the title alone is
-        empty or matches nothing, same as before this parameter existed.
+        title-decides-first rule the LLM prompt follows (categories_
+        definition.txt).
+
+        When a title is given but doesn't decide it, this does NOT fall
+        through to matching the rest of `text` - unlike a title, an
+        arbitrary sentence in the body has no reason to be *about* the
+        role's own category. A company's "about us" paragraph regularly
+        lists its other departments ("...machine learning and robotics,
+        cloud platforms, mapping, sensors and compute systems, systems and
+        safety engineering...") - real jobs at Latitude AI whose title had
+        nothing to do with mapping (a cybersecurity engineer, a fullstack
+        engineer, several vehicle test/mission operators, a bench
+        technician) were all silently keyword-matched to Mapping this way,
+        purely because that boilerplate sentence happens to contain the
+        word "mapping". A blind keyword count can't tell "this describes
+        the role" from "this describes the company's other teams" - that
+        distinction needs real context, which is what the LLM path (with
+        its explicit boilerplate-immunity instructions) is for. Returning
+        empty here defers to it, per this class's own documented contract.
+
+        Only when no title is supplied at all (the caller has no title/body
+        split to offer) does this fall back to matching the whole `text` -
+        preserving the original whole-text behavior for that case.
         """
         if title:
             title_weights = self._match_counts(title)
-            if title_weights:
-                title_matched = constrain_to_dominant_main_type(tuple(title_weights), weights=title_weights)
-                if title_matched:
-                    return title_matched
+            return constrain_to_dominant_main_type(tuple(title_weights), weights=title_weights)
 
         weights = self._match_counts(text)
         return constrain_to_dominant_main_type(tuple(weights), weights=weights)

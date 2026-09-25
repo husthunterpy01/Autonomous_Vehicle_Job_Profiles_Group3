@@ -157,13 +157,23 @@ class _ExplodingEnricher:
 def test_keyword_resolvable_job_never_reaches_the_llm(tmp_path):
     # Regression test: KeywordCategoryClassifier existed but nothing in the
     # pipeline called it, so every job - even ones its curated vocabulary
-    # covers - went through Groq. A description matching known category
-    # keywords should now be resolved by the keyword pass alone.
+    # covers - went through Groq. A job whose TITLE matches a known category
+    # keyword should now be resolved by the keyword pass alone. The title
+    # must be the one carrying the match: KeywordCategoryClassifier no
+    # longer trusts a description-only match once a title is supplied (see
+    # its own docstring) - a company's boilerplate "about us" paragraph
+    # regularly lists unrelated departments ("...cloud platforms, mapping,
+    # sensors...") and a bare word like "mapping" in that list previously
+    # keyword-matched real jobs (a cybersecurity engineer, several vehicle
+    # test operators) to the wrong category with no LLM involved. Bare
+    # "Perception" is deliberately not a keyword (Perception is not "the ML
+    # category" - see categories_definition.txt), so the title here names
+    # the specific keyword phrase instead.
     candidates = [
         {
             "deduplication_key": "j1",
             "company_name": "Company A",
-            "job_title": "Perception Engineer",
+            "job_title": "Object Detection Engineer",
             "job_description": "We build object detection and object tracking pipelines using LiDAR.",
             "_classification": {"relevant": True},
         },
@@ -174,8 +184,6 @@ def test_keyword_resolvable_job_never_reaches_the_llm(tmp_path):
     av_lines = (output_dir / "av_jobs.jsonl").read_text().splitlines()
     assert len(av_lines) == 1
     record = json.loads(av_lines[0])
-    # "LiDAR" legitimately matches both Sensing (hardware) and Perception
-    # (what the sensor feeds) - see KeywordCategoryClassifier's own tests.
     assert "Perception" in record["_classification"]["categories"]
     assert record["_classification"]["category_source"] == "keyword_resolved"
 
@@ -215,7 +223,7 @@ def test_mixed_batch_splits_between_keyword_and_llm_resolution(tmp_path):
         {
             "deduplication_key": "j1",
             "company_name": "Company A",
-            "job_title": "Perception Engineer",
+            "job_title": "Object Detection Engineer",
             "job_description": "We build object detection and object tracking pipelines using LiDAR.",
             "_classification": {"relevant": True},
         },
