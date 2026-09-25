@@ -90,8 +90,39 @@ ON CONFLICT (month, deduplication_key, skill_normalized_name, skill_type) DO UPD
 ```
 
 Both steps are idempotent, so a backfill can be re-run safely. Skills come from
-the keyword extractor (`keyword_skill_extractor.py`), which makes no LLM calls,
-so extracting skills from the backfill costs no tokens.
+stage 7 enrichment, which is keyword-first: jobs covered by the keyword
+vocabulary get categories and skills without an LLM call
+(`KeywordCategoryClassifier` / `KeywordSkillExtractor`), and only the rest fall
+back to Groq, which returns skills too. So a backfill does cost Groq tokens, for
+the stage 6 mid-band and the stage 7 fallback. The classification cache below
+limits that to jobs that are new or have changed.
+
+### Optional: classification cache (pipeline optimisation)
+
+The trend itself doesn't need this, but it saves Groq tokens on both the backfill
+and daily runs: jobs that were already classified don't go through stages 5–7
+again.
+
+- **Cache key:** `deduplication_key` plus a hash of the job title and description,
+  so a posting whose text is edited is re-processed instead of reusing a stale
+  result.
+- **Stored per job:** relevance decision, categories, skills, and the classifier or
+  prompt version that produced them.
+- **Invalidation:** when the classifier, prompt or keyword vocabulary changes (for
+  example #129 adding Infrastructure), bump the version and re-process
+  everything once.
+- **Flow:** before stages 5–7, look up each job. On a hit, reuse the stored result;
+  otherwise run the stages and store the result. Only new or changed jobs pay
+  for Groq.
+- **Trend still records every job:** `load_gold` writes an observation for every AV
+  job seen in the run, cached or new. Skipping cached jobs there would make the
+  trend count only new postings.
+
+A cache table would be `classification_cache (deduplication_key, content_hash,
+classifier_version, is_av_relevant, categories, skills, classified_at)` with
+primary key `(deduplication_key, content_hash, classifier_version)`. It belongs
+to the pipeline, not the Gold schema, and the Gold tables work the same with or
+without it.
 
 ### Reading: data for the rank chart
 
@@ -128,9 +159,11 @@ Checked on local PostgreSQL 16 in an isolated, disposable schema:
 
 ### Open questions for review
 
-1. **Relevance for backfilled jobs.** Re-classifying every historical job costs
-   Groq tokens in the mid-band. Option: reuse today's decision for keys still in
-   Silver, and classify only keys that no longer exist.
+1. **Classification cost for backfilled jobs.** Re-classifying every historical
+   job costs Groq tokens (stage 6 mid-band and stage 7 fallback). The
+   classification cache above would reuse existing results and only classify new
+   or changed jobs. Build the cache before the backfill, or backfill first and add
+   it later?
 2. **Extractor changes shift the trend.** If the keyword list changes, later months
    are counted differently from earlier ones. Record an extractor version on
    `scrape_run`, or re-extract the whole history after a change?
