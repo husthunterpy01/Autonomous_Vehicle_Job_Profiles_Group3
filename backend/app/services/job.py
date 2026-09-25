@@ -146,7 +146,7 @@ def list_jobs(
     has_salary: bool | None = None, sort: JobSortField = JobSortField.POSTED_DATE,
     direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
 ):
-    query = db.query(JobPosting)
+    query = db.query(JobPosting).filter(JobPosting.is_av_relevant.is_(True))
     if q:
         query = query.filter(or_(JobPosting.title.icontains(q, autoescape=True), JobPosting.company.has(Company.name.icontains(q, autoescape=True))))
     if location:
@@ -215,7 +215,7 @@ def get_job(db: Session, job_id: UUID) -> JobDetailResponse | None:
         db.execute(
             select(JobPosting)
             .options(*_DETAIL_LOAD)
-            .where(JobPosting.job_id == job_id)
+            .where(JobPosting.job_id == job_id, JobPosting.is_av_relevant.is_(True))
         )
         .unique()
         .scalars()

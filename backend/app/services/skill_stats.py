@@ -1,7 +1,7 @@
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models.jobposting import job_skill
+from app.models.jobposting import JobPosting, job_skill
 from app.models.skill import Skill
 from app.schemas.skill import SkillStatResponse
 
@@ -18,6 +18,8 @@ class SkillService:
                 func.count(job_skill.c.job_id).label("number_of_occurrences"),
             )
             .join(job_skill, Skill.skill_id == job_skill.c.skill_id)
+            .join(JobPosting, JobPosting.job_id == job_skill.c.job_id)
+            .filter(JobPosting.is_av_relevant.is_(True))
             .group_by(Skill.skill_id)
             .order_by(func.count(job_skill.c.job_id).desc())
         )
