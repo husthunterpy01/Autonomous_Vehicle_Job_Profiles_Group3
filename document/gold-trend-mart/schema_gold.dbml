@@ -1,5 +1,8 @@
 // ============ GOLD LAYER: Trend Data Mart ============
 // Derived from silver.JobPosting / silver.JobCategory / silver.ScrapeLog after each scrape run.
+// Gold tables are decoupled from Silver: they hold plain reference values, not
+// foreign keys, so a Silver re-import (new job_id values) or a
+// TRUNCATE company CASCADE never deletes trend history.
 
 Table gold.CategoryTrendSnapshot {
   snapshot_id uuid [pk, default: `gen_random_uuid()`]
@@ -8,4 +11,46 @@ Table gold.CategoryTrendSnapshot {
   company_id uuid [note: 'nullable - null means aggregated across all companies; references silver.Company.company_id']
   job_count int
   snapshot_date date
+}
+
+// ---------- Skill demand over time (DOC-13) ----------
+// Physical tables: scrape_run, job_skill_observation, view skill_trend_monthly
+// (backend/app/sql/doc13_skill_trend_migration.sql). Design notes:
+// document/gold-trend-mart/README.md.
+
+Table gold.ScrapeRun {
+  run_id uuid [pk, default: `gen_random_uuid()`]
+  scraped_at timestamptz [not null, unique, note: 'when the scrape ran; the loader skips a run it has already loaded']
+  source varchar [not null, default: 'live', note: 'live (pipeline run) or backfill (replayed from MinIO)']
+  jobs_seen int [note: 'nullable - AV jobs observed in this run, for coverage checks']
+  created_at timestamptz [not null, default: `now()`]
+}
+
+Table gold.JobSkillObservation {
+  month date [not null, note: 'first day of the month (UTC) the job was seen in']
+  deduplication_key text [not null, note: 'Silver deduplication_key (md5 hex) - stable across scrapes and re-imports, unlike job_id']
+  skill_normalized_name text [not null, note: 'same normalization as silver.Skill.normalized_name, joined by value rather than skill_id']
+  skill_type varchar [not null]
+  first_seen_at timestamptz [not null, note: 'earliest scrape this month that listed the skill for the job']
+  last_seen_at timestamptz [not null, note: 'latest scrape this month that listed the skill for the job']
+
+  indexes {
+    (month, deduplication_key, skill_normalized_name, skill_type) [pk]
+    (skill_normalized_name, skill_type, month)
+  }
+
+  Note: 'One row per (month, AV job, skill). Repeated scrapes in the same month only move first/last seen, so a job counts once per month and the table grows with jobs x skills per month, not with the number of runs.'
+}
+
+Table gold.SkillTrendMonthly {
+  month date
+  skill_name text [note: 'display name from silver.Skill, falling back to the normalized name']
+  skill_normalized_name text
+  skill_type varchar
+  job_count int [note: 'distinct AV jobs that listed the skill this month']
+  jobs_with_skills int [note: 'distinct AV jobs with at least one skill this month']
+  share numeric [note: 'job_count / jobs_with_skills - comparable across months with different volumes']
+  rank int [note: 'per-month rank by job_count, ties broken by name, so ranks are unique']
+
+  Note: 'VIEW, not a table - computed from gold.JobSkillObservation on read. Feeds the skill rank (bump) chart.'
 }
