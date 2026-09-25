@@ -30,9 +30,9 @@ Martin has scrape runs from August onwards in MinIO to backfill it.
 
 | Object | Grain | Purpose |
 |---|---|---|
-| `scrape_run` | one row per scrape run | Records which runs were loaded (live or backfill), so reloading a run is a no-op and each month's coverage is visible |
-| `job_skill_observation` | one row per (month, AV job, skill) | The history: this job listed this skill at least once in this month, with first and last seen times |
-| `skill_trend_monthly` (view) | one row per (month, skill) | Distinct job count, share of the month's jobs, and a per-month rank |
+| `scrape_run` | one row per scrape run | Records every run (live or backfill), whether it completed, and the classifier version. Reloading a run is a no-op, and the latest completed run of each month is that month's snapshot |
+| `job_skill_observation` | one row per (month, AV job, skill) | The history: this job listed this skill in this month, with the first and last completed run that saw it |
+| `skill_trend_monthly` (view) | one row per (month, skill) | From each month's snapshot: distinct job count, share of the month's jobs, and a per-month rank |
 
 No foreign keys to `jobposting`, `skill` or `company`, on purpose (see above).
 
@@ -50,19 +50,23 @@ No foreign keys to `jobposting`, `skill` or `company`, on purpose (see above).
 3. **Time grain: calendar month, UTC.** The monthly chart is the target. Storing
    per month rather than per run keeps the table small: it grows with
    jobs × skills per month, not with the number of runs.
-4. **Counting rule: distinct AV jobs per skill per month.** A job seen in several
-   runs in the same month counts once, via the primary key. A job still open in
-   the next month counts again there, so the numbers mean *active postings that
-   month*, not *new postings*.
+4. **Counting rule: month-end snapshot** (agreed in review). Each month is compared
+   by the AV jobs in its **latest completed run**: a job is in that snapshot when
+   its `last_seen_at` equals the run's `scraped_at`. Every month is one
+   consistent snapshot, produced by a single classifier version and independent
+   of how many runs the month had. A job still open next month counts again
+   there, so the numbers mean *open postings at month end*. The table keeps
+   first/last seen for the whole month, so switching to "open at any time during
+   the month" later would only change the view.
 5. **AV jobs only.** Only jobs that passed the relevance filter in that run are
    written, so the trend matches what the site shows.
 6. **Rank: `row_number()` per month by job count, ties broken by name.** Every rank
    is unique, so two chart lines never share a position. The raw `job_count` and
    `share` are there if the frontend prefers ties.
-7. **`share` for comparing months.** Monthly volume varies (August starts
-   mid-month, runs may be missed), so `share = job_count / jobs_with_skills`
-   compares better across months than raw counts. `jobs_with_skills` only counts
-   jobs with at least one recognized skill, which is almost all of them.
+7. **`share` for comparing months.** The number of open AV jobs changes from month to
+   month, so `share = job_count / jobs_with_skills` compares better than raw
+   counts. `jobs_with_skills` only counts snapshot jobs with at least one
+   recognized skill, which is almost all of them.
 8. **Retention: keep everything.** At about 1,800 AV jobs × about 8 skills, that's
    roughly 15k rows (a few MB) per month, well within the Supabase free tier.
    Finer per-run detail stays in MinIO if it's ever needed.
@@ -70,16 +74,16 @@ No foreign keys to `jobposting`, `skill` or `company`, on purpose (see above).
 ### Loading
 
 For every scrape run, live or backfilled, after relevance classification and
-skill extraction:
+skill extraction, in **one transaction**:
 
 ```sql
 -- 1. Register the run; if it was already loaded, stop here.
-INSERT INTO scrape_run (scraped_at, source, jobs_seen)
-VALUES (:scraped_at, :source, :jobs_seen)
+INSERT INTO scrape_run (scraped_at, source, classifier_version, jobs_seen)
+VALUES (:scraped_at, :source, :classifier_version, :jobs_seen)
 ON CONFLICT (scraped_at) DO NOTHING
 RETURNING run_id;
 
--- 2. One upsert per (AV job, skill) in the run.
+-- 2. Completed runs only: one upsert per (AV job, skill) in the run.
 INSERT INTO job_skill_observation
     (month, deduplication_key, skill_normalized_name, skill_type, first_seen_at, last_seen_at)
 VALUES (date_trunc('month', :scraped_at AT TIME ZONE 'UTC')::date,
@@ -87,9 +91,21 @@ VALUES (date_trunc('month', :scraped_at AT TIME ZONE 'UTC')::date,
 ON CONFLICT (month, deduplication_key, skill_normalized_name, skill_type) DO UPDATE SET
     first_seen_at = least(job_skill_observation.first_seen_at, excluded.first_seen_at),
     last_seen_at  = greatest(job_skill_observation.last_seen_at, excluded.last_seen_at);
+
+-- 3. Mark it completed.
+UPDATE scrape_run SET completed = true WHERE run_id = :run_id;
 ```
 
-Both steps are idempotent, so a backfill can be re-run safely. Skills come from
+- **Only completed runs write observations.** A failed or partial run (e.g. some
+  sources didn't scrape) is registered with `completed = false` and nothing else,
+  so it can't become a month's snapshot or move `last_seen_at`.
+- **Idempotent and order-independent.** Reloading a run is a no-op, and runs can
+  be backfilled in any order (`least`/`greatest` keep first/last seen right).
+- **Past months are never rewritten.** When the classifier version changes, earlier
+  months keep what they recorded, and `scrape_run.classifier_version` explains
+  any step in the chart.
+
+Skills come from
 stage 7 enrichment, which is keyword-first: jobs covered by the keyword
 vocabulary get categories and skills without an LLM call
 (`KeywordCategoryClassifier` / `KeywordSkillExtractor`), and only the rest fall
@@ -97,11 +113,19 @@ back to Groq, which returns skills too. So a backfill does cost Groq tokens, for
 the stage 6 mid-band and the stage 7 fallback. The classification cache below
 limits that to jobs that are new or have changed.
 
-### Optional: classification cache (pipeline optimisation)
+### Classification cache (pipeline)
 
-The trend itself doesn't need this, but it saves Groq tokens on both the backfill
-and daily runs: jobs that were already classified don't go through stages 5–7
-again.
+Agreed in review: build this **before the backfill**. It has two benefits:
+
+- **Consistency, the main reason.** Re-running the LLM on the same job doesn't
+  reliably return the same skills, even with `GROQ_TEMPERATURE=0`: stage 7 batches
+  several jobs per prompt, so a job can land in a different batch each run, and
+  the hosted model gets updated. A job's skills would then drift between months,
+  and the trend would compare different extractions rather than real changes.
+  With the cache, a posting keeps its first result for as long as its text and
+  the classifier version stay the same.
+- **Cost.** Jobs that were already classified skip stages 5–7, so only new or
+  changed jobs pay for Groq.
 
 - **Cache key:** `deduplication_key` plus a hash of the job title and description,
   so a posting whose text is edited is re-processed instead of reusing a stale
@@ -114,6 +138,10 @@ again.
 - **Flow:** before stages 5–7, look up each job. On a hit, reuse the stored result;
   otherwise run the stages and store the result. Only new or changed jobs pay
   for Groq.
+- **Filter skills before caching.** The LLM sometimes returns unwanted or
+  meaningless skills, and the cache would freeze them. Keep only skills that map
+  to the known skill vocabulary / normalization list, and drop the rest before
+  the result is stored.
 - **Trend still records every job:** `load_gold` writes an observation for every AV
   job seen in the run, cached or new. Skipping cached jobs there would make the
   trend count only new postings.
@@ -135,7 +163,7 @@ top AS (
     FROM skill_trend_monthly, latest
     WHERE month = latest.m AND rank <= 10
 )
-SELECT t.month, t.skill_name, t.rank, t.job_count, t.share
+SELECT t.month, t.snapshot_at, t.skill_name, t.rank, t.job_count, t.share
 FROM skill_trend_monthly AS t
 JOIN top USING (skill_normalized_name, skill_type)
 ORDER BY t.month, t.rank;
@@ -146,31 +174,39 @@ so it enters the chart from below, like the GitHub chart.
 
 ### Validation done
 
-Checked on local PostgreSQL 16 in an isolated, disposable schema:
+Checked on local PostgreSQL 16 in isolated, disposable schemas:
 
-- The migration applies twice; the rollback applies twice and leaves `skill`
-  untouched; the migration re-applies after rollback.
-- Reloading an already-loaded run is a no-op. A job seen in two runs in the same
-  month counts once, and its first/last seen times cover both runs.
+- The migration applies twice, and upgrades the first draft in place (adds the
+  new `scrape_run` columns, recreates the view, keeps existing rows).
+- The rollback applies twice and leaves `skill` untouched; the migration
+  re-applies after rollback.
+- Loader: reloading a run is a no-op; runs loaded out of order keep first/last
+  seen correct; a partial run registers without writing observations.
+- The month-end snapshot uses only the latest completed run of each month. In
+  the test, August counts only the 20 Aug run: jobs seen only on 5 Aug and a
+  partial run on 28 Aug are excluded.
 - The view and the rank-chart query return the expected counts, shares and
   ranks, including an unknown skill falling back to its normalized name.
 - The checks reject a month that isn't the 1st, a seen time outside its month, a
   malformed key and an unknown source.
 
-### Open questions for review
+### Decided in review
 
-1. **Classification cost for backfilled jobs.** Re-classifying every historical
-   job costs Groq tokens (stage 6 mid-band and stage 7 fallback). The
-   classification cache above would reuse existing results and only classify new
-   or changed jobs. Build the cache before the backfill, or backfill first and add
-   it later?
-2. **Extractor changes shift the trend.** If the keyword list changes, later months
-   are counted differently from earlier ones. Record an extractor version on
-   `scrape_run`, or re-extract the whole history after a change?
-3. **Month boundary.** UTC or Australia/Perth? UTC is simpler, and only runs near
+- **Build the classification cache before the backfill** (consistency first,
+  tokens second), and filter LLM skills against the vocabulary before caching.
+- **Compare months by their latest completed run** (month-end snapshot). Past
+  months are never rewritten, and `scrape_run.classifier_version` records which
+  version produced each run.
+
+### Open questions
+
+1. **Month boundary.** UTC or Australia/Perth? UTC is simpler, and only runs near
    midnight on the last day of a month are affected.
-4. **Where the live pipeline writes.** A new step after skill enrichment, next to
-   `import_skills`, into the same Supabase database?
+2. **Where the live pipeline writes.** Proposed: a new `load_gold` step in the
+   backend import, right after `import_skills`, into the same Supabase database.
+   To confirm: does the job sync delete jobs that disappeared from the latest
+   scrape? If it does, a one-statement snapshot of `job_skill` after the import
+   would also work.
 
 ### Follow-ups (not in DOC-13)
 
