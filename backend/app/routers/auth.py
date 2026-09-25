@@ -8,8 +8,20 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
 from app.models.user import User
-from app.schemas.auth import AuthResponse, LoginRequest, SignUpRequest, UserResponse
-from app.services.auth import AuthService, DuplicateUserError
+from app.schemas.auth import (
+    AuthResponse,
+    LoginRequest,
+    PasswordChangeRequest,
+    SignUpRequest,
+    UserProfileResponse,
+    UserProfileUpdate,
+)
+from app.services.auth import (
+    AuthService,
+    DuplicateUserError,
+    IncorrectCurrentPasswordError,
+    ReusedPasswordError,
+)
 from app.services.rate_limit import LoginRateLimiter
 from app.utils.security import SecurityService
 
@@ -104,6 +116,46 @@ def sign_out(response: Response):
     )
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserProfileResponse)
 def get_me(current_user: CurrentUser):
     return current_user
+
+
+@router.patch("/me", response_model=UserProfileResponse)
+def update_me(
+    data: UserProfileUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    try:
+        return AuthService.update_profile(db, current_user, data)
+    except DuplicateUserError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with that email or username already exists",
+        ) from error
+
+
+@router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    data: PasswordChangeRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    try:
+        AuthService.change_password(
+            db,
+            current_user,
+            data.current_password,
+            data.new_password,
+        )
+    except IncorrectCurrentPasswordError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        ) from error
+    except ReusedPasswordError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password",
+        ) from error

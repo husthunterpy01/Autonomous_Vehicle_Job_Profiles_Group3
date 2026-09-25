@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 
 from sqlalchemy import or_
@@ -5,12 +6,23 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.user import User
-from app.schemas.auth import SignUpRequest
+from app.schemas.auth import SignUpRequest, UserProfileUpdate
 from app.utils.security import DUMMY_PASSWORD_HASH, SecurityService
 
 
 class DuplicateUserError(Exception):
     pass
+
+
+class IncorrectCurrentPasswordError(Exception):
+    pass
+
+
+class ReusedPasswordError(Exception):
+    pass
+
+
+logger = logging.getLogger(__name__)
 
 
 class AuthService:
@@ -69,3 +81,57 @@ class AuthService:
         if not user or not user.is_active or not password_matches:
             return None
         return user
+
+    @staticmethod
+    def update_profile(db: Session, user: User, data: UserProfileUpdate) -> User:
+        changes = data.model_dump(exclude_unset=True)
+        identity_filters = []
+        if "email" in changes:
+            identity_filters.append(User.email == changes["email"])
+        if "username" in changes:
+            identity_filters.append(User.username == changes["username"])
+
+        if identity_filters:
+            duplicate = (
+                db.query(User)
+                .filter(User.user_id != user.user_id, or_(*identity_filters))
+                .first()
+            )
+            if duplicate:
+                raise DuplicateUserError
+
+        for field, value in changes.items():
+            setattr(user, field, value)
+
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            if AuthService._is_unique_violation(error):
+                raise DuplicateUserError from error
+            raise
+        db.refresh(user)
+        logger.info(
+            "User profile updated",
+            extra={"user_id": str(user.user_id), "updated_fields": sorted(changes)},
+        )
+        return user
+
+    @staticmethod
+    def change_password(
+        db: Session,
+        user: User,
+        current_password: str,
+        new_password: str,
+    ) -> None:
+        if not SecurityService.verify_password(current_password, user.password_hash):
+            raise IncorrectCurrentPasswordError
+        if SecurityService.verify_password(new_password, user.password_hash):
+            raise ReusedPasswordError
+
+        user.password_hash = SecurityService.hash_password(new_password)
+        db.commit()
+        logger.info(
+            "User password changed",
+            extra={"user_id": str(user.user_id)},
+        )
