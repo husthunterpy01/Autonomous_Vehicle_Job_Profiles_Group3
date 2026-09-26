@@ -23,7 +23,8 @@ function compactUsd(amount: number): string {
    USD) - matches the same "~" convention the Salary component already uses
    for estimates, so an approximation always reads as one. */
 function comparisonRange(job: TopPaidJob): string {
-  const isExact = job.salary_currency === "USD" && job.salary_period === "yearly";
+  const isExact =
+    job.salary_currency === "USD" && job.salary_period === "yearly";
   const prefix = isExact ? "" : "≈";
   if (job.estimated_annual_usd_min === job.estimated_annual_usd_max) {
     return `${prefix}${compactUsd(job.estimated_annual_usd_max)}`;
