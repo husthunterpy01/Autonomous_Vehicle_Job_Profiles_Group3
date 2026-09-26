@@ -145,3 +145,19 @@ def test_parses_response_wrapped_in_code_fence():
 ```"""
     result = AVFunctionFilter.parse_response(response, ["job"])["job"]
     assert result.is_engineering_role is False
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Solution Engineer - Maritime",
+        "Forward Deployed Engineer",
+        "Business Systems Engineer",
+        "Operations Supervisor, Fleet",
+        "Global Threat Intelligence Regional Lead - Europe",
+        "Local Driver CDL",
+        "Automotive GTM",
+    ],
+)
+def test_title_flags_review_catches_customer_facing_operations_and_corporate_titles(title):
+    assert title_flags_review(title) is True
