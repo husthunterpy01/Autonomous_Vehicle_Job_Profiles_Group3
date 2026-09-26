@@ -72,7 +72,7 @@ def reclassify(db) -> dict:
     for job in jobs:
         title, description = compress_job_text(job.title, job.raw_description, MAX_DESCRIPTION_CHARS)
         compressed_by_job[job.job_id] = (title, description)
-        categories = keyword_classifier.classify(f"{title} {description}")
+        categories = keyword_classifier.classify(f"{title} {description}", title=title)
         if categories:
             if sorted(categories) != sorted(c.sub_type for c in job.categories):
                 changed += 1

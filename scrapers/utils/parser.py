@@ -192,6 +192,48 @@ class ScraperParser:
         return args
 
     @classmethod
+    def parse_av_function_filter_args(
+        cls, argv: list[str] | None = None
+    ) -> argparse.Namespace:
+        parser = argparse.ArgumentParser(
+            description=(
+                "Filter AV-relevant jobs down to hands-on engineering/technical roles, "
+                "excluding business/program/product management, operations, policy, "
+                "sales, recruiting, HR, and executive-generalist functions."
+            )
+        )
+        parser.add_argument(
+            "--input",
+            type=Path,
+            default=Path("data") / "job_classification" / "av_candidates.jsonl",
+            help="JSONL of AV-relevant jobs, e.g. job_classifier.py's av_candidates.jsonl output",
+        )
+        parser.add_argument(
+            "--output-dir",
+            type=Path,
+            default=Path("data") / "job_classification",
+            help="Directory for av_engineering_candidates.jsonl, non_engineering_jobs.jsonl, and metrics",
+        )
+        parser.add_argument(
+            "--batch-size",
+            type=int,
+            default=10,
+            help="Jobs per Groq request, for titles the pre-filter flags for review (default: 10)",
+        )
+        parser.add_argument(
+            "--max-description-chars",
+            type=int,
+            default=1200,
+            help="Description length sent to the LLM for a flagged job (default: 1200)",
+        )
+        args = parser.parse_args(argv)
+        if args.batch_size < 1:
+            parser.error("--batch-size must be at least 1")
+        if args.max_description_chars < 1:
+            parser.error("--max-description-chars must be at least 1")
+        return args
+
+    @classmethod
     def parse_pipeline_args(cls, argv: list[str] | None = None) -> argparse.Namespace:
         parser = argparse.ArgumentParser(
             description=(
