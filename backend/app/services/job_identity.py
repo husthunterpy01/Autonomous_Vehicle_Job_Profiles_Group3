@@ -7,6 +7,16 @@ from app.models import JobPosting
 from app.utils.validation import require_identifier
 
 
+class JobNotFoundError(ValueError):
+    """The supplied identity is well formed but no backend job carries it.
+
+    A ValueError subclass, so every existing `except ValueError` keeps
+    working; a distinct type only so import_categories can tell "this job
+    was never inserted" (harmless for a clear-only row) from a malformed or
+    ambiguous identity (always an error).
+    """
+
+
 def resolve_job(db: Session, row: Mapping) -> JobPosting:
     """Prefer Silver identity; source_job_id + ats_name must resolve uniquely.
 
@@ -29,7 +39,7 @@ def resolve_job(db: Session, row: Mapping) -> JobPosting:
         )
     matches = query.limit(2).all()
     if not matches:
-        raise ValueError("No backend job matches the supplied identity")
+        raise JobNotFoundError("No backend job matches the supplied identity")
     if len(matches) > 1:
         raise ValueError("Ambiguous source identity; provide deduplication_key")
     job = matches[0]

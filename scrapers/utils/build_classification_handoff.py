@@ -11,6 +11,7 @@ from scrapers.service.silver_cleaning.salary_extractor import extract_salary_fro
 logger = logging.getLogger(__name__)
 
 DEFAULT_OUTPUT_PATH = Path("data") / "job_classification" / "handoff.json"
+DEFAULT_DROPPED_OUTPUT_PATH = Path("data") / "job_classification" / "handoff_dropped.json"
 # Resolved relative to this module, not the caller's cwd - a cwd-relative
 # default here would resolve to a different (usually missing) path whenever
 # this is run from anywhere but the repo root (e.g. from scrapers/ or
@@ -181,6 +182,36 @@ def build_handoff_records(
     return list(records.values())
 
 
+def build_clear_handoff_records(paths: list[Path], exclude_keys: frozenset[str] | set[str] = frozenset()) -> list[dict]:
+    """Clear-only handoff rows (`functional_area: []`) for jobs the pipeline
+    dropped - no_category_jobs.jsonl, non_engineering_jobs.jsonl, and
+    optionally non_av_jobs.jsonl.
+
+    Those jobs never reach av_jobs.jsonl, so without these rows
+    import_categories never sees them and a job that was labeled on an
+    earlier run (often Infrastructure) keeps that label forever. The backend
+    already treats `[]` as "clear", and skips a clear row whose job was never
+    inserted, so it is safe to emit one for every dropped job.
+
+    `exclude_keys` are jobs that are also in the AV handoff (a later run may
+    accept a job an earlier run dropped) - the assignment wins there. A path
+    that doesn't exist is skipped: a stage that dropped nothing never
+    created its file. Skills and salary are deliberately not cleared here;
+    this only removes the category label.
+    """
+    records: dict[str, dict] = {}
+    for path in paths:
+        if not path.is_file():
+            logger.info("No dropped-jobs file at %s; skipping.", path)
+            continue
+        for row in JobPostingIO.load(path):
+            key = row.get("deduplication_key")
+            if not key or key in exclude_keys:
+                continue
+            records[key] = {"deduplication_key": key, "functional_area": []}
+    return list(records.values())
+
+
 def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(
         level=logging.INFO,
@@ -213,11 +244,31 @@ def main(argv: list[str] | None = None) -> int:
         default=DEFAULT_COMPANY_SALARY_CACHE_PATH,
         help="YAML cache from refresh_company_salary_cache.py; pass a missing/empty path to skip",
     )
+    parser.add_argument(
+        "--dropped",
+        action="append",
+        type=Path,
+        default=[],
+        help=(
+            "A jsonl of jobs the pipeline dropped (no_category_jobs.jsonl, non_engineering_jobs.jsonl, "
+            "non_av_jobs.jsonl); pass more than once. Writes a separate clear-only handoff for "
+            "app.import_categories - never feed it to import_skills/import_salary."
+        ),
+    )
+    parser.add_argument("--dropped-output", type=Path, default=DEFAULT_DROPPED_OUTPUT_PATH)
     args = parser.parse_args(argv)
 
     records = build_handoff_records(args.input, args.main_types, args.company_salary_cache)
     JobPostingIO.write_json(args.output, records)
     logger.info("Wrote %d handoff records to %s.", len(records), args.output)
+
+    if args.dropped:
+        clear_records = build_clear_handoff_records(args.dropped, {r["deduplication_key"] for r in records})
+        JobPostingIO.write_json(args.dropped_output, clear_records)
+        logger.info(
+            "Wrote %d clear-only records to %s (import with app.import_categories only).",
+            len(clear_records), args.dropped_output,
+        )
     return 0
 
 

@@ -181,6 +181,29 @@ the static sub_type -> main_type mapping itself, in
 of the category and not something a per-job record should be able to set),
 `skills`, and salary fields.
 
+**Removing dropped jobs' old labels.** Jobs the pipeline drops (a role that fits
+no category goes to `no_category_jobs.jsonl`, a non-engineering one to
+`non_engineering_jobs.jsonl`, an AV-irrelevant one to `non_av_jobs.jsonl`) never
+reach `av_jobs.jsonl`, so the handoff above never mentions them and a job
+labeled on an earlier run (often Infrastructure) would keep that label forever.
+Pass them with `--dropped` to also write a **separate** clear-only file:
+
+```bash
+python3 -m scrapers.utils.build_classification_handoff \
+  --input data/job_classification/av_jobs.jsonl \
+  --dropped data/job_classification/no_category_jobs.jsonl \
+  --dropped data/job_classification/non_engineering_jobs.jsonl \
+  --output data/job_classification/handoff.json \
+  --dropped-output data/job_classification/handoff_dropped.json
+```
+
+`handoff_dropped.json` holds `{"deduplication_key": ..., "functional_area": []}`
+rows and must go to `python -m app.import_categories` **only** - the backend
+treats `[]` as "clear" and skips a clear row whose job was never inserted, but
+`import_skills`/`import_salary` would fail on those unknown jobs. A job that is
+accepted in the same run is not cleared. This removes the category label only;
+skills and salary are left as they are.
+
 **Salary derivation** tries three sources per job, in order, and stops at the
 first that resolves - never inventing a number:
 

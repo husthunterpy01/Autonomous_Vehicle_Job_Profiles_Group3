@@ -122,6 +122,12 @@ The CLI commits the entire batch or rolls it back and uses the same PostgreSQL
 advisory lock as Silver sync. Library callers must supply a transaction and
 serialize writers. SilverSync also accepts the same inline classification fields.
 
+A record with `"functional_area": []` clears that job's categories. If no
+backend job matches a *clear-only* record it is skipped (counted as
+`skipped_unmatched_clears` in the result) instead of failing the batch - the
+scrapers emit one for every job the pipeline drops, and most were never
+inserted. A record that assigns categories to an unknown job is still an error.
+
 `functional_area` is one label string or an array of strings. Each label becomes
 Category.sub_type. main_type is never accepted from a record - it's a property
 of the category, not of any individual job, so it comes only from the backend's
