@@ -34,6 +34,7 @@ Decisions:
 - **No currency conversion.** Values are stored and shown in their original currency, so they always match the source.
 - **The levels.fyi estimate is company-wide.** Every job at the same company gets the same figure, regardless of title or location. The frontend prefixes estimates with `~` so they are not read as published salaries.
 - **Salaries are only comparable within one pay period.** The job list's `min_salary`/`max_salary` filters therefore require `salary_period`, and salary sorting is not offered.
+- **Two salary filters with different meanings.** On `GET /api/v1/jobs`, `has_salary=true` matches any salary information, including a levels.fyi estimate. `salary_disclosed=true` matches only a range the employer published, in any pay period. The homepage's Featured jobs use `salary_disclosed`, because the client wants employers that publish pay to stand out.
 - **Missing salary is null.** Nothing is guessed when a job publishes no salary and no estimate is available.
 
 Rules enforced by the database, on top of the checks in `backend/app/services/salary_sync.py`. They are defined only in `backend/app/sql/be13_salary_constraints_migration.sql`, which is the source of truth; the ORM model does not declare them:

@@ -1,16 +1,13 @@
 import Link from "next/link";
-import {
-  AV_COMPANIES,
-  FEATURED_JOBS,
-  MOCK_JOBS,
-  mockJobSalary,
-} from "@/lib/mock-data";
 import CategoryGridPanel from "@/components/CategoryGridPanel";
-import CompanyLogo from "@/components/ui/CompanyLogo";
-import JobCardColumn from "@/components/ui/JobCardColumn";
-import JobCardRow from "@/components/ui/JobCardRow";
-import Salary from "@/components/ui/Salary";
 import TopSkillsPanel from "@/components/TopSkillsPanel";
+import {
+  FeaturedJobsGrid,
+  LatestJobsGrid,
+  LatestOpportunitiesList,
+  TopCategoryHighlight,
+  TopCompaniesGrid,
+} from "./home-sections";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -100,42 +97,8 @@ function Hero() {
         <div className="hidden lg:block">
           <div className="relative mx-auto max-w-md">
             <div className="relative rounded-2xl border border-line bg-surface p-6 shadow-lg">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-ink">
-                  Latest opportunities
-                </p>
-                <span className="rounded-md bg-primary-light px-2 py-1 text-xs font-medium text-primary">
-                  {MOCK_JOBS.length} jobs
-                </span>
-              </div>
-
-              {MOCK_JOBS.slice(0, 4).map((job) => (
-                <div
-                  key={job.id}
-                  className="mt-4 flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
-                >
-                  <CompanyLogo text={job.company.charAt(0)} size="h-9 w-9" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-ink">
-                      {job.title}
-                    </p>
-                    <p className="truncate text-xs text-ink-muted">
-                      {job.company} · {job.country}
-                    </p>
-                  </div>
-                  <Salary {...mockJobSalary(job)} />
-                </div>
-              ))}
-
-              <div className="mt-5 flex items-center justify-between rounded-xl bg-primary-light px-4 py-3">
-                <div>
-                  <p className="text-xs font-medium text-primary">Trending</p>
-                  <p className="text-sm font-semibold text-ink">
-                    Perception Engineer
-                  </p>
-                </div>
-                <span className="text-sm font-bold text-primary">+32%</span>
-              </div>
+              <LatestOpportunitiesList />
+              <TopCategoryHighlight />
             </div>
           </div>
         </div>
@@ -192,11 +155,7 @@ function LatestJobs() {
           linkLabel="View all jobs"
         />
 
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          {MOCK_JOBS.map((job) => (
-            <JobCardRow key={job.id} job={job} />
-          ))}
-        </div>
+        <LatestJobsGrid />
       </div>
     </section>
   );
@@ -209,16 +168,12 @@ function FeaturedJobs() {
         <SectionHeader
           title="Featured"
           highlight="Jobs"
-          subtitle="Hand-picked opportunities from our top partners."
+          subtitle="The newest roles from employers that publish their salary range."
           linkHref="/search"
           linkLabel="View all jobs"
         />
 
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {FEATURED_JOBS.map((job) => (
-            <JobCardColumn key={job.id} job={job} />
-          ))}
-        </div>
+        <FeaturedJobsGrid />
       </div>
     </section>
   );
@@ -231,25 +186,12 @@ function TopCompanies() {
         <SectionHeader
           title="AV"
           highlight="Companies Hiring"
-          subtitle="Open roles at the AV companies tracked by this platform."
+          subtitle="The AV companies with the most open roles right now."
           linkHref="/companies"
           linkLabel="View all companies"
         />
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {AV_COMPANIES.slice(0, 8).map((company) => (
-            <Link
-              key={company.id}
-              href={`/companies/${company.id}`}
-              className="flex items-center gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
-            >
-              <CompanyLogo text={company.name.charAt(0)} size="h-9 w-9" />
-              <span className="truncate font-semibold text-ink">
-                {company.name}
-              </span>
-            </Link>
-          ))}
-        </div>
+        <TopCompaniesGrid />
       </div>
     </section>
   );

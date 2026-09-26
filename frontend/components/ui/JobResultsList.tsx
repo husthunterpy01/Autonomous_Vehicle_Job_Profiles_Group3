@@ -192,6 +192,32 @@ export function JobRow({
   );
 }
 
+/* Column card for real jobs - used for Featured Jobs on the homepage. */
+export function JobColumn({ job }: { job: JobListItem }) {
+  const type = typeLabel(job);
+  const location = locationLabel(job);
+  return (
+    <Link
+      href={jobDetailHref(job.job_id)}
+      className="flex flex-col rounded-xl border border-line bg-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-primary hover:shadow-md"
+    >
+      <CompanyLogo text={job.company_name.charAt(0)} />
+      <h3 className="mt-5 font-semibold text-ink">{job.title}</h3>
+      <p className="mt-1 text-sm text-ink-secondary">
+        {job.company_name}
+        {location ? ` · ${location}` : ""}
+      </p>
+      <Salary className="mt-1" {...jobSalary(job)} />
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {type && <Tag label={type} />}
+        <span className="text-xs text-ink-muted">
+          Posted {postedLabel(job)}
+        </span>
+      </div>
+    </Link>
+  );
+}
+
 export function JobsTable({
   jobs,
   renderAction,
