@@ -118,7 +118,12 @@ function SalarySpanBar({
   );
 }
 
-type PayView = "numbers" | "chart";
+type PayView = "list" | "chart";
+
+const PAY_VIEW_LABELS: Record<PayView, string> = {
+  list: "List View",
+  chart: "Chart View",
+};
 
 /* Two-button pill matching the app's ViewToggle pattern (components/ui/
    ViewToggle.tsx), but smaller and local to this panel since it's a
@@ -132,19 +137,19 @@ function PayViewToggle({
 }) {
   return (
     <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
-      {(["numbers", "chart"] as const).map((option) => (
+      {(["list", "chart"] as const).map((option) => (
         <button
           key={option}
           type="button"
           aria-pressed={view === option}
           onClick={() => onChange(option)}
-          className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors ${
+          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
             view === option
               ? "bg-primary-light text-primary"
               : "text-ink-secondary hover:text-ink"
           }`}
         >
-          {option}
+          {PAY_VIEW_LABELS[option]}
         </button>
       ))}
     </div>
@@ -161,7 +166,7 @@ export default function TopPaidJobsPanel() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
-  const [view, setView] = useState<PayView>("numbers");
+  const [view, setView] = useState<PayView>("list");
 
   useEffect(() => {
     let cancelled = false;
@@ -206,7 +211,7 @@ export default function TopPaidJobsPanel() {
 
   return (
     <div>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3">
         <PayViewToggle view={view} onChange={setView} />
       </div>
       {view === "chart" && <ScaleAxis scaleMax={scaleMax} />}
