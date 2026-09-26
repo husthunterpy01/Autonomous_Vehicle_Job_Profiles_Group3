@@ -1,8 +1,18 @@
 # app/core/logging_config.py
+import os
 import sys
 from logging.config import dictConfig
 
 LOG_LEVEL = "INFO"
+
+# Vercel's filesystem is read-only outside /tmp - a RotatingFileHandler on a
+# relative path would raise on the very first log call, crashing every cold
+# start. Vercel sets this on every deployment/runtime, so use it to skip the
+# file handler there and let stdout (which Vercel already captures as
+# function logs) carry everything instead.
+_ON_VERCEL = os.getenv("VERCEL") is not None
+
+_handler_names = ["console"] if _ON_VERCEL else ["console", "file"]
 
 LOGGING_CONFIG = {
     "version": 1,
@@ -19,21 +29,27 @@ LOGGING_CONFIG = {
             "formatter": "default",
             "stream": sys.stdout,
         },
-        "file": {
-            "class": "logging.handlers.RotatingFileHandler",
-            "formatter": "default",
-            "filename": "app.log",
-            "maxBytes": 10_000_000,
-            "backupCount": 5,
-        },
+        **(
+            {}
+            if _ON_VERCEL
+            else {
+                "file": {
+                    "class": "logging.handlers.RotatingFileHandler",
+                    "formatter": "default",
+                    "filename": "app.log",
+                    "maxBytes": 10_000_000,
+                    "backupCount": 5,
+                },
+            }
+        ),
     },
     "loggers": {
         "": {
-            "handlers": ["console", "file"],
+            "handlers": _handler_names,
             "level": LOG_LEVEL,
         },
-        "uvicorn": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
-        "uvicorn.access": {"handlers": ["console", "file"], "level": "INFO", "propagate": False},
+        "uvicorn": {"handlers": _handler_names, "level": "INFO", "propagate": False},
+        "uvicorn.access": {"handlers": _handler_names, "level": "INFO", "propagate": False},
     },
 }
 

@@ -49,6 +49,11 @@ _NON_BASE_SALARY_RE = re.compile(
     r"\bbonus(es)?\b|\bsign(?:ing)?[- ]on\b|\brelocation\b|\bstipend\b|\breferral\b",
     re.IGNORECASE,
 )
+# After a range, "+"/"plus" starts a list of extras paid on top of it
+# ("$32.00 - $37.00/hr + Annual Bonus + Long Term Incentive", Stack AV):
+# a bonus named there is additional pay, not a label on the range itself,
+# so only the text before it is checked for a non-base-salary label.
+_ADDITION_RE = re.compile(r"\+|\bplus\b", re.IGNORECASE)
 
 _SYMBOL_CLASS = "".join(re.escape(s) for s in _CURRENCY_SYMBOLS)
 # Trailing k/K is shorthand for thousands ("$150K"); _parse_number scales it.
@@ -143,6 +148,12 @@ def _parse_number(raw: str) -> float:
     return value * 1000 if thousands_shorthand else value
 
 
+def _trailing_label(after: str) -> str:
+    """The text right after a range that can still label it - up to any
+    "+"/"plus" that starts a list of extras on top of it."""
+    return _ADDITION_RE.split(after, maxsplit=1)[0]
+
+
 def _current_clause(text: str) -> str:
     """The text since the last sentence boundary - so a "bonus" label on an
     earlier, separate sentence doesn't get attributed to a later range that
@@ -179,7 +190,9 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
             continue
         before = description[max(0, match.start() - _BEFORE_WINDOW):match.start()]
         after = description[match.end():match.end() + _AFTER_WINDOW]
-        if _NON_BASE_SALARY_RE.search(_current_clause(before)) or _NON_BASE_SALARY_RE.search(after):
+        if _NON_BASE_SALARY_RE.search(_current_clause(before)) or _NON_BASE_SALARY_RE.search(
+            _trailing_label(after)
+        ):
             continue
         period = _closest_period(before, after)
         if period is None:

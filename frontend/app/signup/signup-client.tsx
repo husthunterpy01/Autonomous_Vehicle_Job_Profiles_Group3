@@ -8,6 +8,9 @@ import { AuthApiError, signUp } from "@/lib/services/auth";
 
 const MIN_PASSWORD_LENGTH = 12;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const USERNAME_PATTERN = /^[A-Za-z0-9_.-]{3,50}$/;
+const USERNAME_REQUIREMENTS =
+  "Username must be 3–50 characters and use only letters, numbers, underscores, periods, or hyphens.";
 const PASSWORD_REQUIREMENTS =
   "Use at least 12 characters with uppercase, lowercase, number, and special character.";
 
@@ -63,14 +66,17 @@ function validateForm(
   confirmPassword: string,
 ): FieldErrors {
   const errors: FieldErrors = {};
+  const trimmedUsername = username.trim();
   const trimmedEmail = email.trim();
 
   if (!name.trim()) {
     errors.name = "Name is required.";
   }
 
-  if (!username.trim()) {
+  if (!trimmedUsername) {
     errors.username = "Username is required.";
+  } else if (!USERNAME_PATTERN.test(trimmedUsername)) {
+    errors.username = USERNAME_REQUIREMENTS;
   }
 
   if (!trimmedEmail) {
@@ -171,7 +177,7 @@ export default function SignUpClient() {
     try {
       await signUp({
         full_name: name.trim(),
-        username: username.trim(),
+        username: username.trim().toLowerCase(),
         email: email.trim(),
         password,
       });
