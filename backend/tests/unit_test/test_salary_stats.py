@@ -40,7 +40,8 @@ def test_ranks_a_single_yearly_usd_job_by_its_max(db_session):
 
     assert len(stats) == 1
     assert stats[0].salary_max == 200000
-    assert stats[0].estimated_annual_usd == 200000
+    assert stats[0].estimated_annual_usd_max == 200000
+    assert stats[0].estimated_annual_usd_min == 150000
 
 
 def test_orders_by_estimated_annual_usd_descending(db_session):
@@ -71,7 +72,8 @@ def test_annualizes_an_hourly_rate_before_ranking(db_session):
 
     assert [s.title for s in stats] == ["Hourly Role", "Yearly Role"]
     hourly = next(s for s in stats if s.title == "Hourly Role")
-    assert hourly.estimated_annual_usd == 80 * 2080
+    assert hourly.estimated_annual_usd_max == 80 * 2080
+    assert hourly.estimated_annual_usd_min == 75 * 2080
     # The displayed figure is untouched - still the raw hourly rate.
     assert hourly.salary_max == 80
     assert hourly.salary_period == "hourly"
@@ -93,7 +95,8 @@ def test_converts_currency_before_ranking(db_session):
 
     stats = {s.title: s for s in SalaryStatsService(db_session).get_top_paid_jobs()}
 
-    assert stats["EUR Role"].estimated_annual_usd == 100000 * 1.08
+    assert stats["EUR Role"].estimated_annual_usd_max == 100000 * 1.08
+    assert stats["EUR Role"].estimated_annual_usd_min == 95000 * 1.08
     assert stats["EUR Role"].salary_max == 100000
     assert stats["EUR Role"].salary_currency == "EUR"
     assert [s.title for s in SalaryStatsService(db_session).get_top_paid_jobs()] == ["USD Role", "EUR Role"]
@@ -114,7 +117,10 @@ def test_uses_the_levels_fyi_average_when_there_is_no_disclosed_range(db_session
 
     assert len(stats) == 1
     assert stats[0].salary_average == 180000
-    assert stats[0].estimated_annual_usd == 180000
+    # No disclosed range to show, so min and max collapse to the same point
+    # rather than fabricating a span.
+    assert stats[0].estimated_annual_usd_max == 180000
+    assert stats[0].estimated_annual_usd_min == 180000
 
 
 def test_excludes_a_job_with_an_unrecognized_currency(db_session):

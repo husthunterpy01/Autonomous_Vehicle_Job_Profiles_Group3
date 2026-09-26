@@ -18,8 +18,12 @@ _PERIOD_TO_ANNUAL_MULTIPLIER = {
     "hourly": 2080,
 }
 
-# Static, hand-updated USD rates. Only the 9 currency codes the salary
-# extractor ever recognizes (scrapers/service/silver_cleaning/
+# Static, hand-set approximate USD rates - NOT pulled from a live feed, and
+# not precise to the day. Set 2026-09-25 as rough spot-rate order-of-magnitude
+# figures (a currency's real rate moves; these exist only to rank/compare
+# salaries, not to state an exact conversion). Re-check and update by hand
+# periodically - there is no automatic refresh. Only the 9 currency codes the
+# salary extractor ever recognizes (scrapers/service/silver_cleaning/
 # salary_extractor.py's _CURRENCY_CODES) need an entry here - a job whose
 # salary_currency isn't one of these (e.g. an ATS API returning a currency
 # the extractor never sees) simply falls through case()'s else_=None and is
@@ -42,16 +46,19 @@ class SalaryStatsService:
         self.db = db
 
     def get_top_paid_jobs(self, limit: int = 10) -> list[TopPaidJobResponse]:
-        # The top of a disclosed range, or the levels.fyi estimate when
-        # there's no disclosed range - salary_sync enforces the two are
-        # mutually exclusive, so exactly one of them is ever set.
-        base_value = func.coalesce(JobPosting.salary_max, JobPosting.salary_average)
+        # The disclosed range's two ends, or the levels.fyi estimate on both
+        # ends when there's no disclosed range (salary_sync enforces that a
+        # job has a range or an estimate, never both) - so a job with only an
+        # estimate reports the same min and max rather than a fabricated span.
+        min_value = func.coalesce(JobPosting.salary_min, JobPosting.salary_average)
+        max_value = func.coalesce(JobPosting.salary_max, JobPosting.salary_average)
         period_multiplier = case(_PERIOD_TO_ANNUAL_MULTIPLIER, value=JobPosting.salary_period)
         currency_rate = case(_CURRENCY_TO_USD_RATE, value=JobPosting.salary_currency)
         # NULL whenever the period or currency isn't one of the known keys
-        # above, which also drops a job with no salary at all (base_value
+        # above, which also drops a job with no salary at all (min/max_value
         # NULL) - one condition covers every "can't rank this" case.
-        estimated_annual_usd = base_value * period_multiplier * currency_rate
+        estimated_annual_usd_min = min_value * period_multiplier * currency_rate
+        estimated_annual_usd_max = max_value * period_multiplier * currency_rate
 
         rows = (
             self.db.query(
@@ -65,11 +72,12 @@ class SalaryStatsService:
                 JobPosting.salary_currency,
                 JobPosting.salary_period,
                 JobPosting.salary_source,
-                estimated_annual_usd.label("estimated_annual_usd"),
+                estimated_annual_usd_min.label("estimated_annual_usd_min"),
+                estimated_annual_usd_max.label("estimated_annual_usd_max"),
             )
             .join(Company, Company.company_id == JobPosting.company_id)
-            .filter(estimated_annual_usd.isnot(None))
-            .order_by(estimated_annual_usd.desc(), JobPosting.job_id)
+            .filter(estimated_annual_usd_max.isnot(None))
+            .order_by(estimated_annual_usd_max.desc(), JobPosting.job_id)
             .limit(limit)
             .all()
         )

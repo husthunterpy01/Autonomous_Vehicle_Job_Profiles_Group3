@@ -34,9 +34,12 @@ class SalaryPeriod(str, Enum):
 
 class TopPaidJobResponse(BaseModel):
     """One row of the homepage's "Top Paid Jobs" ranking. salary_min/max/
-    average/currency/period are shown exactly as posted - see
-    SalaryStatsService for how estimated_annual_usd (the ranking key only,
-    never displayed as if it were the posted figure) is derived from them."""
+    average/currency/period are the figures exactly as posted, always shown
+    alongside estimated_annual_usd_min/max - see SalaryStatsService for how
+    the estimated figures are derived (annualized + converted to USD, for
+    ranking and cross-currency comparison). A job with only a levels.fyi
+    average (no disclosed range) has estimated_annual_usd_min ==
+    estimated_annual_usd_max, since there's no real range to show."""
 
     job_id: UUID
     title: str
@@ -48,7 +51,8 @@ class TopPaidJobResponse(BaseModel):
     salary_currency: str
     salary_period: str
     salary_source: str
-    estimated_annual_usd: float
+    estimated_annual_usd_min: float
+    estimated_annual_usd_max: float
 
 
 class SubCategoryResponse(BaseModel):

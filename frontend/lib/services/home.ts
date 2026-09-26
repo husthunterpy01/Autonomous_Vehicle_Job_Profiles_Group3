@@ -59,12 +59,15 @@ export type TopPaidJob = {
   salary_currency: string;
   salary_period: string;
   salary_source: string;
-  /** USD, annualized - the ranking key only. Never shown as the posted
-   *  figure; the salary_* fields above stay exactly as posted for display. */
-  estimated_annual_usd: number;
+  /** USD, annualized - used both to rank and to show a comparable figure
+   *  alongside the posted salary_* fields (which stay exactly as posted).
+   *  Equal to each other when there's no disclosed range (a levels.fyi
+   *  average only). */
+  estimated_annual_usd_min: number;
+  estimated_annual_usd_max: number;
 };
 
-/** Backend already orders by estimated_annual_usd desc, so this is a
+/** Backend already orders by estimated_annual_usd_max desc, so this is a
  *  straight pass-through - see SalaryStatsService for how the ranking key
  *  is derived. */
 export function getTopPaidJobs(limit = 5): Promise<TopPaidJob[]> {
