@@ -52,13 +52,6 @@ CREATE TABLE IF NOT EXISTS gold.dim_skill (
     CONSTRAINT uq_dim_skill_natural_key UNIQUE (normalized_name, skill_type)
 );
 
--- Dimension: company. Natural key company_name.
-CREATE TABLE IF NOT EXISTS gold.dim_company (
-    company_key bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    company_name text NOT NULL UNIQUE,
-    company_type text
-);
-
 -- Dimension: job. Natural key deduplication_key (md5 hex from the pipeline's
 -- dedup step), which stays the same across scrapes and re-imports. Attributes
 -- are type-1 (latest value wins); first/last seen let an out-of-order backfill
@@ -82,7 +75,6 @@ CREATE TABLE IF NOT EXISTS gold.fact_job_skill_month (
     month_key integer NOT NULL REFERENCES gold.dim_month (month_key),
     job_key bigint NOT NULL REFERENCES gold.dim_job (job_key),
     skill_key bigint NOT NULL REFERENCES gold.dim_skill (skill_key),
-    company_key bigint NOT NULL REFERENCES gold.dim_company (company_key),
     first_seen_at timestamptz NOT NULL,
     last_seen_at timestamptz NOT NULL,
     PRIMARY KEY (month_key, job_key, skill_key),
@@ -99,8 +91,6 @@ CREATE INDEX IF NOT EXISTS ix_fact_job_skill_month_snapshot
     ON gold.fact_job_skill_month (month_key, last_seen_at);
 CREATE INDEX IF NOT EXISTS ix_fact_job_skill_month_skill
     ON gold.fact_job_skill_month (skill_key, month_key);
-CREATE INDEX IF NOT EXISTS ix_fact_job_skill_month_company
-    ON gold.fact_job_skill_month (company_key);
 
 -- Monthly skill demand from a month-end snapshot: each month is compared by
 -- the jobs in its latest completed run. A fact belongs to that snapshot

@@ -50,7 +50,6 @@ erDiagram
     DIM_JOB ||--o{ FACT_JOB_SKILL_MONTH : "one job, many months"
     DIM_MONTH ||--o{ FACT_JOB_SKILL_MONTH : "one month, many jobs"
     DIM_SKILL ||--o{ FACT_JOB_SKILL_MONTH : "one skill, many jobs"
-    DIM_COMPANY ||--o{ FACT_JOB_SKILL_MONTH : "one company, many jobs"
 ```
 
 | Object | Grain / key | Purpose |
@@ -59,7 +58,6 @@ erDiagram
 | `gold.dim_month` | `month_key` = yyyymm | Calendar month (UTC), with a label such as "Aug 2026" |
 | `gold.dim_skill` | natural key (normalized name, skill type) | Skill and display name |
 | `gold.dim_job` | natural key `deduplication_key` | Job title, category area, first/last seen |
-| `gold.dim_company` | natural key company name | Company |
 | `gold.scrape_run` | one row per scrape run | Load log (not part of the star): source, whether it completed, classifier version |
 | `gold.skill_trend_monthly` (view) | one row per (month, skill) | Month-end snapshot: job count, share, rank |
 
@@ -77,7 +75,6 @@ each of its skills), which is the one-to-many "job seen at many times".
      key across scrapes and re-imports.
    - skill: `(normalized name, skill type)`, normalized like the backend `skill`
      table.
-   - company: company name.
 3. **Grain (month, job, skill), calendar month in UTC.** Not one row per run:
    daily runs would add roughly 30 × 1.8k jobs × 8 skills ≈ 430k rows a month and
    outgrow the Supabase free tier within months. The monthly grain is about 15k
@@ -96,7 +93,11 @@ each of its skills), which is the one-to-many "job seen at many times".
 7. **Dimension attributes are type 1.** The latest title / category area wins.
    `dim_job.last_seen_at` stops an out-of-order backfill from overwriting newer
    values with older ones.
-8. **History is never rewritten.** When the classifier changes, earlier months
+8. **No company dimension** (agreed in review). The rank chart doesn't use
+   company, so it's left out. A `dim_company` could be added later if a
+   per-company view is ever needed (new facts would carry it; past months would
+   need a reload from MinIO).
+9. **History is never rewritten.** When the classifier changes, earlier months
    keep what they recorded, and `scrape_run.classifier_version` explains any
    step in the chart. Retention: keep everything (a few MB a month).
 
@@ -104,7 +105,7 @@ each of its skills), which is the one-to-many "job seen at many times".
 
 For every scrape run, live or backfilled, in **one transaction**, from the run's
 pipeline output (`av_jobs.jsonl`: each line is the job row, with
-`deduplication_key`, `company_name` and `job_name`, plus `_classification`, which
+`deduplication_key` and `job_name`, plus `_classification`, which
 holds the categories and skills):
 
 ```sql
@@ -122,11 +123,7 @@ SELECT to_char(d, 'YYYYMM')::integer, d, extract(year FROM d), extract(month FRO
 FROM (SELECT date_trunc('month', :scraped_at AT TIME ZONE 'UTC')::date AS d) AS m
 ON CONFLICT (month_key) DO NOTHING;
 
--- 3. Per job: its company, the job, each skill, and the fact.
-INSERT INTO gold.dim_company (company_name) VALUES (:company_name)
-ON CONFLICT (company_name) DO UPDATE SET company_name = excluded.company_name
-RETURNING company_key;
-
+-- 3. Per job: the job, each skill, and the fact.
 INSERT INTO gold.dim_job (deduplication_key, title, main_type, first_seen_at, last_seen_at)
 VALUES (:deduplication_key, :job_name, :main_type, :scraped_at, :scraped_at)
 ON CONFLICT (deduplication_key) DO UPDATE SET
@@ -144,9 +141,9 @@ ON CONFLICT (normalized_name, skill_type) DO UPDATE SET display_name = excluded.
 RETURNING skill_key;
 
 INSERT INTO gold.fact_job_skill_month
-    (month_key, job_key, skill_key, company_key, first_seen_at, last_seen_at)
+    (month_key, job_key, skill_key, first_seen_at, last_seen_at)
 VALUES (to_char(:scraped_at AT TIME ZONE 'UTC', 'YYYYMM')::integer,
-        :job_key, :skill_key, :company_key, :scraped_at, :scraped_at)
+        :job_key, :skill_key, :scraped_at, :scraped_at)
 ON CONFLICT (month_key, job_key, skill_key) DO UPDATE SET
     first_seen_at = least(gold.fact_job_skill_month.first_seen_at, excluded.first_seen_at),
     last_seen_at = greatest(gold.fact_job_skill_month.last_seen_at, excluded.last_seen_at);
@@ -228,9 +225,8 @@ ORDER BY t.month_key, t.rank;
 ```
 
 A skill that was outside the top 10 earlier shows its lower rank in those months,
-so it enters the chart from below, like the GitHub chart. The company dimension
-and `dim_job.main_type` make "skills by company" or "by category area" cheap
-later.
+so it enters the chart from below, like the GitHub chart. `dim_job.main_type`
+makes "skills by category area" cheap later.
 
 ### Validation done
 
@@ -251,7 +247,8 @@ Checked on local PostgreSQL 16, with the loader above:
 
 ### Decided in review
 
-- Gold is a **star schema**, separate from the backend ERD.
+- Gold is a **star schema**, separate from the backend ERD, with no company
+  dimension since the chart doesn't use it.
 - Compare months by their **latest completed run** (month-end snapshot).
 - Build the **classification cache before the backfill** (consistency first, then
   tokens), filtering LLM skills against the vocabulary before caching.
@@ -263,8 +260,8 @@ Checked on local PostgreSQL 16, with the loader above:
 1. **Month boundary.** UTC or Australia/Perth? UTC is simpler, and only runs near
    midnight on the last day of a month are affected.
 2. **`load_gold` input.** `handoff.json` only has `deduplication_key`, categories,
-   skills and salary. Read `av_jobs.jsonl` directly, or add `job_name` and
-   `company_name` to the handoff?
+   skills and salary. Read `av_jobs.jsonl` directly, or add `job_name` to the
+   handoff?
 
 ### Follow-ups (not in DOC-13)
 

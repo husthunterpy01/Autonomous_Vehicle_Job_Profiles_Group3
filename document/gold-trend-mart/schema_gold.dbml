@@ -13,7 +13,6 @@ Table gold.fact_job_skill_month {
   month_key int [not null, ref: > gold.dim_month.month_key]
   job_key bigint [not null, ref: > gold.dim_job.job_key]
   skill_key bigint [not null, ref: > gold.dim_skill.skill_key]
-  company_key bigint [not null, ref: > gold.dim_company.company_key]
   first_seen_at timestamptz [not null, note: 'first completed run this month that listed the skill for the job']
   last_seen_at timestamptz [not null, note: 'last completed run this month that listed it; equals the month snapshot time when the job was still open at month end']
 
@@ -21,7 +20,6 @@ Table gold.fact_job_skill_month {
     (month_key, job_key, skill_key) [pk]
     (month_key, last_seen_at)
     (skill_key, month_key)
-    company_key
   }
 
   Note: 'Grain: one row per (month, AV job, skill). A job has one row per month it was open (one-to-many from dim_job and dim_month). Repeated runs in a month only move first/last seen.'
@@ -53,12 +51,6 @@ Table gold.dim_job {
   main_type text [note: 'category area, type-1']
   first_seen_at timestamptz [not null]
   last_seen_at timestamptz [not null, note: 'lets an out-of-order backfill keep the newest attributes']
-}
-
-Table gold.dim_company {
-  company_key bigint [pk, increment, note: 'surrogate']
-  company_name text [not null, unique, note: 'natural key']
-  company_type text
 }
 
 Table gold.scrape_run {

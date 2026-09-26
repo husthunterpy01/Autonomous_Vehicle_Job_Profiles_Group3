@@ -7,8 +7,9 @@ DROP VIEW IF EXISTS gold.skill_trend_monthly;
 DROP TABLE IF EXISTS gold.fact_job_skill_month;
 DROP TABLE IF EXISTS gold.dim_job;
 DROP TABLE IF EXISTS gold.dim_skill;
-DROP TABLE IF EXISTS gold.dim_company;
 DROP TABLE IF EXISTS gold.dim_month;
+-- dim_company existed in an earlier draft of this PR; dropped here in case.
+DROP TABLE IF EXISTS gold.dim_company;
 DROP TABLE IF EXISTS gold.scrape_run;
 
 -- Remove the gold schema only if nothing else lives in it.
