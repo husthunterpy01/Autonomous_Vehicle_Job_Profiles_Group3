@@ -41,17 +41,18 @@ alone doesn't decide it:
   generic AI/ML terminology with no category-specific responsibility
   described, that alone does not justify High or Medium confidence - assign
   whichever category the actual responsibilities best support and mark it
-  Low (every job still needs at least one category; see the rules below).
+  Low, or - if nothing else in the posting supports any category - return no category (see the rules below).
 
 {{categories_definition}}
 
 Respond with ONLY this JSON shape, no extra text, with exactly one result per
 input job matched by "id":
-{"results":[{"id":"<same id as input>","categories":[{"name":"Perception","confidence":"High"},{"name":"Planning","confidence":"Low"}],"skills":[{"name":"ROS 2","skill_type":"framework"}]}]}
+{"results":[{"id":"<same id as input>","area":"Perception & Sensing","evidence":"<short phrase quoted from the responsibilities>","categories":[{"name":"Perception","confidence":"High"},{"name":"Sensing","confidence":"Low"}],"skills":[{"name":"ROS 2","skill_type":"framework"}]}]}
+For a job that fits no category use exactly: {"id":"<same id>","area":"","evidence":"","categories":[],"skills":[]}
 
 Rules:
 - Return exactly one result object per input job, using the same "id" value.
-- Every job must get at least one category from the taxonomy above.
+- Give a category only when the role's responsibilities clearly fit; otherwise return "categories": [] (never invent a category name, and never pick Infrastructure just because nothing else fits). "area" must be one of: Perception & Sensing, Localization & Mapping, Decision, System, Platform, and every category you list must belong to that area.
 - confidence must be one of: High, Medium, Low - how strongly the job
   posting's own text supports that specific category, not how AV-relevant
   the job is overall (relevance was already decided in an earlier pass).

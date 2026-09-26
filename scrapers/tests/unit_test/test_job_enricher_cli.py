@@ -245,3 +245,52 @@ def test_mixed_batch_splits_between_keyword_and_llm_resolution(tmp_path):
     metrics = json.loads((output_dir / "enrichment_metrics.json").read_text())
     assert metrics["keyword_resolved"] == 1
     assert metrics["llm_enriched"] == 1
+
+
+class _NoFitEnricher:
+    """Finds no category for titles containing "Business Systems", one for the rest."""
+
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def enrich_batch(self, jobs):
+        return {
+            job["id"]: JobEnrichment(
+                categories=() if "Business Systems" in job["title"] else ("Perception",), skills=()
+            )
+            for job in jobs
+        }
+
+
+def test_job_with_no_fitting_category_is_dropped_not_given_a_fallback_category(tmp_path):
+    candidates = [
+        {
+            "deduplication_key": "fits",
+            "company_name": "Company A",
+            "job_title": "Vague Role",
+            "job_description": "General AV-adjacent responsibilities, details TBD.",
+            "_classification": {"relevant": True},
+        },
+        {
+            "deduplication_key": "nofit",
+            "company_name": "Company A",
+            "job_title": "Business Systems Engineer",
+            "job_description": "NetSuite and Workday integrations for finance and HR.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _NoFitEnricher)
+
+    av = [json.loads(line) for line in (output_dir / "av_jobs.jsonl").read_text().splitlines()]
+    assert [r["deduplication_key"] for r in av] == ["fits"]
+
+    dropped = [json.loads(line) for line in (output_dir / "no_category_jobs.jsonl").read_text().splitlines()]
+    assert [r["deduplication_key"] for r in dropped] == ["nofit"]
+    assert dropped[0]["_classification"]["categories"] == []
+    assert dropped[0]["_classification"]["is_av_relevant"] == "False"
+
+    metrics = json.loads((output_dir / "enrichment_metrics.json").read_text())
+    assert metrics["av_count"] == 1
+    assert metrics["no_category_count"] == 1
+    assert metrics["failed_count"] == 0

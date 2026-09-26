@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from scrapers.service.llm.category_hierarchy import constrain_to_dominant_main_type
+from scrapers.service.llm.category_hierarchy import constrain_to_dominant_main_type, load_main_types
 from scrapers.service.llm.json_response import (
     build_batch_prompt,
     parse_batch_response,
@@ -63,8 +63,23 @@ def parse_categories_with_confidence(value: object) -> tuple[tuple[str, str], ..
 
 @dataclass(frozen=True)
 class JobEnrichment:
+    """`categories` is empty when the model explicitly found no category that
+    fits the role - by design that means "not AV engineering", not "pick the
+    closest one": there is deliberately no fallback category (see
+    categories_definition.txt), and JobEnricherMain drops such jobs.
+
+    `area` and `evidence` are the model's stated technical area and the
+    phrase from the posting that justifies the choice; kept for audit only.
+    """
+
     categories: tuple[str, ...]
     skills: tuple[ExtractedSkill, ...]
+    area: str = ""
+    evidence: str = ""
+
+    @property
+    def has_category(self) -> bool:
+        return bool(self.categories)
 
 
 class JobEnricher:
@@ -110,8 +125,13 @@ class JobEnricher:
         unknown_categories = [name for name in names if name not in ALLOWED_CATEGORIES]
         if unknown_categories:
             raise ValueError(f"Unknown categories in LLM response: {unknown_categories}")
+        area = str(payload.get("area") or "").strip()
+        evidence = str(payload.get("evidence") or "").strip()
         if not names:
-            raise ValueError("AV-relevant jobs must include at least one category")
+            # An explicit empty list is a valid "no category fits" answer.
+            # A missing/non-list "categories" already raised above, so a
+            # truncated or malformed entry is still retried, never dropped.
+            return JobEnrichment((), (), area, evidence)
 
         # A job gets exactly one main_type (see category_hierarchy.py) even
         # when the LLM proposes sub_types spanning more than one - keep only
@@ -122,6 +142,16 @@ class JobEnricher:
         # a different group, and gives ties a real signal to break on
         # instead of falling back to response order.
         weights = {name: _CONFIDENCE_WEIGHTS[confidence] for name, confidence in categories_with_confidence}
-        categories = constrain_to_dominant_main_type(names, weights=weights)
+        # The prompt makes the model commit to one technical area first; when
+        # it did and that area is one we know, honor it over the
+        # confidence-weighted guess so the two steps can't disagree.
+        main_types = load_main_types()
+        if area in set(main_types.values()):
+            in_area = tuple(name for name in names if main_types.get(name) == area)
+            categories = constrain_to_dominant_main_type(in_area, weights=weights) if in_area else ()
+            if not categories:
+                categories = constrain_to_dominant_main_type(names, weights=weights)
+        else:
+            categories = constrain_to_dominant_main_type(names, weights=weights)
         skills = parse_skills(payload.get("skills", []))
-        return JobEnrichment(categories, skills)
+        return JobEnrichment(categories, skills, area, evidence)
