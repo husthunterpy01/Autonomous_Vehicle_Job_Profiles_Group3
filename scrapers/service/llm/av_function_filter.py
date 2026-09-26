@@ -34,6 +34,8 @@ _NON_ENGINEERING_TITLE_PATTERN = re.compile(
     r"account\s+manager|partner\s+manager|"
     r"compensation\s+(and\s+benefits\s+)?analyst|"
     r"site\s+operations\s+manager|technical\s+operations\s+manager|"
+    r"site\s+lead|field\s+lead|deployment\s+lead|site\s+manager|"
+    r"field\s+operations|"
     r"talent\s+management|recruiter|"
     r"business\s+development|sales\s+(manager|lead|engineer)?|"
     r"marketing\s+manager|"
