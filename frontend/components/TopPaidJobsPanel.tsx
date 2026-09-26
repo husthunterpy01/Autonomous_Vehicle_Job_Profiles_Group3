@@ -55,6 +55,102 @@ function PostedSalary({ job }: { job: TopPaidJob }) {
   );
 }
 
+/* A round upper bound for the shared scale, e.g. 275_000 -> 300_000 - always
+   rounds up to the next $100k so a bar never clips at the right edge, and
+   ticks land on clean numbers ($0/$100k/$200k/...) instead of whatever the
+   highest job's exact figure happens to be. */
+function niceScaleMax(highest: number): number {
+  return Math.max(100_000, Math.ceil(highest / 100_000) * 100_000);
+}
+
+/* Ticks every $100k from 0 up to the scale max, e.g. [0, 100000, 200000,
+   300000] - shown once above the list of bars (right-aligned and the same
+   width as SalarySpanBar's track, so the ticks land above the bars they
+   describe) rather than each row drawing its own axis. */
+function ScaleAxis({ scaleMax }: { scaleMax: number }) {
+  const step = 100_000;
+  const tickCount = scaleMax / step + 1;
+  const ticks = Array.from({ length: tickCount }, (_, i) => i * step);
+  return (
+    <div className="mb-2 flex justify-end">
+      <div className="flex w-40 justify-between text-xs text-ink-muted sm:w-56">
+        {ticks.map((tick) => (
+          <span key={tick}>${tick / 1000}k</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* The horizontal span itself: a fixed-width track (not stretched across the
+   card) with a filled bar from estimated_annual_usd_min to
+   estimated_annual_usd_max - Martin's review request for a faster way to
+   compare ranges across jobs than reading numbers. Deliberately compact and
+   left-aligned within its own slot rather than spanning the row, so a
+   narrow range doesn't read as if it's using the whole card's width. A job
+   with no disclosed range (min == max, a levels.fyi average only) renders
+   as a dot rather than a zero-width bar, so it stays visible instead of
+   disappearing. */
+function SalarySpanBar({
+  job,
+  scaleMax,
+}: {
+  job: TopPaidJob;
+  scaleMax: number;
+}) {
+  const left = (job.estimated_annual_usd_min / scaleMax) * 100;
+  const right = (job.estimated_annual_usd_max / scaleMax) * 100;
+  const isPoint = job.estimated_annual_usd_min === job.estimated_annual_usd_max;
+  return (
+    <div className="relative h-2 w-40 shrink-0 rounded-full bg-line sm:w-56">
+      {isPoint ? (
+        <div
+          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-surface bg-primary"
+          style={{ left: `calc(${left}% - 6px)` }}
+        />
+      ) : (
+        <div
+          className="absolute h-2 rounded-full bg-primary"
+          style={{ left: `${left}%`, width: `${right - left}%` }}
+        />
+      )}
+    </div>
+  );
+}
+
+type PayView = "numbers" | "chart";
+
+/* Two-button pill matching the app's ViewToggle pattern (components/ui/
+   ViewToggle.tsx), but smaller and local to this panel since it's a
+   two-state text choice rather than an icon-labeled table/cards switch. */
+function PayViewToggle({
+  view,
+  onChange,
+}: {
+  view: PayView;
+  onChange: (view: PayView) => void;
+}) {
+  return (
+    <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
+      {(["numbers", "chart"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          aria-pressed={view === option}
+          onClick={() => onChange(option)}
+          className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors ${
+            view === option
+              ? "bg-primary-light text-primary"
+              : "text-ink-secondary hover:text-ink"
+          }`}
+        >
+          {option}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* Ranked by estimated_annual_usd_max (period-annualized, currency-converted
    - see SalaryStatsService). Each card shows that comparable figure as the
    prominent line (marked "≈" whenever it's an approximation, not the exact
@@ -65,6 +161,7 @@ export default function TopPaidJobsPanel() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
+  const [view, setView] = useState<PayView>("numbers");
 
   useEffect(() => {
     let cancelled = false;
@@ -103,32 +200,46 @@ export default function TopPaidJobsPanel() {
     );
   }
 
+  const scaleMax = niceScaleMax(
+    Math.max(...jobs.map((job) => job.estimated_annual_usd_max)),
+  );
+
   return (
-    <div className="flex flex-col gap-3">
-      {jobs.map((job, index) => (
-        <Link
-          key={job.job_id}
-          href={jobDetailHref(job.job_id)}
-          className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-5"
-        >
-          <span className="w-6 shrink-0 text-center text-lg font-extrabold text-ink-muted">
-            {index + 1}
-          </span>
-          <CompanyLogo text={job.company_name.charAt(0)} />
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-semibold text-ink">{job.title}</h3>
-            <p className="mt-1 truncate text-sm text-ink-secondary">
-              {job.company_name}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-base font-bold text-primary">
-              {comparisonRange(job)}
-            </p>
-            <PostedSalary job={job} />
-          </div>
-        </Link>
-      ))}
+    <div>
+      <div className="mb-3 flex justify-end">
+        <PayViewToggle view={view} onChange={setView} />
+      </div>
+      {view === "chart" && <ScaleAxis scaleMax={scaleMax} />}
+      <div className="flex flex-col gap-3">
+        {jobs.map((job, index) => (
+          <Link
+            key={job.job_id}
+            href={jobDetailHref(job.job_id)}
+            className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-5"
+          >
+            <span className="w-6 shrink-0 text-center text-lg font-extrabold text-ink-muted">
+              {index + 1}
+            </span>
+            <CompanyLogo text={job.company_name.charAt(0)} />
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate font-semibold text-ink">{job.title}</h3>
+              <p className="mt-1 truncate text-sm text-ink-secondary">
+                {job.company_name}
+              </p>
+            </div>
+            {view === "chart" ? (
+              <SalarySpanBar job={job} scaleMax={scaleMax} />
+            ) : (
+              <div className="shrink-0 text-right">
+                <p className="text-base font-bold text-primary">
+                  {comparisonRange(job)}
+                </p>
+                <PostedSalary job={job} />
+              </div>
+            )}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
