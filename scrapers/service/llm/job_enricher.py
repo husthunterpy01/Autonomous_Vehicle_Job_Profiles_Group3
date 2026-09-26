@@ -4,7 +4,10 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
-from scrapers.service.llm.category_hierarchy import constrain_to_dominant_main_type, load_main_types
+from scrapers.service.llm.category_hierarchy import (
+    constrain_to_dominant_main_type,
+    load_main_types,
+)
 from scrapers.service.llm.json_response import (
     build_batch_prompt,
     parse_batch_response,

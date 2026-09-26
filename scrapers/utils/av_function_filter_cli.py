@@ -3,7 +3,12 @@ from __future__ import annotations
 import json
 import logging
 
-from scrapers.service.llm import AVFunctionFilter, JobFilterConfig, JobPostingIO, title_flags_review
+from scrapers.service.llm import (
+    AVFunctionFilter,
+    JobFilterConfig,
+    JobPostingIO,
+    title_flags_review,
+)
 from scrapers.service.llm.groq_client import GroqCompletion
 from scrapers.service.llm.text import compress_job_text
 from scrapers.utils.job_classifier import (

@@ -17,7 +17,12 @@ embedding probe puts jobs in the 0.45-0.55 mid-band.
 import json
 from unittest.mock import MagicMock, patch
 
-from scrapers.service.llm import ExtractedSkill, FunctionDecision, JobEnrichment, RelevanceDecision
+from scrapers.service.llm import (
+    ExtractedSkill,
+    FunctionDecision,
+    JobEnrichment,
+    RelevanceDecision,
+)
 from scrapers.utils.pipeline_runner import PipelineRunner
 
 

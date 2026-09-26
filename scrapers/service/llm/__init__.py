@@ -1,4 +1,8 @@
-from scrapers.service.llm.av_function_filter import AVFunctionFilter, FunctionDecision, title_flags_review
+from scrapers.service.llm.av_function_filter import (
+    AVFunctionFilter,
+    FunctionDecision,
+    title_flags_review,
+)
 from scrapers.service.llm.category import AuditCategoryRule
 from scrapers.service.llm.classification_result import classification_as_dict
 from scrapers.service.llm.config import JobFilterConfig
