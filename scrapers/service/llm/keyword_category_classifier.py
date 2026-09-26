@@ -9,6 +9,20 @@ _CATEGORIES_PATH = Path(__file__).resolve().parents[2] / "prompts" / "categories
 _CATEGORY_BLOCK = re.compile(r"^([A-Za-z][A-Za-z ]+) — .+\.\nKeywords: (.+)$", re.MULTILINE)
 
 
+# Title words that mark conventional-automotive, operations, or UX work. A
+# category word next to one of these ("Brake CAE", "Vehicle Safety Operator",
+# "HMI ... Control") usually means the role is NOT the driving-stack
+# discipline the keyword names, so the pass abstains and the LLM - which has
+# the no-category rules - decides. Abstaining only costs one LLM call; a
+# wrong deterministic label would be silent.
+_NON_AV_TITLE_MARKERS = re.compile(
+    r"(?<!\w)(cae|powertrain|engine|transmission|crash|passive safety|homologation|ehs|nvh|thermal|hvac|"
+    r"chassis|hmi|ivi|infotainment|cockpit|marketplace|cleaning|operator|operators|operational safety|"
+    r"field safety|devops|it support|help desk|quality engineer|camera experience)(?!\w)",
+    re.IGNORECASE,
+)
+
+
 def _compile_pattern(term: str) -> re.Pattern:
     return re.compile(rf"(?<!\w){re.escape(term)}(?!\w)", re.IGNORECASE)
 
@@ -82,8 +96,14 @@ class KeywordCategoryClassifier:
         preserving the original whole-text behavior for that case.
         """
         if title:
+            if _NON_AV_TITLE_MARKERS.search(title):
+                return ()
             title_weights = self._match_counts(title)
-            return constrain_to_dominant_main_type(tuple(title_weights), weights=title_weights)
+            categories = constrain_to_dominant_main_type(tuple(title_weights), weights=title_weights)
+            # Infrastructure has been the over-assigned catch-all, and a bare
+            # "DevOps"/"Infrastructure" title is exactly what an IT help-desk
+            # role also carries - only the description tells them apart.
+            return () if "Infrastructure" in categories else categories
 
         weights = self._match_counts(text)
         return constrain_to_dominant_main_type(tuple(weights), weights=weights)

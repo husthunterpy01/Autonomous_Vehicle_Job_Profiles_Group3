@@ -48,7 +48,9 @@ _NON_ENGINEERING_TITLE_PATTERN = re.compile(
     r"operations\s+(supervisor|controller|specialist)|service\s+manager|threat\s+intelligence|command\s+center|"
     r"shift\s+(lead|supervisor)|driver\s+trainer|truck\s+operator|vehicle\s+operator|\bcdl\b|"
     r"fp&a|financial\s+analyst|actuary|paid\s+media|brand\s+media|administrative|technical\s+writer|"
-    r"industrial\s+design|product\s+design|\bgtm\b|strategy\s+analyst"
+    r"industrial\s+design|product\s+design|\bgtm\b|strategy\s+analyst|"
+    r"program\s+management|safety\s+operator|test\s+(?:(?:and|&)\s+evaluation\s+)?operator|mission\s+operator|"
+    r"operational\s+safety|field\s+safety"
     r")\b",
     re.IGNORECASE,
 )

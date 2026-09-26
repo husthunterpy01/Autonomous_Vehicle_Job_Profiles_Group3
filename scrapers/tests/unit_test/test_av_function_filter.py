@@ -161,3 +161,17 @@ def test_parses_response_wrapped_in_code_fence():
 )
 def test_title_flags_review_catches_customer_facing_operations_and_corporate_titles(title):
     assert title_flags_review(title) is True
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Vehicle Safety Operator",
+        "Test & Evaluation Operator",
+        "Mission Operator - Detroit, MI",
+        "Operational Safety Manager",
+        "Manager, Technical Program Management - System Safety",
+    ],
+)
+def test_title_flags_review_catches_operator_and_program_management_titles(title):
+    assert title_flags_review(title) is True
