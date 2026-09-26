@@ -40,7 +40,9 @@ _NON_ENGINEERING_TITLE_PATTERN = re.compile(
     r"business\s+development|sales\s+(manager|lead|engineer)?|"
     r"marketing\s+manager|"
     r"chief\s+of\s+staff|"
-    r"supply\s+chain|procurement|logistics|warehouse\s+(operations|manager)"
+    r"supply\s+chain|procurement|logistics|warehouse\s+(operations|manager)|"
+    r"head\s+of\s+training|training\s+lead|training\s+coordinator|"
+    r"learning\s+and\s+development|workforce\s+training|operator\s+training"
     r")\b",
     re.IGNORECASE,
 )
