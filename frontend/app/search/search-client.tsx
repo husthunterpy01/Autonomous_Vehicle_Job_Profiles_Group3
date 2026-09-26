@@ -25,10 +25,15 @@ import {
   parseJobSort,
   type JobSortField,
 } from "@/lib/job-sort";
+import {
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  parsePositiveInt,
+  searchQueryString,
+} from "@/lib/search-url";
 import { getCategoryStatsRaw } from "@/lib/services/home";
 import { getJobs, type JobListItem } from "@/lib/services/job";
 
-const DEFAULT_PER_PAGE = 6;
 /* Debounce keyword input before hitting the API — unlike the Companies list
    (fetched once, filtered client-side), jobs are paginated server-side, so
    every keystroke would otherwise be a new request. */
@@ -38,6 +43,9 @@ export default function SearchClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
+  // The keyword as last submitted - only that one goes into the URL, so the
+  // address bar doesn't change on every keystroke.
+  const [urlKeyword, setUrlKeyword] = useState(searchParams.get("q") ?? "");
   const [sort, setSort] = useState(() =>
     parseJobSort(searchParams.get("sort"), searchParams.get("direction")),
   );
@@ -48,9 +56,18 @@ export default function SearchClient() {
     searchParams.get("category") ?? ALL_CATEGORIES,
   );
   const [view, setView] = useState<ViewMode>("table");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
-  const [perPageInput, setPerPageInput] = useState(String(DEFAULT_PER_PAGE));
+  // ?page=50 opens page 50 directly; ?per_page= is kept too.
+  const [page, setPage] = useState(() =>
+    parsePositiveInt(searchParams.get("page"), 1),
+  );
+  const [perPage, setPerPage] = useState(() =>
+    parsePositiveInt(
+      searchParams.get("per_page"),
+      DEFAULT_PER_PAGE,
+      MAX_PER_PAGE,
+    ),
+  );
+  const [perPageInput, setPerPageInput] = useState(() => String(perPage));
 
   const [jobs, setJobs] = useState<JobListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -124,17 +141,26 @@ export default function SearchClient() {
     const handle = setTimeout(
       () => {
         setListBusy(true);
-        getJobs(
-          {
-            q: keyword.trim() || undefined,
-            category_id: category || undefined,
-            sort,
-            page,
-            page_size: perPage,
-          },
-          controller.signal,
-        )
-          .then((response) => {
+        const query = {
+          q: keyword.trim() || undefined,
+          category_id: category || undefined,
+          sort,
+          page_size: perPage,
+        };
+        getJobs({ ...query, page }, controller.signal)
+          .then(async (response) => {
+            // A page past the end (e.g. ?page=999 from a hand-edited or old
+            // link) jumps to the last page instead of showing an empty list.
+            // The API reports total 0 for an out-of-range page, so page 1 is
+            // asked once for the real page count.
+            if (page > 1 && response.items.length === 0) {
+              const first = await getJobs(
+                { ...query, page: 1 },
+                controller.signal,
+              );
+              setPage(Math.max(1, first.total_pages));
+              return;
+            }
             setJobs(response.items);
             setTotal(response.total);
             setTotalPages(Math.max(1, response.total_pages));
@@ -169,24 +195,23 @@ export default function SearchClient() {
     category !== ALL_CATEGORIES ||
     !isDefaultJobSort(sort);
 
-  const syncUrl = (kw: string, nextSort = sort, nextCategory = category) => {
-    const params = new URLSearchParams();
-    if (kw.trim()) params.set("q", kw.trim());
-    if (nextCategory) params.set("category", nextCategory);
-    // The default sort is what the API does anyway, so it stays out of the
-    // URL and a plain /search link keeps working.
-    if (!isDefaultJobSort(nextSort)) {
-      params.set("sort", nextSort.field);
-      params.set("direction", nextSort.direction);
-    }
-    const qs = params.toString();
+  // One place keeps the URL in step with the list (keyword as submitted,
+  // category, sort, page and per page), so a page can be shared or jumped to
+  // by editing ?page= directly. Defaults stay out of the URL.
+  useEffect(() => {
+    const qs = searchQueryString({
+      q: urlKeyword,
+      category,
+      sort,
+      page,
+      perPage,
+    });
     router.replace(qs ? `/search?${qs}` : "/search");
-  };
+  }, [urlKeyword, category, sort, page, perPage, router]);
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
     setPage(1);
-    syncUrl(keyword, sort, value);
   };
 
   const handleSortChange = (field: JobSortField) => {
@@ -195,7 +220,6 @@ export default function SearchClient() {
     // A re-sorted list starts from the first page, otherwise page 3 of the
     // old order silently becomes page 3 of the new one.
     setPage(1);
-    syncUrl(keyword, updated);
   };
 
   const handleKeyword = (value: string) => {
@@ -225,10 +249,10 @@ export default function SearchClient() {
 
   const resetFilters = () => {
     setKeyword("");
+    setUrlKeyword("");
     setCategory(ALL_CATEGORIES);
     setSort(DEFAULT_JOB_SORT);
     setPage(1);
-    router.replace("/search");
   };
 
   return (
@@ -251,7 +275,7 @@ export default function SearchClient() {
         dropdownClassName="sm:w-64"
         onSubmit={(e) => {
           e.preventDefault();
-          syncUrl(keyword);
+          setUrlKeyword(keyword);
         }}
       />
 
