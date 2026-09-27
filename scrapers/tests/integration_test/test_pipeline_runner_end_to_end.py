@@ -17,7 +17,12 @@ embedding probe puts jobs in the 0.45-0.55 mid-band.
 import json
 from unittest.mock import MagicMock, patch
 
-from scrapers.service.llm import ExtractedSkill, JobEnrichment, RelevanceDecision
+from scrapers.service.llm import (
+    ExtractedSkill,
+    FunctionDecision,
+    JobEnrichment,
+    RelevanceDecision,
+)
 from scrapers.utils.pipeline_runner import PipelineRunner
 
 
@@ -111,8 +116,26 @@ class _FakeEnricher:
         }
 
 
+# Every fixture job in this file is meant to reach enrichment (these tests
+# are about the real Silver -> pre-filter -> relevance -> enrichment
+# handoffs, not about which jobs the function filter excludes - that's
+# covered by test_av_function_filter.py / test_av_function_filter_cli.py
+# instead), so this always confirms "engineering" regardless of title,
+# including the "AV Program Manager" fixture below (whose title genuinely
+# matches the real title_flags_review() pre-filter and so is genuinely
+# routed through this fake, exercising that code path for real).
+class _FakeFunctionFilter:
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def classify_batch(self, jobs):
+        return {job["id"]: FunctionDecision(True, "High", "test fixture") for job in jobs}
+
+
 @patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
 @patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
+@patch("scrapers.utils.av_function_filter_cli.AVFunctionFilter", _FakeFunctionFilter)
+@patch("scrapers.utils.av_function_filter_cli.GroqCompletion", lambda: None)
 @patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
 @patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
 @patch("scrapers.service.silver_cleaning.silver_export.psycopg2.connect")
@@ -148,7 +171,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
             {
                 "deduplication_key": "dk-perception-1",
                 "company_name": "Stack AV",
-                "job_name": "Perception Engineer",
+                "job_name": "Object Detection Engineer",
                 "job_description": (
                     "Build sensor fusion and computer vision pipelines for autonomous "
                     "vehicle perception, including lidar object detection."
@@ -249,6 +272,8 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
 
 @patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
 @patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
+@patch("scrapers.utils.av_function_filter_cli.AVFunctionFilter", _FakeFunctionFilter)
+@patch("scrapers.utils.av_function_filter_cli.GroqCompletion", lambda: None)
 @patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
 @patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
 @patch("scrapers.service.silver_cleaning.silver_export.psycopg2.connect")
@@ -268,7 +293,7 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
             {
                 "deduplication_key": "dk-perception-1",
                 "company_name": "Stack AV",
-                "job_name": "Perception Engineer",
+                "job_name": "Object Detection Engineer",
                 "job_description": "Build sensor fusion and lidar perception software for autonomous vehicles.",
             }
         ],

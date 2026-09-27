@@ -84,3 +84,4 @@ pnpm-debug.log*
 
 # Training-curve source numbers; the PNG snapshot is kept in git
 scrapers/data/snapshots/train_test_accuracy_by_iteration.json
+.vercel

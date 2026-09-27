@@ -1,0 +1,69 @@
+name: Deploy to Vercel
+
+# Vercel's own Git integration is switched off in vercel.json
+# ("git.deploymentEnabled": false), so this workflow is the only thing that
+# deploys. It runs the Vercel CLI, which builds remotely on Vercel from the
+# checked-out source (vercel.json + api/ + frontend/), same as a local
+# `vercel --prod`.
+#
+# One-time setup - add these in GitHub: Settings > Secrets and variables > Actions
+#   VERCEL_TOKEN       token from https://vercel.com/account/tokens
+#   VERCEL_ORG_ID      "orgId" in the local .vercel/project.json
+#   VERCEL_PROJECT_ID  "projectId" in the local .vercel/project.json
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/app/**"
+      - "backend/requirements.txt"
+      - "api/**"
+      - "vercel.json"
+      - ".vercelignore"
+      - ".github/workflows/cd-vercel.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check Vercel secrets are configured
+        run: |
+          missing=0
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret $name is not set (see the header of .github/workflows/cd-vercel.yml)"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59
+
+      - name: Deploy to production
+        id: deploy
+        run: |
+          url=$(vercel deploy --prod --yes --token "$VERCEL_TOKEN")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        run: echo "Deployed to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

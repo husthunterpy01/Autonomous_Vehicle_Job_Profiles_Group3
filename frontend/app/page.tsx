@@ -1,5 +1,6 @@
 import Link from "next/link";
 import CategoryGridPanel from "@/components/CategoryGridPanel";
+import TopPaidJobsPanel from "@/components/TopPaidJobsPanel";
 import TopSkillsPanel from "@/components/TopSkillsPanel";
 import {
   FeaturedJobsGrid,
@@ -143,6 +144,24 @@ function TopSkills() {
   );
 }
 
+function TopPaidJobs() {
+  return (
+    <section className="bg-section py-20">
+      <div className="mx-auto max-w-[1200px] px-6">
+        <SectionHeader
+          title="Top Paid"
+          highlight="Jobs"
+          subtitle="The highest-paying AV roles right now, ranked across currencies and pay periods."
+          linkHref="/search"
+          linkLabel="View all jobs"
+        />
+
+        <TopPaidJobsPanel />
+      </div>
+    </section>
+  );
+}
+
 function LatestJobs() {
   return (
     <section className="bg-section py-20">
@@ -238,6 +257,7 @@ export default function HomePage() {
       <Hero />
       <JobCategories />
       <TopSkills />
+      <TopPaidJobs />
       <LatestJobs />
       <FeaturedJobs />
       <TopCompanies />
