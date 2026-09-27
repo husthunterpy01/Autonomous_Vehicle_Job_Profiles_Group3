@@ -13,7 +13,7 @@ def test_sync_dumps_the_gold_schema_and_replaces_it_in_one_transaction(mock_run)
     sync_gold("host=warehouse", "postgresql://gold-db")
 
     dump, restore = (call.args[0] for call in mock_run.call_args_list)
-    assert dump[:4] == ["pg_dump", "host=warehouse", "--schema", "gold"]
+    assert dump[:5] == ["pg_dump", "-d", "host=warehouse", "--schema", "gold"]
     assert restore[:3] == ["pg_restore", "-d", "postgresql://gold-db"]
     assert {"--clean", "--if-exists", "--single-transaction"} <= set(restore)
     assert dump[-1] == restore[-1]

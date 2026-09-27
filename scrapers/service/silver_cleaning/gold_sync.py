@@ -28,7 +28,9 @@ def sync_gold(source_dsn: str, target_dsn: str) -> None:
         # (including CREATE SCHEMA) is safe, unlike the backend mirror,
         # which shares Supabase's public schema with other tables.
         subprocess.run(
-            ["pg_dump", source_dsn, "--schema", SCHEMA, "--no-owner", "--no-privileges", "-Fc", "-f", str(dump_path)],
+            # -d rather than a positional database: Windows builds of
+            # pg_dump stop reading options at the first positional argument.
+            ["pg_dump", "-d", source_dsn, "--schema", SCHEMA, "--no-owner", "--no-privileges", "-Fc", "-f", str(dump_path)],
             check=True, capture_output=True, text=True,
         )
         # --single-transaction: a failed restore leaves the previous copy
