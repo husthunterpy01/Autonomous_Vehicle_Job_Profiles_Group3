@@ -49,14 +49,126 @@ _ADDITIONAL_KEYWORDS = (
     "machine learning",
     "deep learning",
     "neural network",
+    # Specific languages, frameworks/libraries/simulators/standards named in
+    # AV postings' requirements. Bare "ROS" is a plain term here; extract()
+    # drops it when the more specific "ROS 1"/"ROS 2" also matched. Short
+    # single-letter language names ("C", "Go", "R") stay out - they would
+    # false-match ordinary text ("Go" is matched only as "Golang", and
+    # "Swift" is left out because it is also a common adjective).
+    "Python",
+    "C++",
+    "MATLAB",
+    "Java",
+    "Rust",
+    "Golang",
+    "C#",
+    "Kotlin",
+    "Scala",
+    "Lua",
+    "JavaScript",
+    "TypeScript",
+    "SQL",
+    "Bash",
+    "Verilog",
+    "SystemVerilog",
+    "VHDL",
+    "Objective-C",
+    "ROS",
+    "PyTorch",
+    "TensorFlow",
+    "ONNX",
+    "OpenCV",
+    "PCL",
+    "Point Cloud Library",
+    "CUDA",
+    "cuDNN",
+    "Autoware",
+    "AUTOSAR",
+    "ROS 1",
+    "ROS1",
+    "CARLA",
+    "LGSVL",
+    "OpenDRIVE",
+    "OpenSCENARIO",
+    "Isaac Sim",
+    "GTSAM",
+    "g2o",
+    "Ceres Solver",
+    # Tooling, OS and hardware platforms.
+    "Linux",
+    "Git",
+    "Bazel",
+    "CMake",
+    "Simulink",
+    "QNX",
+    "Jetson",
+    "CANoe",
+    "dSPACE",
+    # AV terminology not covered by the category keyword lines.
+    "ADAS",
+    "V2X",
+    "GNSS",
+    "IMU",
+    "RTK",
+    "Kalman filter",
+    "particle filter",
+    "visual odometry",
+    "visual SLAM",
+    "lane detection",
+    "behavior planning",
+    "trajectory optimization",
+    "Hybrid A*",
+    "BEV",
+    "bird's-eye view",
+    "bird's eye view",
+    "bird\u2019s-eye view",
+    "bird\u2019s eye view",
+    "occupancy network",
+    "end-to-end driving",
+    "world model",
+    "operational design domain",
+    "hardware-in-the-loop",
+    "software-in-the-loop",
+    "ASIL",
+    "UL 4600",
+    "ISO 21448",
 )
+
+# Spelling variants of the additional terms above that should collapse to one
+# display name (the categories_definition.txt SKILL NORMALIZATION section only
+# covers the terms it already lists).
+_ADDITIONAL_NORMALIZATION = {
+    "golang": "Go",
+    "ros1": "ROS 1",
+    "point cloud library": "PCL",
+    "bird's eye view": "BEV",
+    "bird's-eye view": "BEV",
+    "bird\u2019s eye view": "BEV",
+    "bird\u2019s-eye view": "BEV",
+}
 
 # Most terms are domain concepts (sensor names, algorithm names, ROS/Apollo
 # node names); this only needs to flag the minority that are actually a
 # specific language/framework/tool name.
-_PROGRAMMING_LANGUAGES = frozenset({"python", "c++", "matlab"})
-_FRAMEWORKS = frozenset({"ros 2", "ros2", "rclcpp", "autoware", "cyber rt", "lanelet2", "tensorrt"})
-_TOOLS = frozenset({"velodyne", "yolo", "yolox"})
+_PROGRAMMING_LANGUAGES = frozenset(
+    {
+        "python", "c++", "matlab", "java", "rust", "golang", "c#", "kotlin", "scala", "lua",
+        "javascript", "typescript", "sql", "bash", "verilog", "systemverilog", "vhdl", "objective-c",
+    }
+)
+_FRAMEWORKS = frozenset(
+    {
+        "ros", "ros 2", "ros2", "ros 1", "ros1", "rclcpp", "autoware", "cyber rt", "lanelet2", "tensorrt",
+        "pytorch", "tensorflow", "onnx", "opencv", "pcl", "point cloud library", "cuda", "cudnn",
+        "autosar", "carla", "lgsvl", "opendrive", "openscenario", "isaac sim", "gtsam", "g2o", "ceres solver",
+    }
+)
+_TOOLS = frozenset(
+    {
+        "velodyne", "yolo", "yolox", "docker", "kubernetes", "linux", "git", "bazel", "cmake", "simulink",
+        "qnx", "jetson", "canoe", "dspace",
+    }
+)
 
 
 def _load_keywords() -> tuple[str, ...]:
@@ -86,7 +198,7 @@ def _load_normalization_map() -> dict[str, str]:
         canonical = canonical.strip()
         for term in raw_terms.split(","):
             mapping[term.strip().casefold()] = canonical
-    return mapping
+    return {**_ADDITIONAL_NORMALIZATION, **mapping}
 
 
 def _skill_type_for(term: str) -> str:
@@ -136,4 +248,8 @@ class KeywordSkillExtractor:
                 continue
             seen.add(key)
             skills.append(ExtractedSkill(name=display_name, skill_type=_skill_type_for(term)))
+        # Bare "ROS" also matches inside "ROS 2"/"ROS 1"; keep only the more
+        # specific version when a posting names one.
+        if "ros 1" in seen or "ros 2" in seen:
+            skills = [skill for skill in skills if skill.name != "ROS"]
         return tuple(skills)

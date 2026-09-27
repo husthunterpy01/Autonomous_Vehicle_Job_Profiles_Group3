@@ -36,15 +36,50 @@ def test_returns_none_for_single_value_up_to_amount():
     assert extract_salary_from_text(text) is None
 
 
-def test_returns_none_when_range_has_no_period_indicator():
-    # Real text from a live NVIDIA/Workday posting fetched this session -
-    # states a currency-coded range but never says "per year" anywhere near
-    # it, so the extractor correctly declines rather than assuming annual.
+def test_infers_yearly_when_a_large_range_states_no_period_at_all():
+    # Real text from a live NVIDIA/Workday posting - states a currency-coded
+    # range but never says "per year" anywhere near it. No real hourly,
+    # daily, or weekly rate reaches five figures, so a five-figure-or-larger
+    # unstated-period range can only be annual.
     text = (
         "Your base salary will be determined based on your location, experience, and the "
         "pay of employees in similar positions. The base salary range is 116,000 USD - "
         "178,250 USD for Level 3, and 140,000 USD - 224,250 USD for Level 4."
     )
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=116000.0, max=178250.0, currency="USD", period="yearly"
+    )
+
+
+def test_does_not_infer_yearly_for_a_small_unstated_period_range():
+    # Below the floor, the numbers are too ambiguous to guess a period for
+    # (could be a headcount, an ID range, a small one-off payment, ...).
+    assert extract_salary_from_text("We have 5,000 - 6,000 $ widgets in stock.") is None
+
+
+def test_an_explicit_period_still_wins_over_yearly_inference():
+    text = "$5,000 - $10,000 per month for this contract role."
+    assert extract_salary_from_text(text) == SalaryEstimate(min=5000.0, max=10000.0, currency="USD", period="monthly")
+
+
+def test_wayve_style_range_plus_equity_package_with_no_period_still_extracts():
+    text = "The reasonably estimated salary for this role ranges from $311,850–$370,000, plus a competitive equity package."
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=311850.0, max=370000.0, currency="USD", period="yearly"
+    )
+
+
+def test_in_addition_to_bonus_is_treated_as_extra_pay_not_a_label_on_the_range():
+    # Real text from a live XPENG posting - "in addition to bonus" is the
+    # same shape as "+ Annual Bonus" (#135) but doesn't contain "+"/"plus".
+    text = "The salary range for this role is $174,720 - $295,680, in addition to bonus, equity and benefits."
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=174720.0, max=295680.0, currency="USD", period="yearly"
+    )
+
+
+def test_a_range_actually_labeled_as_a_bonus_before_in_addition_to_is_still_skipped():
+    text = "Sign-on bonus of $5,000 - $10,000, in addition to your base salary."
     assert extract_salary_from_text(text) is None
 
 
@@ -164,3 +199,92 @@ def test_full_european_decimal_comma_format_is_not_collapsed():
     # silently collapsing it to 50.0 instead of 50000.0.
     text = "Gross annual salary range €50.000,00 - €60.000,00 per year."
     assert extract_salary_from_text(text) == SalaryEstimate(50000.0, 60000.0, "EUR", "yearly")
+
+
+def test_accepts_a_duplicated_single_value_as_the_range():
+    # Real Waymo intern posting: the ATS states one hourly rate as a
+    # "range" with the same number on both ends rather than a real min/max
+    # pair. Equal isn't garbage - only an inverted pair (max below min) is.
+    text = "Hourly PhD Pay $85 — $85 USD"
+    assert extract_salary_from_text(text) == SalaryEstimate(85.0, 85.0, "USD", "hourly")
+
+
+def test_still_rejects_an_inverted_range():
+    text = "Compensation $200,000 - $100,000 per year."
+    assert extract_salary_from_text(text) is None
+
+
+def test_repairs_a_number_split_by_stripped_inline_tags():
+    # Real GM posting: individual digits/groups were each wrapped in an
+    # inline tag for styling, and normalize_text's tag-stripping turns each
+    # one into a stray space - "125,000" scraped as "1 25 , 00 0".
+    text = "The salary range for this role is $1 25 , 00 0 to $1 65 , 0 00."
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=125000.0, max=165000.0, currency="USD", period="yearly"
+    )
+
+
+def test_prefers_an_explicit_trailing_currency_code_over_the_dollar_sign():
+    # Real Waymo Taiwan posting shape: "$" is used generically but the
+    # trailing code says what it actually means - TWD, not USD.
+    text = "Salary Range $2,600,000 — $3,150,000 TWD annually"
+    assert extract_salary_from_text(text) == SalaryEstimate(2600000.0, 3150000.0, "TWD", "yearly")
+
+
+def test_does_not_infer_yearly_for_a_twd_range_with_no_stated_period():
+    # Same shape as above but with no period word - previously misread as
+    # ~USD 2.6M-3.15M/year (about 6x too high); now correctly left
+    # unresolved rather than guessed, since TWD isn't a currency this
+    # module trusts itself to guess a period for.
+    text = "Salary Range $2,600,000 — $3,150,000 TWD"
+    assert extract_salary_from_text(text) is None
+
+
+def test_recognizes_additional_currency_codes():
+    for code in ("TWD", "KRW", "SGD", "HKD"):
+        text = f"Compensation: {code} 50,000 - {code} 60,000 per month."
+        result = extract_salary_from_text(text)
+        assert result is not None and result.currency == code
+
+
+def test_does_not_swallow_a_following_unrelated_number_past_a_spaced_group():
+    # A real digit-spacing artifact (see test_repairs_a_number_split_by_
+    # stripped_inline_tags) and an unrelated trailing number must not be
+    # confused for each other - only an actual "," or "." can extend a
+    # matched number, never a bare space.
+    text = "The base salary range is $150,000 - $200,000 for a 12 month contract."
+    assert extract_salary_from_text(text) == SalaryEstimate(150000.0, 200000.0, "USD", "yearly")
+
+
+def test_does_not_swallow_a_following_unrelated_number_gbp():
+    text = "Base pay: £45,000 - £55,000, plus 30 days holiday."
+    result = extract_salary_from_text(text)
+    assert result is not None
+    assert result.min == 45000.0
+    assert result.max == 55000.0
+
+
+def test_does_not_infer_yearly_without_a_nearby_salary_context_word():
+    # Real risk: a non-salary dollar range in the same unstated-period,
+    # above-floor shape as a real salary range.
+    text = "Budget of USD 10,000 - 50,000 for conference travel."
+    assert extract_salary_from_text(text) is None
+
+
+def test_rejects_a_source_typo_with_an_extra_digit():
+    # Real 42dot posting: an extra trailing zero on the max value.
+    text = "Compensation $133,000 - $254,0000 per year."
+    assert extract_salary_from_text(text) is None
+
+
+def test_rejects_a_source_typo_with_a_missing_digit():
+    # Real GM posting: a missing digit on the min value.
+    text = "The salary range is $185,00 and $284,100 per year."
+    assert extract_salary_from_text(text) is None
+
+
+def test_wide_but_plausible_range_is_still_accepted():
+    # A wide multi-level band should still pass the ratio guard - only a
+    # >10x spread is treated as a likely typo.
+    text = "The base salary range is $30,000 - $280,000 per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(30000.0, 280000.0, "USD", "yearly")
