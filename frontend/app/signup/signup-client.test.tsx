@@ -100,6 +100,22 @@ describe("sign-up form validation", () => {
     expect(signUpMock).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["a username shorter than 3 characters", "ab"],
+    ["a username longer than 50 characters", "a".repeat(51)],
+    ["a username containing spaces", "avery chen"],
+    ["a username containing unsupported special characters", "avery@chen"],
+  ])("rejects %s", (_description, username) => {
+    submitForm({ Username: username });
+
+    expectFieldError(
+      "Username",
+      "Username must be 3–50 characters and use only letters, numbers, underscores, periods, or hyphens.",
+      "signup-username-error",
+    );
+    expect(signUpMock).not.toHaveBeenCalled();
+  });
+
   it("rejects a password shorter than the existing 12 character minimum", () => {
     submitForm({ Password: "Shortpass1!", "Confirm Password": "Shortpass1!" });
 
@@ -164,18 +180,34 @@ describe("sign-up form validation", () => {
     expect(signUpMock).not.toHaveBeenCalled();
   });
 
-  it("calls the registration boundary for a valid form", async () => {
+  it("calls the registration boundary with a lowercase username", async () => {
     signUpMock.mockResolvedValueOnce({});
-    submitForm();
+    submitForm({ Username: "Alex.Driver" });
 
     await waitFor(() => {
       expect(signUpMock).toHaveBeenCalledWith({
         full_name: "Avery Chen",
-        username: "avery.chen",
+        username: "alex.driver",
         email: "avery@example.com",
         password: "SecurePassword!123",
       });
       expect(pushMock).toHaveBeenCalledWith("/");
+    });
+  });
+
+  it.each([
+    ["letters and numbers", "Avery123"],
+    ["underscores, periods, and hyphens", "avery_chen.test-user"],
+    ["exactly 3 characters", "abc"],
+    ["exactly 50 characters", "a".repeat(50)],
+  ])("accepts a valid username with %s", async (_description, username) => {
+    signUpMock.mockResolvedValueOnce({});
+    submitForm({ Username: username });
+
+    await waitFor(() => {
+      expect(signUpMock).toHaveBeenCalledWith(
+        expect.objectContaining({ username: username.toLowerCase() }),
+      );
     });
   });
 });

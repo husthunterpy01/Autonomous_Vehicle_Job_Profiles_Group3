@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from pathlib import Path
 from time import monotonic
@@ -60,9 +61,18 @@ class Database:
             engine_kwargs = {
                 "pool_pre_ping": False,
                 "pool_recycle": 300,
-                "pool_size": 5,
-                "max_overflow": 5,
                 "pool_use_lifo": True,
+                # Many short-lived Lambda instances can each hold their own
+                # pool concurrently, unlike one long-lived Docker container -
+                # a size-5 pool per instance multiplies into far more
+                # connections than Supabase's limit allows under load. A
+                # warm instance still reuses this one connection across
+                # invocations; it just can't open several in parallel.
+                **(
+                    {"pool_size": 1, "max_overflow": 0}
+                    if os.getenv("VERCEL") is not None
+                    else {"pool_size": 5, "max_overflow": 5}
+                ),
             }
         self.engine = create_engine(url, **engine_kwargs)
 

@@ -1,10 +1,10 @@
 You are designing a two-level taxonomy for autonomous-vehicle software engineering job categories.
 
-Below are 9 fixed sub-categories (do not rename, merge, split, add, or remove any of them). Group them into 3-4 higher-level "main_type" buckets that reflect coherent stages or domains of the AV software stack. Every sub-category must be assigned to exactly one main_type. Choose main_type names that are short, domain-accurate, and mutually distinct.
+Below are 10 fixed sub-categories (do not rename, merge, split, add, or remove any of them). Group them into 3-5 higher-level "main_type" buckets that reflect coherent stages or domains of the AV software stack. Every sub-category must be assigned to exactly one main_type. Choose main_type names that are short, domain-accurate, and mutually distinct.
 
 {{categories_definition}}
 
 Return strict JSON only, no prose, no code fence, in this exact shape:
-{"categories": [{"sub_type": "<one of the 9 category names above, verbatim>", "main_type": "<your proposed grouping name>"}, ...]}
+{"categories": [{"sub_type": "<one of the 10 category names above, verbatim>", "main_type": "<your proposed grouping name>"}, ...]}
 
-The "categories" array must contain exactly 9 entries, one per sub-category listed above.
+The "categories" array must contain exactly 10 entries, one per sub-category listed above.

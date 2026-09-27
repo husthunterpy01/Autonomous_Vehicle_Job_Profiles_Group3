@@ -71,10 +71,20 @@ class JobEnricherMain:
             # job_classifier.py for why this can't share "failed_jobs.jsonl"
             # with the relevance stage even though they share output_dir.
             "failed": output_dir / "enrichment_failed_jobs.jsonl",
+            # Jobs the enricher explicitly found no category for. There is
+            # no fallback category by design: a role that fits none of the
+            # taxonomy is treated as not AV engineering and kept out of
+            # av_jobs.jsonl (its own file, not non_av_jobs.jsonl, so the
+            # relevance stage's resume logic never sees these ids).
+            "no_category": output_dir / "no_category_jobs.jsonl",
             "metrics": output_dir / "enrichment_metrics.json",
         }
 
-        processed_ids = _load_processed_ids(paths["av"]) | _load_processed_ids(paths["failed"])
+        processed_ids = (
+            _load_processed_ids(paths["av"])
+            | _load_processed_ids(paths["failed"])
+            | _load_processed_ids(paths["no_category"])
+        )
         if processed_ids:
             logger.info("Resuming: %d jobs already enriched, skipping them.", len(processed_ids))
 
@@ -86,6 +96,7 @@ class JobEnricherMain:
         counts = {
             "av": _count_lines(paths["av"]),
             "failed": _count_lines(paths["failed"]),
+            "no_category": _count_lines(paths["no_category"]),
             # Only cover this run's own work (not re-derived from prior runs'
             # output on resume) - see the metrics docstring note below.
             "keyword_resolved": 0,
@@ -115,7 +126,7 @@ class JobEnricherMain:
 
         with paths["av"].open("a", encoding="utf-8") as av_file, paths["failed"].open(
             "a", encoding="utf-8"
-        ) as failed_file:
+        ) as failed_file, paths["no_category"].open("a", encoding="utf-8") as no_category_file:
             category_counts = cls._run_enrichment_stage(
                 enricher,
                 keyword_classifier,
@@ -128,6 +139,7 @@ class JobEnricherMain:
                 args,
                 av_file,
                 failed_file,
+                no_category_file,
                 paths,
                 total,
                 skipped_count,
@@ -152,6 +164,7 @@ class JobEnricherMain:
         args,
         av_file,
         failed_file,
+        no_category_file,
         paths,
         total,
         skipped_count,
@@ -170,7 +183,7 @@ class JobEnricherMain:
                 _resolve(posting, aliases, "description"),
                 args.max_description_chars,
             )
-            categories = keyword_classifier.classify(f"{title} {description}")
+            categories = keyword_classifier.classify(f"{title} {description}", title=title)
             if not categories:
                 needs_llm.append((rep_id, posting))
                 continue
@@ -178,7 +191,7 @@ class JobEnricherMain:
             enrichment = JobEnrichment(categories=categories, skills=skills)
             cls._write_enrichment_result(
                 rep_id, enrichment, "keyword_resolved", dedup_map, postings_by_id, decisions_by_id,
-                av_file, failed_file, counts, category_counts,
+                av_file, failed_file, no_category_file, counts, category_counts,
             )
 
         if needs_llm:
@@ -208,7 +221,7 @@ class JobEnricherMain:
             for rep_id, _rep_posting in batch:
                 cls._write_enrichment_result(
                     rep_id, results.get(rep_id), "llm_enriched", dedup_map, postings_by_id, decisions_by_id,
-                    av_file, failed_file, counts, category_counts,
+                    av_file, failed_file, no_category_file, counts, category_counts,
                 )
 
             logger.info("enrichment batch %d/%d done", batch_index, len(batches))
@@ -217,7 +230,8 @@ class JobEnricherMain:
 
     @staticmethod
     def _write_enrichment_result(
-        rep_id, enrichment, source, dedup_map, postings_by_id, decisions_by_id, av_file, failed_file, counts, category_counts,
+        rep_id, enrichment, source, dedup_map, postings_by_id, decisions_by_id, av_file, failed_file, no_category_file,
+        counts, category_counts,
     ) -> None:
         """Fan a representative's enrichment result (or failure) out to every
         (company, title) duplicate it stands in for, tagging which of the
@@ -233,11 +247,31 @@ class JobEnricherMain:
                 )
                 counts["failed"] += 1
                 continue
+            if not enrichment.categories:
+                _write_line(
+                    no_category_file,
+                    {
+                        **posting,
+                        "_job_id": job_id,
+                        "_classification": {
+                            **relevance,
+                            "is_av_relevant": "False",
+                            "categories": [],
+                            "category_source": source,
+                            "_note": "No category in the taxonomy fits this role's responsibilities; "
+                            "treated as not AV engineering (no fallback category).",
+                        },
+                    },
+                )
+                counts["no_category"] += 1
+                continue
             merged = {
                 **relevance,
                 "categories": list(enrichment.categories),
                 "skills": [{"name": s.name, "skill_type": s.skill_type} for s in enrichment.skills],
                 "category_source": source,
+                "category_area": enrichment.area,
+                "category_evidence": enrichment.evidence,
             }
             _write_line(av_file, {**posting, "_job_id": job_id, "_classification": merged})
             counts["av"] += 1
@@ -259,6 +293,7 @@ class JobEnricherMain:
             "total": total,
             "av_count": counts["av"],
             "failed_count": counts["failed"],
+            "no_category_count": counts["no_category"],
             "skipped_already_processed": skipped_count,
             # This run's own split only - unlike av_count/failed_count, not
             # re-derived from prior runs' output on resume (would mean

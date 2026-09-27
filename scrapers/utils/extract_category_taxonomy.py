@@ -21,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
             "One-time LLM call that proposes main_type groupings for the fixed "
-            "9-category taxonomy. Review the output before committing it - this "
+            "10-category taxonomy. Review the output before committing it - this "
             "is a taxonomy design decision, applied to every job via a static "
             "mapping, not re-run per job."
         )

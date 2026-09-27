@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from app.models import Category
-from app.services.job_identity import resolve_job
+from app.services.job_identity import JobNotFoundError, resolve_job
 
 _MAIN_TYPES_PATH = Path(__file__).resolve().parent.parent / "config" / "category_main_types.yaml"
 
@@ -149,11 +149,23 @@ def import_categories(db, records):
     cache = _preload_categories(db, _collect_category_keys(records))
     seen = set()
     updated = 0
+    skipped_unmatched_clears = 0
     for index, row in enumerate(records):
         try:
             if not isinstance(row, dict):
                 raise TypeError("Each record must be an object")
-            job = resolve_job(db, row)
+            try:
+                job = resolve_job(db, row)
+            except JobNotFoundError:
+                # A clear-only row ("functional_area": []) exists to drop the
+                # old labels of a job the pipeline no longer accepts. Most of
+                # those jobs were never inserted, so "no such job" is the
+                # expected, harmless outcome for them - but it stays an error
+                # for any row that actually assigns categories.
+                if row.get("functional_area") == []:
+                    skipped_unmatched_clears += 1
+                    continue
+                raise
             if job.job_id in seen:
                 raise ValueError("Multiple handoff records target the same backend job")
             seen.add(job.job_id)
@@ -161,4 +173,7 @@ def import_categories(db, records):
             updated += int("functional_area" in row)
         except (TypeError, ValueError) as exc:
             raise ValueError(f"Row {index + 1}: {exc}") from exc
-    return {"read": len(records), "updated": updated}
+    result = {"read": len(records), "updated": updated}
+    if skipped_unmatched_clears:
+        result["skipped_unmatched_clears"] = skipped_unmatched_clears
+    return result

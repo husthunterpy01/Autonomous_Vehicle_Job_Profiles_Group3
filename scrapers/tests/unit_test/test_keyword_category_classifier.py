@@ -1,3 +1,4 @@
+import pytest
 from scrapers.service.llm.keyword_category_classifier import KeywordCategoryClassifier
 
 
@@ -56,3 +57,39 @@ def test_is_case_insensitive_and_word_bounded():
     # "SLAM" as a substring of an unrelated word must not false-match.
     no_match = classifier.classify("The islamabad office is expanding.")
     assert "Localization" not in no_match
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Brake CAE Virtual Integration Engineer/Senior Engineer",
+        "Vehicle Safety Operator",
+        "Operational Safety Manager",
+        "Field Safety Engineer, Japan",
+        "Product Designer, HMI",
+        "Sr. Machine Learning Engineer, Marketplace ML Platform",
+        "Senior Chassis Engineer, Steering Actuation",
+    ],
+)
+def test_title_with_a_non_av_marker_abstains_so_the_llm_applies_the_no_category_rules(title):
+    assert KeywordCategoryClassifier().classify(title, title=title) == ()
+
+
+def test_a_title_alone_never_resolves_to_infrastructure():
+    classifier = KeywordCategoryClassifier()
+
+    assert classifier.classify("DevOps Engineer - Infrastructure", title="DevOps Engineer - Infrastructure") == ()
+    assert classifier.classify("ML Platform Engineer", title="ML Platform Engineer") == ()
+
+
+def test_behavior_evaluation_is_not_a_keyword_because_two_different_roles_share_it():
+    title = "Senior Engineer, AV Behavior Evaluation"
+
+    assert KeywordCategoryClassifier().classify(title, title=title) == ()
+
+
+def test_specific_discipline_titles_still_resolve_without_an_llm_call():
+    classifier = KeywordCategoryClassifier()
+
+    assert classifier.classify("Object Detection Engineer", title="Object Detection Engineer") == ("Perception",)
+    assert classifier.classify("System Safety Engineer", title="System Safety Engineer") == ("System and Safety",)
