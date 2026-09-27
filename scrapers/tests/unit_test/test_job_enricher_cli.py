@@ -294,3 +294,69 @@ def test_job_with_no_fitting_category_is_dropped_not_given_a_fallback_category(t
     assert metrics["av_count"] == 1
     assert metrics["no_category_count"] == 1
     assert metrics["failed_count"] == 0
+
+
+def test_keyword_resolved_job_extracts_skills_from_the_full_description_not_just_the_compressed_one(tmp_path):
+    # Regex skill extraction has no per-job token cost, so it must not be
+    # bounded by the LLM's compress_job_text budget - a skill term placed
+    # past that cutoff must still be found.
+    filler = "We build autonomous driving technology for the future of mobility. " * 40
+    assert len(filler) > 1200
+    candidates = [
+        {
+            "deduplication_key": "j1",
+            "company_name": "Company A",
+            "job_title": "Object Detection Engineer",
+            "job_description": filler + "You will use Kubernetes to manage our deployment infrastructure.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _EchoEnricher)
+
+    record = json.loads((output_dir / "av_jobs.jsonl").read_text().splitlines()[0])
+    assert record["_classification"]["category_source"] == "keyword_resolved"
+    skill_names = [s["name"] for s in record["_classification"]["skills"]]
+    assert "Kubernetes" in skill_names
+
+
+def test_llm_enriched_job_gets_skills_from_regex_on_full_text_not_from_the_llm(tmp_path):
+    # _EchoEnricher always returns skills=() - any skill in the output here
+    # can only have come from the keyword extractor's own full-text pass.
+    filler = "We build autonomous driving technology for the future of mobility. " * 40
+    assert len(filler) > 1200
+    candidates = [
+        {
+            "deduplication_key": "j1",
+            "company_name": "Company A",
+            "job_title": "Vague Role",
+            "job_description": filler + "You will use Kubernetes to manage our deployment infrastructure.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _EchoEnricher)
+
+    record = json.loads((output_dir / "av_jobs.jsonl").read_text().splitlines()[0])
+    assert record["_classification"]["category_source"] == "llm_enriched"
+    skill_names = [s["name"] for s in record["_classification"]["skills"]]
+    assert "Kubernetes" in skill_names
+
+
+def test_a_dropped_no_category_job_is_not_given_skills(tmp_path):
+    candidates = [
+        {
+            "deduplication_key": "j1",
+            "company_name": "Company A",
+            "job_title": "Business Systems Engineer",
+            "job_description": "NetSuite and Workday integrations, uses Kubernetes for internal tooling.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _NoFitEnricher)
+
+    assert not (output_dir / "av_jobs.jsonl").read_text().strip()
+    dropped = json.loads((output_dir / "no_category_jobs.jsonl").read_text().splitlines()[0])
+    assert dropped["_classification"]["categories"] == []
+    assert "skills" not in dropped["_classification"]

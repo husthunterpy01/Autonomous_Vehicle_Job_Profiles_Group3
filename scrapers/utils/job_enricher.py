@@ -187,7 +187,7 @@ class JobEnricherMain:
             if not categories:
                 needs_llm.append((rep_id, posting))
                 continue
-            skills = keyword_skill_extractor.extract(f"{title} {description}")
+            skills = cls._extract_skills(keyword_skill_extractor, posting, aliases)
             enrichment = JobEnrichment(categories=categories, skills=skills)
             cls._write_enrichment_result(
                 rep_id, enrichment, "keyword_resolved", dedup_map, postings_by_id, decisions_by_id,
@@ -218,9 +218,31 @@ class JobEnricherMain:
                 jobs_by_id[job_id] = {"id": job_id, "title": title, "description": description}
             results = cls._enrich_with_retry(enricher, jobs_by_id, batch_index, len(batches))
 
-            for rep_id, _rep_posting in batch:
+            for rep_id, rep_posting in batch:
+                enrichment = results.get(rep_id)
+                # Skills always come from the deterministic keyword vocabulary
+                # against the job's full, untruncated text, never from the
+                # LLM: regex has no per-job token cost, so unlike the
+                # category decision it was never a reason to hand the LLM a
+                # compressed description in the first place, and a batch of
+                # llm_enriched jobs was silently returning empty skills most
+                # of the time simply because the compressed text sent for
+                # categorization had already cut off the Requirements
+                # section that lists them (see keyword_skill_extractor's own
+                # docstring on this being a deliberate precision/recall
+                # trade-off - full text only widens its recall, not its
+                # vocabulary). A no-category enrichment (empty categories,
+                # by design - see JobEnrichment.has_category) is left as-is;
+                # _write_enrichment_result routes it to no_category_file
+                # regardless of what skills it carries.
+                if enrichment is not None and enrichment.has_category:
+                    skills = cls._extract_skills(keyword_skill_extractor, rep_posting, aliases)
+                    enrichment = JobEnrichment(
+                        categories=enrichment.categories, skills=skills,
+                        area=enrichment.area, evidence=enrichment.evidence,
+                    )
                 cls._write_enrichment_result(
-                    rep_id, results.get(rep_id), "llm_enriched", dedup_map, postings_by_id, decisions_by_id,
+                    rep_id, enrichment, "llm_enriched", dedup_map, postings_by_id, decisions_by_id,
                     av_file, failed_file, no_category_file, counts, category_counts,
                 )
 
@@ -284,6 +306,16 @@ class JobEnricherMain:
         return _batch_call_with_retry(
             enricher.enrich_batch, jobs_by_id, batch_index, total_batches, label="enrichment"
         )
+
+    @staticmethod
+    def _extract_skills(keyword_skill_extractor, posting, aliases) -> tuple:
+        """Regex skill extraction against the job's full, untruncated
+        title/description - deliberately bypasses compress_job_text, which
+        exists only to fit the LLM's token budget and has no bearing on a
+        free, local regex pass."""
+        full_title = _resolve(posting, aliases, "title")
+        full_description = _resolve(posting, aliases, "description")
+        return keyword_skill_extractor.extract(f"{full_title} {full_description}")
 
     @staticmethod
     def _write_metrics(

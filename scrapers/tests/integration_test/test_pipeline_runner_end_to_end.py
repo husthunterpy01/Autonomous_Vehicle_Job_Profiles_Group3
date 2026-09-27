@@ -183,7 +183,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
                 "job_name": "AV Program Manager",
                 "job_description": (
                     "Coordinate roadmap execution across engineering teams building the "
-                    "autonomy product line, tracking milestones and dependencies."
+                    "autonomy product line on ROS 2, tracking milestones and dependencies."
                 ),
             },
         ],
@@ -259,7 +259,12 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     llm_enriched = av_jobs["dk-program-2"]["_classification"]
     assert llm_enriched["category_source"] == "llm_enriched"
     assert llm_enriched["categories"] == ["System and Safety"]
-    assert llm_enriched["skills"] == [{"name": "Program Management", "skill_type": "domain_concept"}]
+    # Skills come from the deterministic keyword extractor against the full
+    # description, not from _FakeEnricher's own (fabricated) skills output -
+    # "Program Management" was never a real vocabulary term, so asserting it
+    # here was only ever checking that the fake's output passed through
+    # unchanged, not that skill extraction actually worked.
+    assert llm_enriched["skills"] == [{"name": "ROS 2", "skill_type": "framework"}]
 
     enrichment_metrics = json.loads(
         (classification_output_dir / "enrichment_metrics.json").read_text(encoding="utf-8")
