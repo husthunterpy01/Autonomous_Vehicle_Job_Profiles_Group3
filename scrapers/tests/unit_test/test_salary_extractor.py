@@ -199,3 +199,26 @@ def test_full_european_decimal_comma_format_is_not_collapsed():
     # silently collapsing it to 50.0 instead of 50000.0.
     text = "Gross annual salary range €50.000,00 - €60.000,00 per year."
     assert extract_salary_from_text(text) == SalaryEstimate(50000.0, 60000.0, "EUR", "yearly")
+
+
+def test_accepts_a_duplicated_single_value_as_the_range():
+    # Real Waymo intern posting: the ATS states one hourly rate as a
+    # "range" with the same number on both ends rather than a real min/max
+    # pair. Equal isn't garbage - only an inverted pair (max below min) is.
+    text = "Hourly PhD Pay $85 — $85 USD"
+    assert extract_salary_from_text(text) == SalaryEstimate(85.0, 85.0, "USD", "hourly")
+
+
+def test_still_rejects_an_inverted_range():
+    text = "Compensation $200,000 - $100,000 per year."
+    assert extract_salary_from_text(text) is None
+
+
+def test_repairs_a_number_split_by_stripped_inline_tags():
+    # Real GM posting: individual digits/groups were each wrapped in an
+    # inline tag for styling, and normalize_text's tag-stripping turns each
+    # one into a stray space - "125,000" scraped as "1 25 , 00 0".
+    text = "The salary range for this role is $1 25 , 00 0 to $1 65 , 0 00."
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=125000.0, max=165000.0, currency="USD", period="yearly"
+    )

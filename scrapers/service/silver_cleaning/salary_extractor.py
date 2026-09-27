@@ -59,7 +59,16 @@ _ADDITION_RE = re.compile(r"\+|\bplus\b|\bin addition to\b", re.IGNORECASE)
 
 _SYMBOL_CLASS = "".join(re.escape(s) for s in _CURRENCY_SYMBOLS)
 # Trailing k/K is shorthand for thousands ("$150K"); _parse_number scales it.
-_NUMBER = r"[\d][\d,.]*[kK]?"
+# Interior whitespace is tolerated (and stripped by _parse_number): some
+# postings wrap individual digits in inline tags for kerning/styling, and
+# stripping tags (normalize_text) leaves an otherwise well-formed number
+# split apart, e.g. "125,000" scraped as "1 25 , 00 0" (real GM/Workday
+# example). Safe to allow here specifically because _NUMBER only ever
+# matches immediately next to a currency symbol/code (see _RANGE_RE) -
+# unrelated digits elsewhere in the text never reach this pattern, and any
+# run that doesn't end up followed by a real separator (-/to/and) still
+# fails to complete a match, same as before.
+_NUMBER = r"[\d][\d,.\s]*[kK]?"
 _CURRENCY_TOKEN = rf"[{_SYMBOL_CLASS}]|\b(?:{'|'.join(_CURRENCY_CODES)})\b"
 _RANGE_RE = re.compile(
     rf"""
@@ -148,6 +157,12 @@ def _parse_number(raw: str) -> float:
     instead of 50000.0.
     """
     raw = raw.strip()
+    # Strip stray interior whitespace before the grouping checks below - see
+    # _NUMBER's comment on why a matched number can legitimately contain it
+    # (digit-wrapping inline tags stripped down to bare spaces). None of the
+    # grouping patterns use whitespace on purpose, so any space inside a
+    # matched number is always this artifact, never a meaningful separator.
+    raw = re.sub(r"\s+", "", raw)
     thousands_shorthand = raw[-1:] in ("k", "K")
     if thousands_shorthand:
         raw = raw[:-1]
@@ -213,7 +228,11 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
             max_value = _parse_number(match.group("max"))
         except ValueError:
             continue
-        if min_value <= 0 or max_value <= min_value:
+        if min_value <= 0 or max_value < min_value:
+            # Equal min/max is a real shape, not garbage: some ATS postings
+            # state a single value as a duplicated "range" (real Waymo
+            # intern example, "Hourly PhD Pay $85 - $85 USD"). Only a
+            # genuinely inverted pair (max below min) signals a bad match.
             continue
         period = _closest_period(before, after)
         if period is None:
