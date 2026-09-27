@@ -152,6 +152,24 @@ ON CONFLICT (month_key, job_key, skill_key) DO UPDATE SET
 UPDATE gold.scrape_run SET completed = true WHERE run_id = :run_id;
 ```
 
+Implemented as `python -m app.load_gold` (from `backend/`, logic in
+`app/services/gold_loader.py`):
+
+```bash
+python -m app.load_gold av_jobs.jsonl --scraped-at 2026-08-31T14:17:29Z \
+    --source backfill --classifier-version <version>
+```
+
+- `--scraped-at` is when the run scraped, not when the pipeline processed it
+  (`ingested_at` in `av_jobs.jsonl` is the processing time).
+- `--incomplete` registers a failed or partial run without writing facts.
+- Skills are normalized with the backend's `skill` rules; `main_type` comes from
+  the job's categories through `config/category_main_types.yaml` (null when the
+  run has no categories). Rows with `is_av_relevant` false are skipped, and a
+  malformed row rejects the whole run.
+- Each table is written with one set-based statement, so a run of ~1.3k jobs
+  loads in one round trip per table.
+
 - **Only completed runs write facts.** A failed or partial run (e.g. some sources
   didn't scrape) is registered with `completed = false` and nothing else, so it
   can't become a month's snapshot or move `last_seen_at`.
@@ -241,6 +259,11 @@ Checked on local PostgreSQL 16, with the loader above:
   the test, August counts only the 20 Aug run: jobs seen only on 5 Aug and a
   partial run on 28 Aug are excluded.
 - The view returns the expected counts, shares, unique ranks and display names.
+- `load_gold` on the two backfilled runs (31 Aug: 1,270 jobs, 4,547 facts;
+  12 Sep: 1,229 jobs, 5,326 facts): 1,769 distinct jobs, 128 skills; reloading
+  a run returns `already_loaded`. `tests/integration_test/test_gold_loader_postgres.py`
+  covers the snapshot, idempotency, partial runs, out-of-order loads and the UTC
+  month (opt-in: `DOC13_TEST_POSTGRES=1`, `DOC13_TEST_DATABASE_URL`).
 - Constraints reject a fact outside its month, a fact with an unknown job
   (foreign key), a month whose key and parts disagree, a malformed
   `deduplication_key` and an unknown run source.
@@ -259,9 +282,8 @@ Checked on local PostgreSQL 16, with the loader above:
 
 1. **Month boundary.** UTC or Australia/Perth? UTC is simpler, and only runs near
    midnight on the last day of a month are affected.
-2. **`load_gold` input.** `handoff.json` only has `deduplication_key`, categories,
-   skills and salary. Read `av_jobs.jsonl` directly, or add `job_name` to the
-   handoff?
+2. ~~`load_gold` input.~~ Resolved: `load_gold` reads the run's `av_jobs.jsonl`
+   directly, since `handoff.json` has no `job_name`.
 
 ### Follow-ups (not in DOC-13)
 
