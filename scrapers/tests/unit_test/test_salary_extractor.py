@@ -36,15 +36,50 @@ def test_returns_none_for_single_value_up_to_amount():
     assert extract_salary_from_text(text) is None
 
 
-def test_returns_none_when_range_has_no_period_indicator():
-    # Real text from a live NVIDIA/Workday posting fetched this session -
-    # states a currency-coded range but never says "per year" anywhere near
-    # it, so the extractor correctly declines rather than assuming annual.
+def test_infers_yearly_when_a_large_range_states_no_period_at_all():
+    # Real text from a live NVIDIA/Workday posting - states a currency-coded
+    # range but never says "per year" anywhere near it. No real hourly,
+    # daily, or weekly rate reaches five figures, so a five-figure-or-larger
+    # unstated-period range can only be annual.
     text = (
         "Your base salary will be determined based on your location, experience, and the "
         "pay of employees in similar positions. The base salary range is 116,000 USD - "
         "178,250 USD for Level 3, and 140,000 USD - 224,250 USD for Level 4."
     )
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=116000.0, max=178250.0, currency="USD", period="yearly"
+    )
+
+
+def test_does_not_infer_yearly_for_a_small_unstated_period_range():
+    # Below the floor, the numbers are too ambiguous to guess a period for
+    # (could be a headcount, an ID range, a small one-off payment, ...).
+    assert extract_salary_from_text("We have 5,000 - 6,000 $ widgets in stock.") is None
+
+
+def test_an_explicit_period_still_wins_over_yearly_inference():
+    text = "$5,000 - $10,000 per month for this contract role."
+    assert extract_salary_from_text(text) == SalaryEstimate(min=5000.0, max=10000.0, currency="USD", period="monthly")
+
+
+def test_wayve_style_range_plus_equity_package_with_no_period_still_extracts():
+    text = "The reasonably estimated salary for this role ranges from $311,850–$370,000, plus a competitive equity package."
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=311850.0, max=370000.0, currency="USD", period="yearly"
+    )
+
+
+def test_in_addition_to_bonus_is_treated_as_extra_pay_not_a_label_on_the_range():
+    # Real text from a live XPENG posting - "in addition to bonus" is the
+    # same shape as "+ Annual Bonus" (#135) but doesn't contain "+"/"plus".
+    text = "The salary range for this role is $174,720 - $295,680, in addition to bonus, equity and benefits."
+    assert extract_salary_from_text(text) == SalaryEstimate(
+        min=174720.0, max=295680.0, currency="USD", period="yearly"
+    )
+
+
+def test_a_range_actually_labeled_as_a_bonus_before_in_addition_to_is_still_skipped():
+    text = "Sign-on bonus of $5,000 - $10,000, in addition to your base salary."
     assert extract_salary_from_text(text) is None
 
 

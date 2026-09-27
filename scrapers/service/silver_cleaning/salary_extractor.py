@@ -49,11 +49,13 @@ _NON_BASE_SALARY_RE = re.compile(
     r"\bbonus(es)?\b|\bsign(?:ing)?[- ]on\b|\brelocation\b|\bstipend\b|\breferral\b",
     re.IGNORECASE,
 )
-# After a range, "+"/"plus" starts a list of extras paid on top of it
-# ("$32.00 - $37.00/hr + Annual Bonus + Long Term Incentive", Stack AV):
-# a bonus named there is additional pay, not a label on the range itself,
-# so only the text before it is checked for a non-base-salary label.
-_ADDITION_RE = re.compile(r"\+|\bplus\b", re.IGNORECASE)
+# After a range, "+"/"plus"/"in addition to" starts a list of extras paid
+# on top of it ("$32.00 - $37.00/hr + Annual Bonus + Long Term Incentive",
+# Stack AV; "$174,720 - $295,680, in addition to bonus, equity and
+# benefits.", XPENG): a bonus named there is additional pay, not a label on
+# the range itself, so only the text before it is checked for a
+# non-base-salary label.
+_ADDITION_RE = re.compile(r"\+|\bplus\b|\bin addition to\b", re.IGNORECASE)
 
 _SYMBOL_CLASS = "".join(re.escape(s) for s in _CURRENCY_SYMBOLS)
 # Trailing k/K is shorthand for thousands ("$150K"); _parse_number scales it.
@@ -78,6 +80,16 @@ _RANGE_RE = re.compile(
 # while a trailing period ("... per year.") is always short.
 _BEFORE_WINDOW = 80
 _AFTER_WINDOW = 25
+
+# A range with no stated period at all ("...ranges from $311,850–$370,000,
+# plus a competitive equity package.", real example, Wayve/XPENG) is common
+# in practice and, above this floor, unambiguous: no real hourly, daily, or
+# weekly rate reaches five figures, so a range whose low end already clears
+# it can only be an annual figure. Set comfortably below every genuine
+# unstated-period range observed (all >= $145,600) and comfortably above
+# any plausible hourly/daily/weekly one, so this never overrides an actual
+# stated period - _closest_period is still tried first.
+_UNSTATED_PERIOD_YEARLY_FLOOR = 10_000
 
 
 @dataclass(frozen=True)
@@ -165,11 +177,13 @@ def _current_clause(text: str) -> str:
 def extract_salary_from_text(description: str) -> SalaryEstimate | None:
     """Best-effort regex extraction of a base-salary range from free text.
 
-    Returns the first match with both a resolvable currency and period -
-    without either, the number pair is too ambiguous to trust (could be a
-    date range, a headcount, an ID range, ...). The period is looked for in
-    text on *both* sides of the number range ("per year" typically follows
-    it, "gross annual salary ... range X-Y" typically precedes it).
+    Returns the first match with a resolvable currency and a period - stated
+    or, above _UNSTATED_PERIOD_YEARLY_FLOOR, inferred as yearly. Without a
+    currency, or a small unstated-period number pair, it's too ambiguous to
+    trust (could be a date range, a headcount, an ID range, ...). The period
+    is looked for in text on *both* sides of the number range ("per year"
+    typically follows it, "gross annual salary ... range X-Y" typically
+    precedes it).
 
     Normalizes the input first (strips tags, collapses HTML entities like
     "&#xa0;" down to a single space) - raw scraped descriptions can carry
@@ -194,9 +208,6 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
             _trailing_label(after)
         ):
             continue
-        period = _closest_period(before, after)
-        if period is None:
-            continue
         try:
             min_value = _parse_number(match.group("min"))
             max_value = _parse_number(match.group("max"))
@@ -204,5 +215,14 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
             continue
         if min_value <= 0 or max_value <= min_value:
             continue
+        period = _closest_period(before, after)
+        if period is None:
+            # No period word at all is common for a senior-level range
+            # ("...$311,850–$370,000, plus a competitive equity package.")
+            # - see _UNSTATED_PERIOD_YEARLY_FLOOR for why five-or-more-figure
+            # numbers can only mean an annual range even unstated.
+            if min_value < _UNSTATED_PERIOD_YEARLY_FLOOR:
+                continue
+            period = "yearly"
         return SalaryEstimate(min=min_value, max=max_value, currency=currency, period=period)
     return None
