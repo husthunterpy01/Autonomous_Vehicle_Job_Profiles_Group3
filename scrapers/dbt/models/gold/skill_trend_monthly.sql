@@ -4,10 +4,9 @@
 -- the jobs in its latest completed run. A fact belongs to that snapshot
 -- exactly when its last_seen_at equals the run's scraped_at.
 with month_snapshot as (
-    select {{ utc_month_key("scraped_at") }} as month_key, max(scraped_at) as snapshot_at
-    from {{ source("silver", "classification_run") }}
-    where completed
-    group by 1
+    select month_key, max(scraped_at) as snapshot_at
+    from {{ ref("scrape_run") }}
+    group by month_key
 ),
 
 snapshot_facts as (

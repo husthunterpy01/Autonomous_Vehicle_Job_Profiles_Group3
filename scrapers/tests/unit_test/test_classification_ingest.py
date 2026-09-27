@@ -163,8 +163,9 @@ def test_build_gold_runs_the_gold_dbt_models():
     dbt_config.run.assert_called_once_with("tag:gold", postgres_config)
 
 
+@patch("scrapers.service.silver_cleaning.classification_ingest.sync_gold_if_configured", return_value=0)
 @patch("scrapers.service.silver_cleaning.classification_ingest.ClassificationIngest")
-def test_main_ingests_then_builds_gold(mock_ingest, tmp_path):
+def test_main_ingests_then_builds_and_syncs_gold(mock_ingest, mock_sync, tmp_path):
     path = tmp_path / "av_jobs.jsonl"
     path.write_text(json.dumps(job()) + "\n", encoding="utf-8")
     mock_ingest.return_value.ingest.return_value = {"status": "ingested"}
@@ -174,6 +175,19 @@ def test_main_ingests_then_builds_gold(mock_ingest, tmp_path):
     kwargs = mock_ingest.return_value.ingest.call_args.kwargs
     assert (kwargs["scraped_at"], kwargs["source"], kwargs["completed"]) == (SCRAPED_AT, "backfill", True)
     mock_ingest.return_value.build_gold.assert_called_once()
+    mock_sync.assert_called_once_with(mock_ingest.return_value.postgres_config)
+
+
+@patch("scrapers.service.silver_cleaning.classification_ingest.sync_gold_if_configured")
+@patch("scrapers.service.silver_cleaning.classification_ingest.ClassificationIngest")
+def test_main_does_not_sync_when_the_gold_build_fails(mock_ingest, mock_sync, tmp_path):
+    path = tmp_path / "av_jobs.jsonl"
+    path.write_text(json.dumps(job()) + "\n", encoding="utf-8")
+    mock_ingest.return_value.ingest.return_value = {"status": "ingested"}
+    mock_ingest.return_value.build_gold.return_value = 1
+
+    assert main([str(path), "--scraped-at", "2026-08-31T12:00:00Z"]) == 1
+    mock_sync.assert_not_called()
 
 
 @patch("scrapers.service.silver_cleaning.classification_ingest.ClassificationIngest")

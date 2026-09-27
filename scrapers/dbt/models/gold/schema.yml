@@ -3,6 +3,19 @@ version: 2
 # DOC-13 gold star schema: skill demand over time. Built only from the
 # primitive silver classification tables; see document/gold-trend-mart/README.md.
 models:
+  - name: scrape_run
+    description: Completed scrape runs (copied with gold, so the trend view needs no silver table).
+    columns:
+      - name: scraped_at
+        data_tests: [not_null, unique]
+      - name: month_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_key
+
   - name: dim_month
     description: Calendar months (UTC) that have at least one completed scrape run.
     columns:
@@ -121,12 +134,13 @@ unit_tests:
   - name: trend_counts_only_each_months_latest_completed_run
     model: skill_trend_monthly
     given:
-      - input: source("silver", "classification_run")
+      - input: ref("scrape_run")
         format: sql
         rows: |
-          select '2026-08-05T12:00:00Z'::timestamptz as scraped_at, true as completed
-          union all select '2026-08-31T12:00:00Z'::timestamptz, true
-          union all select '2026-09-12T12:00:00Z'::timestamptz, true
+          select '2026-08-05T12:00:00Z'::timestamptz as scraped_at, 202608 as month_key, 'backfill'::text as source,
+                 null::text as classifier_version, 2 as jobs_seen
+          union all select '2026-08-31T12:00:00Z'::timestamptz, 202608, 'backfill', null, 1
+          union all select '2026-09-12T12:00:00Z'::timestamptz, 202609, 'backfill', null, 1
       - input: ref("fact_job_skill_month")
         format: sql
         rows: |

@@ -4,7 +4,8 @@ Silver is the last layer that cleans data: this validates each row of the
 run's av_jobs.jsonl, normalizes skill names and resolves the job's
 main_type, then writes three primitive silver tables. The gold dbt models
 (models/gold, tag "gold") only reshape these into the star schema - no
-further sanitizing happens after silver.
+further sanitizing happens after silver - and gold_sync copies the result
+to the gold database when GOLD_DATABASE_URL is set.
 
     python -m scrapers.service.silver_cleaning.classification_ingest \
         data/job_classification/av_jobs.jsonl --scraped-at 2026-08-31T14:17:29Z
@@ -22,6 +23,7 @@ from psycopg2.extras import execute_values
 from scrapers.config.dbt import DbtConfig
 from scrapers.config.postgres import PostgresConfig
 from scrapers.service.llm.category_hierarchy import load_main_types
+from scrapers.service.silver_cleaning.gold_sync import sync_gold_if_configured
 
 logger = logging.getLogger(__name__)
 
@@ -244,7 +246,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--classifier-version", help="Classifier/prompt/vocabulary version that produced the skills")
     parser.add_argument("--incomplete", action="store_true", help="Register a failed or partial run without its jobs")
     parser.add_argument("--replace", action="store_true", help="Replace a run that was already ingested")
-    parser.add_argument("--skip-gold", action="store_true", help="Don't run the gold dbt models afterwards")
+    parser.add_argument("--skip-gold", action="store_true",
+                        help="Don't rebuild gold (dbt) or copy it to the gold database afterwards")
     args = parser.parse_args(argv)
 
     ingest = ClassificationIngest()
@@ -260,7 +263,11 @@ def main(argv: list[str] | None = None) -> int:
     if skipped:
         result["skipped_not_av"] = skipped
     logger.info("Silver classification: %s", json.dumps(result))
-    return 0 if args.skip_gold else ingest.build_gold()
+    if args.skip_gold:
+        return 0
+    if ingest.build_gold() != 0:
+        return 1
+    return sync_gold_if_configured(ingest.postgres_config)
 
 
 if __name__ == "__main__":
