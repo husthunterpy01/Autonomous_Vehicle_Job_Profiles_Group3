@@ -77,6 +77,13 @@ python -m scrapers.service.silver_cleaning.classification_ingest \
 
 It then runs `dbt run --select tag:gold` and `gold_sync` (`--skip-gold` skips both).
 
+In the pipeline (`python -m scrapers.utils.pipeline_runner`) this is stage 9, run
+after the enrichment. It keeps only the jobs in this run's Silver export, since
+`av_jobs.jsonl` can still hold jobs from earlier runs (the enricher resumes from
+its output directory), and takes `scraped_at` from the newest
+`bronze.raw_responses.fetched_at` unless `--scraped-at` is given. `--skip-gold`
+skips the stage.
+
 ### Gold: the star schema (dbt)
 
 The gold models **only reshape** silver, with no further cleaning. Every model

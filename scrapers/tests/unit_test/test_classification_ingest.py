@@ -9,6 +9,7 @@ from scrapers.service.silver_cleaning.classification_ingest import (
     main,
     parse_run,
     parse_scraped_at,
+    publish_pipeline_run,
     read_jsonl,
 )
 
@@ -197,3 +198,46 @@ def test_main_fails_without_building_gold_on_a_bad_file(mock_ingest, tmp_path):
 
     assert main([str(path), "--scraped-at", "2026-08-31T12:00:00Z", "--skip-gold"]) == 1
     mock_ingest.return_value.build_gold.assert_not_called()
+
+
+def _write_jsonl(path, rows):
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    return path
+
+
+@patch("scrapers.service.silver_cleaning.classification_ingest.publish", return_value=0)
+@patch("scrapers.service.silver_cleaning.classification_ingest.ClassificationIngest")
+def test_pipeline_run_keeps_only_this_scrapes_jobs(mock_ingest, mock_publish, tmp_path):
+    av_jobs = _write_jsonl(tmp_path / "av_jobs.jsonl", [job(KEY_A), job(KEY_B)])
+    silver_export = _write_jsonl(tmp_path / "silver_export.jsonl", [{"deduplication_key": KEY_A}])
+
+    assert publish_pipeline_run(av_jobs, silver_export, scraped_at=SCRAPED_AT) == 0
+
+    records = mock_publish.call_args.args[0]
+    assert [r["deduplication_key"] for r in records] == [KEY_A]
+    assert mock_publish.call_args.kwargs["scraped_at"] == SCRAPED_AT
+    assert mock_publish.call_args.kwargs["source"] == "live"
+    mock_ingest.return_value.latest_fetched_at.assert_not_called()
+
+
+@patch("scrapers.service.silver_cleaning.classification_ingest.publish", return_value=0)
+@patch("scrapers.service.silver_cleaning.classification_ingest.ClassificationIngest")
+def test_pipeline_run_defaults_to_the_newest_bronze_fetch(mock_ingest, mock_publish, tmp_path):
+    av_jobs = _write_jsonl(tmp_path / "av_jobs.jsonl", [job(KEY_A)])
+    silver_export = _write_jsonl(tmp_path / "silver_export.jsonl", [{"deduplication_key": KEY_A}])
+    mock_ingest.return_value.latest_fetched_at.return_value = SCRAPED_AT
+
+    assert publish_pipeline_run(av_jobs, silver_export) == 0
+    assert mock_publish.call_args.kwargs["scraped_at"] == SCRAPED_AT
+
+    mock_ingest.return_value.latest_fetched_at.return_value = None
+    assert publish_pipeline_run(av_jobs, silver_export) == 1
+    assert mock_publish.call_count == 1
+
+
+@patch("scrapers.service.silver_cleaning.classification_ingest.publish")
+@patch("scrapers.service.silver_cleaning.classification_ingest.ClassificationIngest")
+def test_pipeline_run_without_av_jobs_changes_nothing(mock_ingest, mock_publish, tmp_path):
+    assert publish_pipeline_run(tmp_path / "missing.jsonl", tmp_path / "silver_export.jsonl") == 0
+    mock_publish.assert_not_called()
+    mock_ingest.return_value.latest_fetched_at.assert_not_called()

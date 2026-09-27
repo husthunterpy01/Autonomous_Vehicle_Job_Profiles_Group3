@@ -235,6 +235,68 @@ class ClassificationIngest:
     def build_gold(self) -> int:
         return self.dbt_config.run("tag:gold", self.postgres_config)
 
+    def latest_fetched_at(self) -> datetime | None:
+        """When the current bronze payloads were fetched: bronze.raw_responses
+        keeps the latest payload per company, so its newest fetched_at is the
+        latest scrape."""
+        connection = psycopg2.connect(self.postgres_config.dsn())
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT max(fetched_at) FROM bronze.raw_responses")
+                return cursor.fetchone()[0]
+        finally:
+            connection.close()
+
+
+def publish(records: list, *, scraped_at: datetime, source: str = "live", classifier_version: str | None = None,
+            completed: bool = True, replace: bool = False, skip_gold: bool = False,
+            ingest: ClassificationIngest | None = None) -> int:
+    """Silver ingest, then the gold dbt models, then the copy to the gold
+    database. Returns a process status (0 = ok)."""
+    ingest = ingest or ClassificationIngest()
+    try:
+        jobs, skipped = parse_run(records) if completed else ([], 0)
+        result = ingest.ingest(
+            jobs, scraped_at=scraped_at, source=source, classifier_version=classifier_version,
+            completed=completed, replace=replace,
+        )
+    except (TypeError, ValueError, psycopg2.Error) as exc:
+        logger.error("Classification ingest failed: %s", exc)
+        return 1
+    if skipped:
+        result["skipped_not_av"] = skipped
+    logger.info("Silver classification: %s", json.dumps(result))
+    if skip_gold:
+        return 0
+    if ingest.build_gold() != 0:
+        return 1
+    return sync_gold_if_configured(ingest.postgres_config)
+
+
+def publish_pipeline_run(av_jobs_path: Path, current_run_path: Path, scraped_at: datetime | None = None) -> int:
+    """Pipeline stage 9. The enricher resumes from its output directory, so
+    av_jobs.jsonl can still hold jobs classified in earlier runs; only the
+    jobs in this run's Silver export (current_run_path) belong to this
+    scrape. scraped_at defaults to the newest bronze fetch."""
+    ingest = ClassificationIngest()
+    try:
+        records = read_jsonl(av_jobs_path) if av_jobs_path.is_file() else []
+        if not records:
+            logger.warning("No AV jobs in %s; skipping the gold update.", av_jobs_path)
+            return 0
+        current = {row.get("deduplication_key") for row in read_jsonl(current_run_path) if isinstance(row, dict)}
+        in_run = [row for row in records if isinstance(row, dict) and row.get("deduplication_key") in current]
+        if len(in_run) < len(records):
+            logger.info("Dropped %d AV jobs from earlier runs that are not in this scrape.", len(records) - len(in_run))
+        scraped_at = scraped_at or ingest.latest_fetched_at()
+    except (OSError, ValueError, psycopg2.Error) as exc:
+        logger.error("Could not prepare the gold update: %s", exc)
+        return 1
+    if scraped_at is None:
+        logger.error("No fetched_at in bronze.raw_responses; pass --scraped-at.")
+        return 1
+    return publish(in_run, scraped_at=scraped_at, source="live", ingest=ingest)
+
 
 def main(argv: list[str] | None = None) -> int:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -250,24 +312,15 @@ def main(argv: list[str] | None = None) -> int:
                         help="Don't rebuild gold (dbt) or copy it to the gold database afterwards")
     args = parser.parse_args(argv)
 
-    ingest = ClassificationIngest()
     try:
-        jobs, skipped = parse_run(read_jsonl(args.input)) if not args.incomplete else ([], 0)
-        result = ingest.ingest(
-            jobs, scraped_at=args.scraped_at, source=args.source, classifier_version=args.classifier_version,
-            completed=not args.incomplete, replace=args.replace,
-        )
-    except (OSError, TypeError, ValueError, psycopg2.Error) as exc:
+        records = [] if args.incomplete else read_jsonl(args.input)
+    except (OSError, ValueError) as exc:
         logger.error("Classification ingest failed: %s", exc)
         return 1
-    if skipped:
-        result["skipped_not_av"] = skipped
-    logger.info("Silver classification: %s", json.dumps(result))
-    if args.skip_gold:
-        return 0
-    if ingest.build_gold() != 0:
-        return 1
-    return sync_gold_if_configured(ingest.postgres_config)
+    return publish(
+        records, scraped_at=args.scraped_at, source=args.source, classifier_version=args.classifier_version,
+        completed=not args.incomplete, replace=args.replace, skip_gold=args.skip_gold,
+    )
 
 
 if __name__ == "__main__":

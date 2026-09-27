@@ -1,7 +1,17 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 from scrapers.utils.pipeline_runner import PipelineRunner
+
+
+@pytest.fixture(autouse=True)
+def mock_publish_gold():
+    # Stage 9 talks to Postgres (silver ingest, dbt, gold copy); every test
+    # here mocks it, and the tests below check how it is called.
+    with patch("scrapers.utils.pipeline_runner.publish_pipeline_run", return_value=0) as mock:
+        yield mock
 
 
 def _patch_stage(name, **kwargs):
@@ -347,3 +357,59 @@ def test_prefilter_config_flag_is_passed_through_to_prefilter_stage(
     prefilter_argv = mock_prefilter.main.call_args.args[0]
     assert "--config" in prefilter_argv
     assert prefilter_argv[prefilter_argv.index("--config") + 1] == "custom_prefilter.yaml"
+
+
+@_patch_stage("JobEnricherMain")
+@_patch_stage("AVFunctionFilterMain")
+@_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
+@_patch_stage("JobPrefilterMain")
+@_patch_stage("SilverExport")
+@_patch_stage("SilverIngest")
+@_patch_stage("ScraperRunner")
+def test_stage_9_publishes_this_runs_av_jobs_to_gold(
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier,
+    mock_function_filter, mock_enricher, mock_publish_gold, tmp_path,
+):
+    _succeeding_upstream(mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score)
+    mock_function_filter.main.return_value = 0
+    mock_enricher.main.return_value = 0
+    classification_dir = tmp_path / "job_classification"
+    silver_export = tmp_path / "silver_export.jsonl"
+
+    status = PipelineRunner.run([
+        "--classification-output-dir", str(classification_dir),
+        "--silver-export-path", str(silver_export),
+        "--scraped-at", "2026-09-12T05:46:21Z",
+    ])
+
+    assert status == 0
+    mock_publish_gold.assert_called_once_with(
+        classification_dir / "av_jobs.jsonl", silver_export,
+        scraped_at=datetime(2026, 9, 12, 5, 46, 21, tzinfo=timezone.utc),
+    )
+
+
+@_patch_stage("JobEnricherMain")
+@_patch_stage("AVFunctionFilterMain")
+@_patch_stage("JobClassifierMain")
+@_patch_stage("relevance_classifier_main")
+@_patch_stage("JobPrefilterMain")
+@_patch_stage("SilverExport")
+@_patch_stage("SilverIngest")
+@_patch_stage("ScraperRunner")
+def test_skip_gold_skips_stage_9_and_a_gold_failure_is_propagated(
+    mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score, mock_classifier,
+    mock_function_filter, mock_enricher, mock_publish_gold, tmp_path,
+):
+    _succeeding_upstream(mock_scraper_runner, mock_silver_ingest, mock_silver_export, mock_prefilter, mock_score)
+    mock_function_filter.main.return_value = 0
+    mock_enricher.main.return_value = 0
+    argv = ["--classification-output-dir", str(tmp_path / "job_classification")]
+
+    assert PipelineRunner.run([*argv, "--skip-gold"]) == 0
+    mock_publish_gold.assert_not_called()
+
+    mock_publish_gold.return_value = 1
+    assert PipelineRunner.run(argv) == 1
+    assert mock_publish_gold.call_args.kwargs["scraped_at"] is None

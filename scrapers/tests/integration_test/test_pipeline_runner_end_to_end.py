@@ -132,6 +132,7 @@ class _FakeFunctionFilter:
         return {job["id"]: FunctionDecision(True, "High", "test fixture") for job in jobs}
 
 
+@patch("scrapers.utils.pipeline_runner.publish_pipeline_run", return_value=0)
 @patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
 @patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
 @patch("scrapers.utils.av_function_filter_cli.AVFunctionFilter", _FakeFunctionFilter)
@@ -153,6 +154,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     mock_dbt_subprocess,
     _mock_which,
     mock_silver_connect,
+    mock_publish_gold,
     tmp_path,
 ):
     mock_urlopen.return_value = _urlopen_json(
@@ -207,6 +209,10 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     )
 
     assert status == 0
+    # Stage 9 gets this run's enrichment output and Silver export.
+    mock_publish_gold.assert_called_once_with(
+        classification_output_dir / "av_jobs.jsonl", silver_export_path, scraped_at=None
+    )
 
     # Scrape -> bronze -> dbt Silver build all ran for real (against mocked
     # boundaries): dbt runs once for bronze's `+job_postings` and once for
@@ -270,6 +276,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     assert enrichment_metrics["llm_enriched"] == 1
 
 
+@patch("scrapers.utils.pipeline_runner.publish_pipeline_run", return_value=0)
 @patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
 @patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
 @patch("scrapers.utils.av_function_filter_cli.AVFunctionFilter", _FakeFunctionFilter)
@@ -285,6 +292,7 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
     mock_minio,
     mock_dbt_subprocess,
     mock_silver_connect,
+    mock_publish_gold,
     tmp_path,
 ):
     _stub_silver_export_rows(
@@ -316,6 +324,7 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
     )
 
     assert status == 0
+    mock_publish_gold.assert_called_once()
     mock_urlopen.assert_not_called()
     mock_minio.assert_not_called()
     mock_dbt_subprocess.assert_not_called()
