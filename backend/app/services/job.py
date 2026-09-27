@@ -143,7 +143,8 @@ def list_jobs(
     db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
     category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
     min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
-    has_salary: bool | None = None, sort: JobSortField = JobSortField.POSTED_DATE,
+    has_salary: bool | None = None, salary_disclosed: bool | None = None,
+    sort: JobSortField = JobSortField.POSTED_DATE,
     direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
 ):
     query = db.query(JobPosting)
@@ -172,6 +173,13 @@ def list_jobs(
         # deliberately only compare real ranges.
         condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
+    if salary_disclosed is not None:
+        # Only a range the employer actually published (salary_min and
+        # salary_max, any pay period) - unlike has_salary, a levels.fyi
+        # estimate does not count. The salary constraints guarantee a row
+        # never has both, so salary_min alone identifies a published range.
+        disclosed = JobPosting.salary_min.isnot(None)
+        query = query.filter(disclosed if salary_disclosed else ~disclosed)
     # Page of ids + total in one statement (window count, no TOAST columns),
     # then one joined load of those rows. Two round-trips instead of a
     # count + page + four selectinload queries.
