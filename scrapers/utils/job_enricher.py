@@ -220,21 +220,12 @@ class JobEnricherMain:
 
             for rep_id, rep_posting in batch:
                 enrichment = results.get(rep_id)
-                # Skills always come from the deterministic keyword vocabulary
-                # against the job's full, untruncated text, never from the
-                # LLM: regex has no per-job token cost, so unlike the
-                # category decision it was never a reason to hand the LLM a
-                # compressed description in the first place, and a batch of
-                # llm_enriched jobs was silently returning empty skills most
-                # of the time simply because the compressed text sent for
-                # categorization had already cut off the Requirements
-                # section that lists them (see keyword_skill_extractor's own
-                # docstring on this being a deliberate precision/recall
-                # trade-off - full text only widens its recall, not its
-                # vocabulary). A no-category enrichment (empty categories,
-                # by design - see JobEnrichment.has_category) is left as-is;
-                # _write_enrichment_result routes it to no_category_file
-                # regardless of what skills it carries.
+                # Skills always come from the keyword regex over the full,
+                # untruncated text, never the LLM - the compressed text sent
+                # for categorization was cutting off the Requirements section
+                # before it ever reached the model. Only re-extract when a
+                # category was actually found; a no-category enrichment is
+                # left as-is regardless of what skills it carries.
                 if enrichment is not None and enrichment.has_category:
                     skills = cls._extract_skills(keyword_skill_extractor, rep_posting, aliases)
                     enrichment = JobEnrichment(
