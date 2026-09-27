@@ -60,6 +60,7 @@ def list_jobs(
     max_salary: float | None = Query(None, ge=0),
     salary_period: SalaryPeriod | None = None,
     has_salary: bool | None = None,
+    salary_disclosed: bool | None = None,
     sort: JobSortField = JobSortField.POSTED_DATE,
     direction: SortDirection | None = None,
     page: int = Query(1, ge=1),
@@ -80,7 +81,7 @@ def list_jobs(
         db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
         employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
         salary_period=salary_period.value if salary_period else None,
-        has_salary=has_salary, sort=sort, direction=direction, page=page, page_size=page_size,
+        has_salary=has_salary, salary_disclosed=salary_disclosed, sort=sort, direction=direction, page=page, page_size=page_size,
     )
 
 

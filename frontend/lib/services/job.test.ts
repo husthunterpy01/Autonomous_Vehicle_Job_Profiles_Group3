@@ -6,6 +6,7 @@ import {
   descriptionParagraphs,
   descriptionSections,
   getJob,
+  getJobs,
   isJobUuid,
   jobCategoryLabels,
   jobDetailHref,
@@ -77,6 +78,41 @@ it("fetches one job from /api/v1/jobs/{job_id}", async () => {
 
   assert.deepEqual(await getJob(jobId), expected);
   assert.equal(requestedUrl, `${API_BASE_URL}/api/v1/jobs/${jobId}`);
+});
+
+it("sends salary_disclosed and the sort when listing jobs", async () => {
+  let requestedUrl: string | undefined;
+  globalThis.fetch = async (input) => {
+    requestedUrl = String(input);
+    return new Response(
+      JSON.stringify({
+        items: [],
+        total: 0,
+        page: 1,
+        page_size: 3,
+        total_pages: 0,
+      }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
+  };
+
+  await getJobs({
+    salary_disclosed: true,
+    sort: { field: "posted_date", direction: "desc" },
+    page_size: 3,
+  });
+  const url = new URL(requestedUrl ?? "");
+  assert.equal(url.pathname, "/api/v1/jobs");
+  assert.equal(url.searchParams.get("salary_disclosed"), "true");
+  assert.equal(url.searchParams.get("sort"), "posted_date");
+  assert.equal(url.searchParams.get("direction"), "desc");
+  assert.equal(url.searchParams.get("page_size"), "3");
+
+  await getJobs({});
+  assert.equal(
+    new URL(requestedUrl ?? "").searchParams.has("salary_disclosed"),
+    false,
+  );
 });
 
 it("splits requirements on newlines and strips bullets", () => {
