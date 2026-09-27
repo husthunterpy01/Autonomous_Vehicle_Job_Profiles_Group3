@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import SkillRankChart from "./skill-rank-chart";
+import SkillTrendChart from "./skill-trend-chart";
 
 export const metadata: Metadata = {
   title: "Market Trends | AV Job Finder",
@@ -18,17 +18,17 @@ export default function TrendsPage() {
         </h1>
 
         <p className="mt-3 max-w-2xl text-ink-secondary">
-          The ten skills most requested in autonomous vehicle job postings,
-          ranked each month by how many postings mention them.
+          How many autonomous vehicle job postings ask for each of the most
+          requested skills, month by month.
         </p>
       </section>
 
       <section className="mx-auto max-w-[1200px] px-6 py-10">
         <div className="rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-6">
-          <SkillRankChart />
+          <SkillTrendChart />
           <p className="mt-4 text-xs text-ink-muted">
             Each month uses its last scrape of the month. Counts are job
-            postings that list the skill.
+            postings that list the skill. Click a skill to hide or show it.
           </p>
         </div>
       </section>
