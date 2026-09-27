@@ -12,7 +12,7 @@ CATEGORIES_PATH = Path(__file__).resolve().parents[2] / "prompts" / "categories_
 
 
 class CategoryTaxonomyExtractor:
-    """One-time (not per-job) LLM call that groups the fixed 9-category
+    """One-time (not per-job) LLM call that groups the fixed 10-category
     taxonomy into higher-level main_type buckets.
 
     main_type is a property of the *category*, not of any individual job -

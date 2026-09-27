@@ -1,7 +1,11 @@
 AV RELEVANCE SIGNALS
 Use these to decide whether a posting is AV-relevant (is_av_relevant). General
 automotive, corporate, or unrelated software roles are NOT AV relevant even if
-the employer builds AV products elsewhere.
+the employer builds AV products elsewhere. Conventional vehicle engineering is
+general automotive: powertrain/engine/transmission and EV propulsion or battery
+work (including powertrain calibration on dynos and proving grounds), brakes and
+chassis, crash/passive safety, NVH, seating, thermal, and humanoid or other
+non-vehicle robotics.
 
 Cross-cutting signals (strong, not category-specific):
 Autoware, ApolloAuto, Apollo Cyber, Cyber RT, ROS 2, rclcpp, autonomous driving, autonomous vehicle, self-driving, autonomy, ADAS, LiDAR, radar, sensor fusion, perception, motion planning, path planning, localization, robotics, computer vision

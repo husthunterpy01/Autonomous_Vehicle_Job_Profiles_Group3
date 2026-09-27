@@ -1,3 +1,8 @@
+from scrapers.service.llm.av_function_filter import (
+    AVFunctionFilter,
+    FunctionDecision,
+    title_flags_review,
+)
 from scrapers.service.llm.category import AuditCategoryRule
 from scrapers.service.llm.classification_result import classification_as_dict
 from scrapers.service.llm.config import JobFilterConfig
@@ -12,10 +17,12 @@ from scrapers.service.llm.result import FilterResult
 from scrapers.service.llm.skill import ExtractedSkill
 
 __all__ = [
+    "AVFunctionFilter",
     "AuditCategoryRule",
     "ExtractedSkill",
     "FilterDecision",
     "FilterResult",
+    "FunctionDecision",
     "JobClassifier",
     "JobEnricher",
     "JobEnrichment",
@@ -26,4 +33,5 @@ __all__ = [
     "KeywordSkillExtractor",
     "RelevanceDecision",
     "classification_as_dict",
+    "title_flags_review",
 ]

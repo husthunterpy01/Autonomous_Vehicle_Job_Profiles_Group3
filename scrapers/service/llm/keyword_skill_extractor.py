@@ -21,6 +21,20 @@ _NORMALIZATION_LINE = re.compile(r"^(.+?)\s*->\s*(.+)$", re.MULTILINE)
 # had them - kept here rather than added to categories_definition.txt so the
 # zero-shot categorizer (which treats every entry there as a job category)
 # doesn't start treating "dataset name" as a 10th category.
+#
+# Same reasoning applies to generic ML/AI terms: harshil_doc_0308.md treats
+# "Machine Learning" itself as ambiguous across categories ("A role
+# mentioning nuScenes may relate to Perception, Prediction, or Machine
+# Learning"), not a Perception signal. Perception's Keywords: line briefly
+# included "machine learning"/"deep learning"/"neural network" - not part of
+# the original researched taxonomy (martin_doc_0208.md's Perception row has
+# neither) - and because those terms show up in nearly every AV ML job's
+# description or even a company's boilerplate "about us" paragraph
+# regardless of the actual role, the keyword classifier's group-weighting
+# tie-break let them hijack unrelated jobs (Linux Kernel, Developer
+# Relations, IC design) into Perception. Kept here as skills worth
+# extracting, same as the dataset names above, without letting them decide
+# a category.
 _ADDITIONAL_KEYWORDS = (
     "ROS 2",
     "rclcpp",
@@ -32,6 +46,9 @@ _ADDITIONAL_KEYWORDS = (
     "Argoverse 2",
     "KITTI",
     "BDD100K",
+    "machine learning",
+    "deep learning",
+    "neural network",
 )
 
 # Most terms are domain concepts (sensor names, algorithm names, ROS/Apollo

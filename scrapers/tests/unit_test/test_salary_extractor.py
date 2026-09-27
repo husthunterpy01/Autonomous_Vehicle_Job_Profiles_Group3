@@ -116,6 +116,25 @@ def test_skips_sign_on_bonus_range_in_favor_of_base_salary():
     assert extract_salary_from_text(text) == SalaryEstimate(180000.0, 220000.0, "USD", "yearly")
 
 
+def test_keeps_base_range_when_a_bonus_is_listed_as_extra_pay_after_it():
+    # Regression test (real Stack AV posting): "+ Annual Bonus" after the
+    # range is extra pay on top of it, not a label on it, but the trailing
+    # bonus check used to discard this hourly base rate entirely.
+    text = (
+        "Benefits & Perks to joining Stack AV: Compensation: $32.00 – $37.00/hr "
+        "+ Annual Bonus + Long Term Incentive $0 Healthcare Premiums"
+    )
+    assert extract_salary_from_text(text) == SalaryEstimate(32.0, 37.0, "USD", "hourly")
+
+    text = "Base pay $150,000 - $180,000 per year plus annual bonus and equity."
+    assert extract_salary_from_text(text) == SalaryEstimate(150000.0, 180000.0, "USD", "yearly")
+
+
+def test_still_skips_a_range_labelled_as_a_bonus_right_after_it():
+    text = "Up to $5,000 - $10,000 signing bonus. Salary $120,000 - $140,000 per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(120000.0, 140000.0, "USD", "yearly")
+
+
 def test_recognizes_k_thousands_shorthand():
     text = "Compensation $150K - $200K per year."
     assert extract_salary_from_text(text) == SalaryEstimate(150000.0, 200000.0, "USD", "yearly")
