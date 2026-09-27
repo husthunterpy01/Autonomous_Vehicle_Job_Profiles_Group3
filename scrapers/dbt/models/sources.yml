@@ -17,3 +17,18 @@ sources:
             data_type: text
           - name: body
             data_type: jsonb
+
+  - name: silver
+    schema: silver
+    description: >
+      Primitive silver tables landed by
+      scrapers.service.silver_cleaning.classification_ingest (DOC-13): each
+      scrape run's cleaned classification output. The gold models only
+      reshape these; no cleaning happens after silver.
+    tables:
+      - name: classification_run
+        description: One row per scrape run; only completed runs have jobs.
+      - name: classified_job
+        description: One row per (run, AV job).
+      - name: classified_job_skill
+        description: One row per (run, AV job, skill), skill_name normalized.
