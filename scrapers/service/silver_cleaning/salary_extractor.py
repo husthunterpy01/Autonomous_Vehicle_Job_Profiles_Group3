@@ -15,7 +15,19 @@ from scrapers.service.llm.text import normalize_text
 # "$150,000+") is skipped rather than guessing a range, since there's no
 # reliable way to turn one number into a min/max pair.
 _CURRENCY_SYMBOLS = {"$": "USD", "€": "EUR", "£": "GBP", "¥": "JPY"}
-_CURRENCY_CODES = frozenset({"USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR"})
+_CURRENCY_CODES = frozenset(
+    {"USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF", "CNY", "INR", "TWD", "KRW", "SGD", "HKD"}
+)
+# Currencies whose typical salary scale makes _UNSTATED_PERIOD_YEARLY_FLOOR's
+# "no period word -> must be yearly" guess safe. Deliberately narrower than
+# _CURRENCY_CODES: a "$"-denominated range with no stated period is usually
+# a genuine US/CA/AU salary, but the same guess for other currencies is far
+# less safe - JPY/KRW/TWD/CNY salary figures routinely run into the
+# millions at ordinary levels (so the floor doesn't bound them the way it
+# does USD), and CNY compensation is often quoted monthly by convention
+# even when unstated. Never applies to a currency with an explicitly stated
+# period - _closest_period is still tried first regardless of currency.
+_YEARLY_INFERENCE_CURRENCIES = frozenset({"USD", "EUR", "GBP", "CAD", "AUD", "CHF"})
 
 _PERIOD_PATTERNS = (
     # A number immediately before year/month/week almost always states a
@@ -59,16 +71,27 @@ _ADDITION_RE = re.compile(r"\+|\bplus\b|\bin addition to\b", re.IGNORECASE)
 
 _SYMBOL_CLASS = "".join(re.escape(s) for s in _CURRENCY_SYMBOLS)
 # Trailing k/K is shorthand for thousands ("$150K"); _parse_number scales it.
-# Interior whitespace is tolerated (and stripped by _parse_number): some
-# postings wrap individual digits in inline tags for kerning/styling, and
-# stripping tags (normalize_text) leaves an otherwise well-formed number
-# split apart, e.g. "125,000" scraped as "1 25 , 00 0" (real GM/Workday
-# example). Safe to allow here specifically because _NUMBER only ever
-# matches immediately next to a currency symbol/code (see _RANGE_RE) -
-# unrelated digits elsewhere in the text never reach this pattern, and any
-# run that doesn't end up followed by a real separator (-/to/and) still
-# fails to complete a match, same as before.
-_NUMBER = r"[\d][\d,.\s]*[kK]?"
+# A single stray space is tolerated *only* right where a real number's own
+# digit-grouping would put a boundary (before/after a comma or period, or
+# between two digits of the same 1-3-or-3-digit group) - some postings wrap
+# individual digits in inline tags for kerning/styling, and stripping tags
+# (normalize_text) leaves an otherwise well-formed number split apart, e.g.
+# "125,000" scraped as "1 25 , 00 0" (real GM/Workday example).
+#
+# This is deliberately NOT "any digit/comma/period/whitespace run": an
+# earlier, looser version of this pattern let a real range glue onto an
+# unrelated number that just happened to follow a lone space, e.g.
+# "$150,000 - $200,000 12 month contract" reading max as 20,000,012.
+# Requiring every extra digit to be introduced by an actual "," or "."
+# separator (never by a bare space alone) means the match can only ever
+# extend past a genuine grouping boundary, so it stops cleanly at "200,000"
+# and never reaches the unrelated "12" - a space alone is never enough to
+# pull in another digit group. Each group allows 1-4 digits, not a fixed 3 -
+# wide enough for a 1-2 digit decimal ("25.50") or a full-European decimal
+# ("50.000,00"), and, deliberately, wide enough to preserve rather than
+# silently truncate a source typo's extra digit ("$254,0000" stays exactly
+# that many digits) so _MAX_TO_MIN_RATIO below can still catch it.
+_NUMBER = r"(?:(?:\d\s?){1,3}(?:[,.]\s?(?:\d\s?){1,4})*|\d+)[kK]?"
 _CURRENCY_TOKEN = rf"[{_SYMBOL_CLASS}]|\b(?:{'|'.join(_CURRENCY_CODES)})\b"
 _RANGE_RE = re.compile(
     rf"""
@@ -100,6 +123,22 @@ _AFTER_WINDOW = 25
 # stated period - _closest_period is still tried first.
 _UNSTATED_PERIOD_YEARLY_FLOOR = 10_000
 
+# Required alongside the floor above before guessing "yearly": an unrelated
+# above-floor dollar range with no stated period is common in postings for
+# reasons that have nothing to do with pay (a travel/conference budget, a
+# grant amount, ...) - real example, "Budget of USD 10,000 - 50,000 for
+# conference travel" - and the floor alone can't tell those apart from a
+# real salary range. Checked in the same before/after windows already used
+# for period words.
+_SALARY_CONTEXT_RE = re.compile(r"\bsalary\b|\bcompensation\b|\bpay\b|\bbase\b", re.IGNORECASE)
+
+# A source typo occasionally produces a technically-valid but absurd range
+# ("$133,000 - $254,0000", 42dot; "$185,00 and $284,100", GM - an extra or
+# missing digit). No genuine AV-engineering salary band spans more than
+# ~3-4x from min to max; 10x gives real wide bands (e.g. a role posted
+# across many levels/regions) plenty of room while still catching these.
+_MAX_TO_MIN_RATIO = 10
+
 
 @dataclass(frozen=True)
 class SalaryEstimate:
@@ -116,6 +155,33 @@ def _normalize_currency(token: str | None) -> str | None:
         return _CURRENCY_SYMBOLS[token]
     upper = token.upper()
     return upper if upper in _CURRENCY_CODES else None
+
+
+def _pick_currency(match: re.Match) -> str | None:
+    """Prefer an explicit currency CODE over a bare SYMBOL.
+
+    A symbol is ambiguous - "$" alone is used for USD, CAD, AUD, HKD, SGD,
+    TWD, and others - while a code names one currency unambiguously.
+    Previously this took whichever of the four currency groups matched
+    first textually, so a trailing, disambiguating code always lost to a
+    leading "$" (real Waymo Taiwan example: "Salary Range $2,600,000 -
+    $3,150,000 TWD" read as USD - about 6x too high). A recognized code
+    anywhere in the match now wins over a symbol found anywhere else in it.
+    """
+    tokens = (
+        match.group("currency1"),
+        match.group("currency_after_min"),
+        match.group("currency2"),
+        match.group("currency3"),
+    )
+    for token in tokens:
+        if token and token.upper() in _CURRENCY_CODES:
+            return token.upper()
+    for token in tokens:
+        normalized = _normalize_currency(token)
+        if normalized is not None:
+            return normalized
+    return None
 
 
 def _closest_period(before: str, after: str) -> str | None:
@@ -193,12 +259,13 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
     """Best-effort regex extraction of a base-salary range from free text.
 
     Returns the first match with a resolvable currency and a period - stated
-    or, above _UNSTATED_PERIOD_YEARLY_FLOOR, inferred as yearly. Without a
-    currency, or a small unstated-period number pair, it's too ambiguous to
-    trust (could be a date range, a headcount, an ID range, ...). The period
-    is looked for in text on *both* sides of the number range ("per year"
-    typically follows it, "gross annual salary ... range X-Y" typically
-    precedes it).
+    or, for a currency/context where that's safe to guess (see
+    _YEARLY_INFERENCE_CURRENCIES and _SALARY_CONTEXT_RE), inferred as yearly
+    above _UNSTATED_PERIOD_YEARLY_FLOOR. Without a currency, or a small
+    unstated-period number pair, it's too ambiguous to trust (could be a
+    date range, a headcount, an ID range, ...). The period is looked for in
+    text on *both* sides of the number range ("per year" typically follows
+    it, "gross annual salary ... range X-Y" typically precedes it).
 
     Normalizes the input first (strips tags, collapses HTML entities like
     "&#xa0;" down to a single space) - raw scraped descriptions can carry
@@ -209,12 +276,7 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
         return None
     description = normalize_text(description)
     for match in _RANGE_RE.finditer(description):
-        currency = _normalize_currency(
-            match.group("currency1")
-            or match.group("currency_after_min")
-            or match.group("currency2")
-            or match.group("currency3")
-        )
+        currency = _pick_currency(match)
         if currency is None:
             continue
         before = description[max(0, match.start() - _BEFORE_WINDOW):match.start()]
@@ -234,13 +296,24 @@ def extract_salary_from_text(description: str) -> SalaryEstimate | None:
             # intern example, "Hourly PhD Pay $85 - $85 USD"). Only a
             # genuinely inverted pair (max below min) signals a bad match.
             continue
+        if max_value > min_value * _MAX_TO_MIN_RATIO:
+            continue
         period = _closest_period(before, after)
         if period is None:
             # No period word at all is common for a senior-level range
             # ("...$311,850–$370,000, plus a competitive equity package.")
             # - see _UNSTATED_PERIOD_YEARLY_FLOOR for why five-or-more-figure
-            # numbers can only mean an annual range even unstated.
-            if min_value < _UNSTATED_PERIOD_YEARLY_FLOOR:
+            # numbers can only mean an annual range even unstated. Only
+            # trusted for a currency where that's actually a safe guess
+            # (_YEARLY_INFERENCE_CURRENCIES) and only alongside a nearby
+            # salary-context word (_SALARY_CONTEXT_RE) - the floor alone
+            # can't tell a real salary range from an unrelated budget/grant
+            # figure of the same size.
+            if (
+                currency not in _YEARLY_INFERENCE_CURRENCIES
+                or min_value < _UNSTATED_PERIOD_YEARLY_FLOOR
+                or not (_SALARY_CONTEXT_RE.search(before) or _SALARY_CONTEXT_RE.search(after))
+            ):
                 continue
             period = "yearly"
         return SalaryEstimate(min=min_value, max=max_value, currency=currency, period=period)

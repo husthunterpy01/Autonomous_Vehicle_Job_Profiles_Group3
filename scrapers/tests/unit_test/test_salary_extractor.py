@@ -222,3 +222,69 @@ def test_repairs_a_number_split_by_stripped_inline_tags():
     assert extract_salary_from_text(text) == SalaryEstimate(
         min=125000.0, max=165000.0, currency="USD", period="yearly"
     )
+
+
+def test_prefers_an_explicit_trailing_currency_code_over_the_dollar_sign():
+    # Real Waymo Taiwan posting shape: "$" is used generically but the
+    # trailing code says what it actually means - TWD, not USD.
+    text = "Salary Range $2,600,000 — $3,150,000 TWD annually"
+    assert extract_salary_from_text(text) == SalaryEstimate(2600000.0, 3150000.0, "TWD", "yearly")
+
+
+def test_does_not_infer_yearly_for_a_twd_range_with_no_stated_period():
+    # Same shape as above but with no period word - previously misread as
+    # ~USD 2.6M-3.15M/year (about 6x too high); now correctly left
+    # unresolved rather than guessed, since TWD isn't a currency this
+    # module trusts itself to guess a period for.
+    text = "Salary Range $2,600,000 — $3,150,000 TWD"
+    assert extract_salary_from_text(text) is None
+
+
+def test_recognizes_additional_currency_codes():
+    for code in ("TWD", "KRW", "SGD", "HKD"):
+        text = f"Compensation: {code} 50,000 - {code} 60,000 per month."
+        result = extract_salary_from_text(text)
+        assert result is not None and result.currency == code
+
+
+def test_does_not_swallow_a_following_unrelated_number_past_a_spaced_group():
+    # A real digit-spacing artifact (see test_repairs_a_number_split_by_
+    # stripped_inline_tags) and an unrelated trailing number must not be
+    # confused for each other - only an actual "," or "." can extend a
+    # matched number, never a bare space.
+    text = "The base salary range is $150,000 - $200,000 for a 12 month contract."
+    assert extract_salary_from_text(text) == SalaryEstimate(150000.0, 200000.0, "USD", "yearly")
+
+
+def test_does_not_swallow_a_following_unrelated_number_gbp():
+    text = "Base pay: £45,000 - £55,000, plus 30 days holiday."
+    result = extract_salary_from_text(text)
+    assert result is not None
+    assert result.min == 45000.0
+    assert result.max == 55000.0
+
+
+def test_does_not_infer_yearly_without_a_nearby_salary_context_word():
+    # Real risk: a non-salary dollar range in the same unstated-period,
+    # above-floor shape as a real salary range.
+    text = "Budget of USD 10,000 - 50,000 for conference travel."
+    assert extract_salary_from_text(text) is None
+
+
+def test_rejects_a_source_typo_with_an_extra_digit():
+    # Real 42dot posting: an extra trailing zero on the max value.
+    text = "Compensation $133,000 - $254,0000 per year."
+    assert extract_salary_from_text(text) is None
+
+
+def test_rejects_a_source_typo_with_a_missing_digit():
+    # Real GM posting: a missing digit on the min value.
+    text = "The salary range is $185,00 and $284,100 per year."
+    assert extract_salary_from_text(text) is None
+
+
+def test_wide_but_plausible_range_is_still_accepted():
+    # A wide multi-level band should still pass the ratio guard - only a
+    # >10x spread is treated as a likely typo.
+    text = "The base salary range is $30,000 - $280,000 per year."
+    assert extract_salary_from_text(text) == SalaryEstimate(30000.0, 280000.0, "USD", "yearly")
