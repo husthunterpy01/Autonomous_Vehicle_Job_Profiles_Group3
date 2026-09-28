@@ -86,16 +86,14 @@ test("months spread across the plot and a missing month counts as 0", () => {
   assert.match(ros.path, /^M\S+ \S+ L\S+ \S+$/);
 });
 
-test("hiding a skill rescales the axis but keeps every color", () => {
-  const layout = layoutSkillTrend(DATA, new Set(["python|domain_concept"]));
-  assert.equal(layout.series[0].hidden, true);
+test("colors follow the API order and the latest count is kept", () => {
+  const layout = layoutSkillTrend(DATA);
   assert.deepEqual(
-    layout.yTicks.map((t) => t.value),
-    [0, 25, 50, 75, 100],
-  );
-  assert.deepEqual(
-    layout.series.map((s) => s.color),
-    [SERIES_COLORS[0], SERIES_COLORS[1]],
+    layout.series.map((s) => [s.name, s.color, s.latestCount]),
+    [
+      ["Python", SERIES_COLORS[0], 806],
+      ["ROS 2", SERIES_COLORS[1], 81],
+    ],
   );
 });
 

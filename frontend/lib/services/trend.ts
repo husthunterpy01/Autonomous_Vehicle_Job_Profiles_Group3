@@ -28,8 +28,9 @@ export type SkillTrends = {
   skills: SkillTrend[];
 };
 
+/** The chart shows MAX_SERIES (8) skills, one color each. */
 export function getSkillTrends(
-  limit = 10,
+  limit = 8,
   months = 12,
   signal?: AbortSignal,
 ): Promise<SkillTrends> {

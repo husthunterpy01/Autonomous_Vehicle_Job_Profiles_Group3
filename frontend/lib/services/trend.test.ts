@@ -9,7 +9,7 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-it("requests the top skills and months from /api/v1/trends/skills", async () => {
+it("requests the chart's 8 skills and 12 months by default", async () => {
   const expected: SkillTrends = { months: [], skills: [] };
   let requestedUrl = "";
   globalThis.fetch = (async (input: RequestInfo | URL) => {
@@ -17,10 +17,10 @@ it("requests the top skills and months from /api/v1/trends/skills", async () => 
     return new Response(JSON.stringify(expected), { status: 200 });
   }) as typeof fetch;
 
-  assert.deepEqual(await getSkillTrends(10, 12), expected);
+  assert.deepEqual(await getSkillTrends(), expected);
   assert.equal(
     requestedUrl,
-    `${API_BASE_URL}/api/v1/trends/skills?limit=10&months=12`,
+    `${API_BASE_URL}/api/v1/trends/skills?limit=8&months=12`,
   );
 });
 

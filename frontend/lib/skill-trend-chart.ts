@@ -6,7 +6,8 @@ import type { SkillTrends } from "./services/trend";
 /* Categorical slots in fixed order (validated for adjacent-pair and CVD
    separation on the white card). Eight is the ceiling: a ninth hue would
    be indistinguishable from one of these, so the chart shows eight skills.
-   A skill keeps its color when others are hidden. */
+   Colors follow the skill's position in the API's order, never the
+   current highlight. */
 export const SERIES_COLORS = [
   "#2a78d6",
   "#eb6834",
@@ -22,11 +23,13 @@ export const MAX_SERIES = SERIES_COLORS.length;
 
 export const CHART = {
   width: 760,
-  height: 320,
+  height: 440,
   top: 16,
-  right: 48,
-  bottom: 40,
-  left: 56,
+  right: 40,
+  // Room for the month labels and the "Month" axis title.
+  bottom: 62,
+  // Room for the count labels and the rotated "Job postings" title.
+  left: 78,
 } as const;
 
 export type TrendPoint = {
@@ -40,9 +43,11 @@ export type TrendPoint = {
 export type TrendSeries = {
   key: string;
   name: string;
+  skillType: string;
   color: string;
-  hidden: boolean;
   points: TrendPoint[];
+  /** Job count in the latest month shown. */
+  latestCount: number;
   path: string;
 };
 
@@ -75,10 +80,7 @@ export function niceStep(value: number): number {
   return multipliers.find((m) => m * magnitude >= raw)! * magnitude;
 }
 
-export function layoutSkillTrend(
-  data: SkillTrends,
-  hiddenKeys: ReadonlySet<string> = new Set(),
-): SkillTrendLayout {
+export function layoutSkillTrend(data: SkillTrends): SkillTrendLayout {
   const plotLeft = CHART.left;
   const plotRight = CHART.width - CHART.right;
   const plotTop = CHART.top;
@@ -105,10 +107,7 @@ export function layoutSkillTrend(
         0,
     ),
   );
-  const visibleCounts = counts.filter(
-    (_, i) => !hiddenKeys.has(seriesKey(skills[i])),
-  );
-  const highest = Math.max(0, ...visibleCounts.flat());
+  const highest = Math.max(0, ...counts.flat());
   const step = niceStep(highest);
   const yMax = Math.max(step, Math.ceil(highest / step) * step);
   const y = (value: number) =>
@@ -125,9 +124,10 @@ export function layoutSkillTrend(
     return {
       key: seriesKey(skill),
       name: skill.name,
+      skillType: skill.skill_type,
       color: SERIES_COLORS[i],
-      hidden: hiddenKeys.has(seriesKey(skill)),
       points,
+      latestCount: counts[i][counts[i].length - 1] ?? 0,
       path: points
         .map((p, index) => `${index === 0 ? "M" : "L"}${p.x} ${p.y}`)
         .join(" "),

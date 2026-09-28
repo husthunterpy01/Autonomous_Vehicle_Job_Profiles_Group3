@@ -63,21 +63,54 @@ describe("SkillTrendChartView", () => {
     );
   });
 
-  it("draws one colored line per skill with a job-count axis and a legend", () => {
-    const { container, getByRole } = renderChart();
+  it("draws one colored line per skill with named axes", () => {
+    const { container } = renderChart();
     const strokes = [...container.querySelectorAll("path")].map((p) =>
       p.getAttribute("stroke"),
     );
     assert.deepEqual(strokes, [SERIES_COLORS[0], SERIES_COLORS[1]]);
-    const ticks = [...container.querySelectorAll("text")].map(
+    const texts = [...container.querySelectorAll("text")].map(
       (t) => t.textContent,
     );
-    assert.deepEqual(ticks.slice(0, 5), ["0", "250", "500", "750", "1,000"]);
-    assert.ok(ticks.includes("Aug 2026") && ticks.includes("Sep 2026"));
+    assert.deepEqual(texts.slice(0, 5), ["0", "250", "500", "750", "1,000"]);
+    for (const label of ["Job postings", "Month", "Aug 2026", "Sep 2026"]) {
+      assert.ok(texts.includes(label), label);
+    }
+  });
+
+  it("the legend lists each skill with its latest count and type", () => {
+    const { getByRole } = renderChart();
+    const python = getByRole("button", { name: /Python/ });
+    assert.match(python.textContent!, /Python.*Language.*806/);
+    assert.equal(python.getAttribute("aria-pressed"), "false");
+    assert.match(
+      getByRole("button", { name: /ROS 2/ }).textContent!,
+      /Framework.*81/,
+    );
+  });
+
+  it("clicking a skill highlights it and dims the others", () => {
+    const { container, getByRole } = renderChart();
+    const line = (name: string) =>
+      container.querySelector(`g[data-skill="${name}"]`)!;
+    fireEvent.click(getByRole("button", { name: /ROS 2/ }));
+
     assert.equal(
-      getByRole("button", { name: "Python" }).getAttribute("aria-pressed"),
+      getByRole("button", { name: /ROS 2/ }).getAttribute("aria-pressed"),
       "true",
     );
+    assert.equal(line("ROS 2").getAttribute("opacity"), "1");
+    assert.equal(line("Python").getAttribute("opacity"), "0.2");
+    // Drawn last, so it sits on top of the others.
+    assert.equal(
+      container
+        .querySelector("g[data-skill]:last-of-type")
+        ?.getAttribute("data-skill"),
+      "ROS 2",
+    );
+
+    fireEvent.click(getByRole("button", { name: /ROS 2/ }));
+    assert.equal(line("Python").getAttribute("opacity"), "1");
   });
 
   it("hovering a month lists every skill's job count, highest first", () => {
@@ -85,9 +118,9 @@ describe("SkillTrendChartView", () => {
     const target = container.querySelector("rect[tabindex='0']")!;
     const svg = container.querySelector("svg")!;
     svg.getBoundingClientRect = () =>
-      ({ left: 0, width: 760, top: 0, height: 320 }) as DOMRect;
+      ({ left: 0, width: 760, top: 0, height: 440 }) as DOMRect;
 
-    fireEvent.pointerMove(target, { clientX: 60 });
+    fireEvent.pointerMove(target, { clientX: 80 });
     const tooltip = getByRole("status");
     assert.match(tooltip.textContent!, /Aug 2026/);
     assert.match(tooltip.textContent!, /664Python.*0ROS 2/);
@@ -105,27 +138,31 @@ describe("SkillTrendChartView", () => {
     assert.match(getByRole("status").textContent!, /Aug 2026/);
   });
 
-  it("the legend hides a skill but never the last one", () => {
-    const { container, getByRole } = renderChart();
-    fireEvent.click(getByRole("button", { name: "Python" }));
-    assert.equal(
-      getByRole("button", { name: "Python" }).getAttribute("aria-pressed"),
-      "false",
-    );
-    assert.equal(container.querySelectorAll("path").length, 1);
-
-    fireEvent.click(getByRole("button", { name: "ROS 2" }));
-    assert.equal(container.querySelectorAll("path").length, 1);
-  });
-
-  it("zooms between 100% and 200%", () => {
+  it("zooms with the buttons between 100% and 300%, and resets", () => {
     const { getByRole, getByText } = renderChart();
     const zoomOut = getByRole("button", { name: "Zoom out" });
     const zoomIn = getByRole("button", { name: "Zoom in" });
+    const reset = getByRole("button", { name: "Reset zoom" });
     assert.equal((zoomOut as HTMLButtonElement).disabled, true);
-    for (let i = 0; i < 4; i += 1) fireEvent.click(zoomIn);
-    getByText("200%");
+    assert.equal((reset as HTMLButtonElement).disabled, true);
+    for (let i = 0; i < 8; i += 1) fireEvent.click(zoomIn);
+    getByText("300%");
     assert.equal((zoomIn as HTMLButtonElement).disabled, true);
+    fireEvent.click(reset);
+    getByText("100%");
+  });
+
+  it("zooms with the mouse wheel, and lets the page scroll at the limit", () => {
+    const { getByTestId, getByText } = renderChart();
+    const scroll = getByTestId("chart-scroll");
+
+    const zoomOutAtMin = fireEvent.wheel(scroll, { deltaY: 100 });
+    assert.equal(zoomOutAtMin, true); // not prevented: the page scrolls
+    getByText("100%");
+
+    const zoomIn = fireEvent.wheel(scroll, { deltaY: -100 });
+    assert.equal(zoomIn, false); // prevented: the chart zoomed instead
+    getByText("116%");
   });
 
   it("lists the same numbers in a table, with 0 for a missing month", () => {

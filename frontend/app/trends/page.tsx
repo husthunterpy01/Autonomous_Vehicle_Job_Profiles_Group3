@@ -28,7 +28,7 @@ export default function TrendsPage() {
           <SkillTrendChart />
           <p className="mt-4 text-xs text-ink-muted">
             Each month uses its last scrape of the month. Counts are job
-            postings that list the skill. Click a skill to hide or show it.
+            postings that list the skill.
           </p>
         </div>
       </section>
