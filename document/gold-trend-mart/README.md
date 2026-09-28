@@ -35,7 +35,7 @@ flowchart LR
     OUT -- "classification_ingest<br/>(validate, normalize)" --> SILVER[("silver<br/>classification tables")]
     SILVER -- "dbt tag:gold<br/>(reshape only)" --> GOLD[("gold star schema<br/>in the warehouse")]
     GOLD -- "gold_sync" --> GOLDDB[("gold database<br/>(Supabase)")]
-    GOLDDB --> API["Skill trend API"] --> CHART["Market Trends<br/>rank chart"]
+    GOLDDB --> API["Skill trend API"] --> CHART["Market Trends<br/>skill demand chart"]
 ```
 
 ### Why the backend tables can't do this
@@ -189,7 +189,7 @@ makes "skills by category area" cheap later.
 ### Classification cache (pipeline)
 
 Agreed in review before the backfill, mainly for consistency: re-running the LLM
-on the same job doesn't reliably return the same result. With #141 (open), skills
+on the same job doesn't reliably return the same result. Since #141, skills
 come from the deterministic keyword extractor over the full description, so they
 are stable across runs; the cache would still matter for relevance and
 categories, and for Groq cost. A sketch: `classification_cache (deduplication_key,
@@ -235,10 +235,17 @@ On local PostgreSQL 16 (warehouse) and the Supabase gold database (PostgreSQL 17
 - **Month boundary:** UTC (current) or Australia/Perth? Only runs near midnight on
   a month's last day are affected.
 
-### Follow-ups (not in DOC-13)
+### Serving it (FE-20, #143)
 
-- Backend endpoint serving the rank-chart data from the gold database.
-- Frontend rank chart on Market Trends (currently prototype data).
+- Backend: `GET /api/v1/trends/skills?limit&months` (`backend/app/services/skill_trend.py`)
+  reads `gold.skill_trend_monthly` over `GOLD_DATABASE_URL` and returns 503 when
+  it isn't set, so the deployed backend needs that variable too.
+- Frontend: the Market Trends page (`/trends`) shows monthly job counts for the
+  top 8 skills, with a table view. It uses raw counts rather than ranks, as
+  agreed in review.
+
+### Follow-ups
+
 - Category trends via the same star (a category dimension), replacing the unused
   `CategoryTrendSnapshot` draft.
 
