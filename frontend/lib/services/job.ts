@@ -49,6 +49,7 @@ export function jobSalary(job: JobListItem): SalaryInput {
 export function getJobs(params: {
   q?: string;
   category_id?: string;
+  location?: string;
   sort?: JobSort;
   page?: number;
   page_size?: number;
@@ -56,6 +57,7 @@ export function getJobs(params: {
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
   if (params.category_id) search.set("category_id", params.category_id);
+  if (params.location) search.set("location", params.location);
   if (params.sort) {
     search.set("sort", params.sort.field);
     search.set("direction", params.sort.direction);

@@ -20,6 +20,11 @@ import {
   resolveCategory,
 } from "@/lib/category-filter";
 import {
+  ALL_COUNTRIES,
+  COUNTRY_OPTIONS,
+  resolveCountry,
+} from "@/lib/country-filter";
+import {
   DEFAULT_JOB_SORT,
   isDefaultJobSort,
   nextJobSort,
@@ -47,6 +52,9 @@ export default function SearchClient() {
   );
   const [category, setCategory] = useState(
     searchParams.get("category") ?? ALL_CATEGORIES,
+  );
+  const [country, setCountry] = useState(() =>
+    resolveCountry(searchParams.get("country")),
   );
   const [view, setView] = useState<ViewMode>("table");
   const [page, setPage] = useState(1);
@@ -126,6 +134,7 @@ export default function SearchClient() {
         getJobs({
           q: keyword.trim() || undefined,
           category_id: category || undefined,
+          location: country || undefined,
           sort,
           page,
           page_size: perPage,
@@ -154,17 +163,24 @@ export default function SearchClient() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [keyword, category, sort, page, perPage, reloadToken]);
+  }, [keyword, category, country, sort, page, perPage, reloadToken]);
 
   const hasFilters =
     keyword.trim() !== "" ||
     category !== ALL_CATEGORIES ||
+    country !== ALL_COUNTRIES ||
     !isDefaultJobSort(sort);
 
-  const syncUrl = (kw: string, nextSort = sort, nextCategory = category) => {
+  const syncUrl = (
+    kw: string,
+    nextSort = sort,
+    nextCategory = category,
+    nextCountry = country,
+  ) => {
     const params = new URLSearchParams();
     if (kw.trim()) params.set("q", kw.trim());
     if (nextCategory) params.set("category", nextCategory);
+    if (nextCountry) params.set("country", nextCountry);
     // The default sort is what the API does anyway, so it stays out of the
     // URL and a plain /search link keeps working.
     if (!isDefaultJobSort(nextSort)) {
@@ -179,6 +195,12 @@ export default function SearchClient() {
     setCategory(value);
     setPage(1);
     syncUrl(keyword, sort, value);
+  };
+
+  const handleCountryChange = (value: string) => {
+    setCountry(value);
+    setPage(1);
+    syncUrl(keyword, sort, category, value);
   };
 
   const handleSortChange = (field: JobSortField) => {
@@ -218,6 +240,7 @@ export default function SearchClient() {
   const resetFilters = () => {
     setKeyword("");
     setCategory(ALL_CATEGORIES);
+    setCountry(ALL_COUNTRIES);
     setSort(DEFAULT_JOB_SORT);
     setPage(1);
     router.replace("/search");
@@ -241,17 +264,32 @@ export default function SearchClient() {
         }}
       />
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
+      <div className="mt-4 grid gap-3 sm:grid-cols-[auto_16rem_auto_16rem] sm:items-center">
         <label htmlFor="category-filter" className="text-sm text-ink-secondary">
           Category
         </label>
         <Dropdown
           id="category-filter"
-          className="w-64"
+          className="w-full"
           value={category}
           onChange={handleCategoryChange}
           options={categoryOptionList}
         />
+        <label htmlFor="country-filter" className="text-sm text-ink-secondary">
+          Country
+        </label>
+        <select
+          id="country-filter"
+          value={country}
+          onChange={(event) => handleCountryChange(event.target.value)}
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+        >
+          {COUNTRY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       {status === "loading" && (

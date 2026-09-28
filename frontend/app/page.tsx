@@ -11,6 +11,7 @@ import JobCardColumn from "@/components/ui/JobCardColumn";
 import JobCardRow from "@/components/ui/JobCardRow";
 import Salary from "@/components/ui/Salary";
 import TopSkillsPanel from "@/components/TopSkillsPanel";
+import HomeSearchForm from "./home-search-form";
 
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
@@ -65,27 +66,7 @@ function Hero() {
             companies and find the role that fits your skills and goals.
           </p>
 
-          {/* Search bar */}
-          <form className="mt-8 flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-sm sm:flex-row sm:items-center">
-            <input
-              type="text"
-              name="q"
-              placeholder="Job title, skill or keyword"
-              className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
-            />
-            <div className="hidden h-8 w-px bg-line sm:block" />
-            <input
-              type="text"
-              placeholder="Country"
-              className="w-full flex-1 bg-transparent px-2 py-2 text-sm text-ink outline-none placeholder:text-ink-muted"
-            />
-            <button
-              type="submit"
-              className="rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover"
-            >
-              Search Jobs
-            </button>
-          </form>
+          <HomeSearchForm />
 
           {/* Popular searches */}
           <p className="mt-4 text-sm text-ink-muted">
