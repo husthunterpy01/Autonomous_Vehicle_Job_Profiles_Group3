@@ -1,0 +1,171 @@
+version: 2
+
+# DOC-13 gold star schema: skill demand over time. Built only from the
+# primitive silver classification tables; see document/gold-trend-mart/README.md.
+models:
+  - name: scrape_run
+    description: Completed scrape runs (copied with gold, so the trend view needs no silver table).
+    columns:
+      - name: scraped_at
+        data_tests: [not_null, unique]
+      - name: month_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_key
+
+  - name: dim_month
+    description: Calendar months (UTC) that have at least one completed scrape run.
+    columns:
+      - name: month_key
+        description: yyyymm, e.g. 202608.
+        data_tests: [not_null, unique]
+      - name: month_start
+        data_tests: [not_null, unique]
+
+  - name: dim_skill
+    description: One row per (normalized name, skill type); display name from the newest run.
+    columns:
+      - name: skill_key
+        description: md5 of normalized_name and skill_type, stable across rebuilds.
+        data_tests: [not_null, unique]
+      - name: normalized_name
+        data_tests: [not_null]
+      - name: skill_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [tool, programming_language, framework, domain_concept, certification]
+
+  - name: dim_job
+    description: One row per job; title and main_type from the newest completed run.
+    columns:
+      - name: deduplication_key
+        data_tests: [not_null, unique]
+      - name: title
+        data_tests: [not_null]
+
+  - name: fact_job_skill_month
+    description: One row per (month, job, skill), with the first and last completed run that saw it.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "month_key || '|' || deduplication_key || '|' || skill_key"
+    columns:
+      - name: month_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_month')
+                field: month_key
+      - name: deduplication_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_job')
+                field: deduplication_key
+      - name: skill_key
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_skill')
+                field: skill_key
+
+  - name: skill_trend_monthly
+    description: Month-end snapshot per (month, skill) - job count, share and a unique rank - for the Market Trends rank chart.
+    data_tests:
+      - unique:
+          arguments:
+            column_name: "month_key || '|' || rank"
+
+unit_tests:
+  - name: dim_job_keeps_the_newest_completed_run
+    model: dim_job
+    given:
+      - input: source("silver", "classification_run")
+        format: sql
+        rows: |
+          select '2026-08-31T12:00:00Z'::timestamptz as scraped_at, true as completed
+          union all select '2026-09-12T12:00:00Z'::timestamptz, true
+          union all select '2026-09-20T12:00:00Z'::timestamptz, false
+      - input: source("silver", "classified_job")
+        format: sql
+        rows: |
+          select '2026-09-12T12:00:00Z'::timestamptz as scraped_at, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'::text as deduplication_key,
+                 'September title'::text as job_title, 'Perception & Sensing'::text as main_type
+          union all select '2026-08-31T12:00:00Z'::timestamptz, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'August title', null
+          union all select '2026-09-20T12:00:00Z'::timestamptz, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'Partial run title', null
+    expect:
+      format: sql
+      rows: |
+        select 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'::text as deduplication_key, 'September title'::text as title,
+               'Perception & Sensing'::text as main_type,
+               '2026-08-31T12:00:00Z'::timestamptz as first_seen_at, '2026-09-12T12:00:00Z'::timestamptz as last_seen_at
+
+  - name: fact_is_one_row_per_month_job_skill
+    model: fact_job_skill_month
+    given:
+      - input: source("silver", "classification_run")
+        format: sql
+        rows: |
+          select '2026-08-05T12:00:00Z'::timestamptz as scraped_at, true as completed
+          union all select '2026-08-31T12:00:00Z'::timestamptz, true
+          union all select '2026-08-30T12:00:00Z'::timestamptz, false
+      - input: source("silver", "classified_job_skill")
+        format: sql
+        rows: |
+          select '2026-08-05T12:00:00Z'::timestamptz as scraped_at, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'::text as deduplication_key,
+                 'lidar'::text as skill_name, 'domain_concept'::text as skill_type
+          union all select '2026-08-31T12:00:00Z'::timestamptz, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'lidar', 'domain_concept'
+          union all select '2026-08-30T12:00:00Z'::timestamptz, 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'lidar', 'domain_concept'
+    expect:
+      format: sql
+      rows: |
+        select 202608 as month_key, 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'::text as deduplication_key,
+               md5('lidar|domain_concept') as skill_key,
+               '2026-08-05T12:00:00Z'::timestamptz as first_seen_at, '2026-08-31T12:00:00Z'::timestamptz as last_seen_at
+
+  - name: trend_counts_only_each_months_latest_completed_run
+    model: skill_trend_monthly
+    given:
+      - input: ref("scrape_run")
+        format: sql
+        rows: |
+          select '2026-08-05T12:00:00Z'::timestamptz as scraped_at, 202608 as month_key, 'backfill'::text as source,
+                 null::text as classifier_version, 2 as jobs_seen
+          union all select '2026-08-31T12:00:00Z'::timestamptz, 202608, 'backfill', null, 1
+          union all select '2026-09-12T12:00:00Z'::timestamptz, 202609, 'backfill', null, 1
+      - input: ref("fact_job_skill_month")
+        format: sql
+        rows: |
+          -- job a: lidar and camera at month end; job b: only seen on 5 Aug; job c: camera in September.
+          select 202608 as month_key, 'a'::text as deduplication_key, 'k_lidar'::text as skill_key,
+                 '2026-08-05T12:00:00Z'::timestamptz as first_seen_at, '2026-08-31T12:00:00Z'::timestamptz as last_seen_at
+          union all select 202608, 'a', 'k_camera', '2026-08-31T12:00:00Z', '2026-08-31T12:00:00Z'
+          union all select 202608, 'b', 'k_radar', '2026-08-05T12:00:00Z', '2026-08-05T12:00:00Z'
+          union all select 202609, 'c', 'k_camera', '2026-09-12T12:00:00Z', '2026-09-12T12:00:00Z'
+      - input: ref("dim_month")
+        format: sql
+        rows: |
+          select 202608 as month_key, '2026-08-01'::date as month_start, 2026::smallint as year,
+                 8::smallint as month, 'Aug 2026'::text as label
+          union all select 202609, '2026-09-01'::date, 2026::smallint, 9::smallint, 'Sep 2026'
+      - input: ref("dim_skill")
+        format: sql
+        rows: |
+          select 'k_lidar'::text as skill_key, 'lidar'::text as normalized_name, 'domain_concept'::text as skill_type, 'LiDAR'::text as display_name
+          union all select 'k_camera', 'camera', 'domain_concept', 'camera'
+          union all select 'k_radar', 'radar', 'domain_concept', 'radar'
+    # Job b (seen only on 5 Aug) is not in August's snapshot, so radar is absent;
+    # camera and LiDAR tie on count and are ranked by name.
+    expect:
+      rows:
+        - {month_key: 202608, skill_name: camera, job_count: 1, jobs_with_skills: 1, rank: 1}
+        - {month_key: 202608, skill_name: LiDAR, job_count: 1, jobs_with_skills: 1, rank: 2}
+        - {month_key: 202609, skill_name: camera, job_count: 1, jobs_with_skills: 1, rank: 1}

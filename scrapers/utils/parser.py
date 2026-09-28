@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from scrapers.service.silver_cleaning.classification_ingest import parse_scraped_at
+
 
 class ScraperParser:
     @classmethod
@@ -239,7 +241,8 @@ class ScraperParser:
             description=(
                 "Run the full pipeline end to end: scrape -> MinIO -> bronze -> "
                 "Silver (dbt) -> export -> AV pre-filter -> embedding relevance "
-                "(Groq only for the mid-band) -> LLM category/skill enrichment."
+                "(Groq only for the mid-band) -> LLM category/skill enrichment -> "
+                "silver classification tables -> gold (dbt) -> gold database."
             )
         )
         parser.add_argument(
@@ -279,6 +282,17 @@ class ScraperParser:
             type=Path,
             default=None,
             help="Optional YAML config for the pre-filter stage (see job_prefilter.py --config)",
+        )
+        parser.add_argument(
+            "--skip-gold",
+            action="store_true",
+            help="Skip stage 9 (silver classification tables, gold dbt models, gold database copy)",
+        )
+        parser.add_argument(
+            "--scraped-at",
+            type=parse_scraped_at,
+            default=None,
+            help="When this run scraped (ISO 8601 with a timezone); defaults to the newest bronze fetched_at",
         )
         parser.add_argument(
             "--embedding-hf-repo-id",

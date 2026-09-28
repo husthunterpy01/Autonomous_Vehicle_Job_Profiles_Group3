@@ -1,6 +1,81 @@
 // ============ GOLD LAYER: Trend Data Mart ============
-// Derived from silver.JobPosting / silver.JobCategory / silver.ScrapeLog after each scrape run.
+// A separate star schema (Postgres schema `gold`), distinct from the backend
+// ERD that serves the site. Built by dbt (scrapers/dbt/models/gold, tag
+// "gold") from the silver classification tables, never from the backend
+// tables, and holding no foreign keys into them, so re-importing jobs (new
+// job_id values) or TRUNCATE company CASCADE never deletes trend history.
+// Relationships only exist inside the star (checked by dbt tests). gold_sync
+// copies the schema to the separate gold database.
 
+// ---------- Skill demand over time (DOC-13) ----------
+// Design notes: document/gold-trend-mart/README.md
+
+Table gold.fact_job_skill_month {
+  month_key int [not null, ref: > gold.dim_month.month_key]
+  deduplication_key text [not null, ref: > gold.dim_job.deduplication_key]
+  skill_key text [not null, ref: > gold.dim_skill.skill_key]
+  first_seen_at timestamptz [not null, note: 'first completed run this month that listed the skill for the job']
+  last_seen_at timestamptz [not null, note: 'last completed run this month that listed it; equals the month snapshot time when the job was still open at month end']
+
+  indexes {
+    (month_key, deduplication_key, skill_key) [unique, note: 'grain, checked by a dbt test']
+  }
+
+  Note: 'Grain: one row per (month, AV job, skill). A job has one row per month it was open (one-to-many from dim_job and dim_month). Repeated runs in a month only move first/last seen.'
+}
+
+Table gold.dim_month {
+  month_key int [pk, note: 'yyyymm, e.g. 202608 (UTC)']
+  month_start date [not null, unique]
+  year smallint [not null]
+  month smallint [not null]
+  label text [not null, note: 'e.g. Aug 2026']
+}
+
+Table gold.dim_skill {
+  skill_key text [pk, note: 'md5(normalized_name | skill_type), stable across rebuilds']
+  normalized_name text [not null, note: 'normalized in silver like the backend skill table']
+  skill_type varchar [not null, note: 'tool, programming_language, framework, domain_concept, certification']
+  display_name text [not null, note: 'from the newest run, e.g. ROS 2']
+}
+
+Table gold.dim_job {
+  deduplication_key text [pk, note: 'md5 hex from the pipeline dedup step - same across scrapes and re-imports, unlike job_id']
+  title text [not null, note: 'type 1: the newest completed run wins']
+  main_type text [note: 'category area, type 1']
+  first_seen_at timestamptz [not null]
+  last_seen_at timestamptz [not null]
+}
+
+Table gold.scrape_run {
+  scraped_at timestamptz [pk, note: 'when the scrape ran']
+  month_key int [not null, ref: > gold.dim_month.month_key]
+  source varchar [not null, note: 'live or backfill (replayed from MinIO)']
+  classifier_version text [note: 'classifier/prompt/vocabulary version; explains steps in the chart']
+  jobs_seen int
+
+  Note: 'Completed runs only (from silver.classification_run). Lets the trend view find each month snapshot without silver, so gold can be copied on its own.'
+}
+
+Table gold.skill_trend_monthly {
+  month_key int
+  month date
+  month_label text
+  snapshot_at timestamptz [note: 'scraped_at of the latest completed run of the month']
+  skill_name text
+  skill_normalized_name text
+  skill_type varchar
+  job_count int [note: 'distinct snapshot jobs that listed the skill']
+  jobs_with_skills int [note: 'distinct snapshot jobs with at least one skill']
+  share numeric [note: 'job_count / jobs_with_skills']
+  rank int [note: 'per month, ties broken by name, so ranks are unique']
+
+  Note: 'VIEW, not a table - the month-end snapshot of fact_job_skill_month joined to dim_month and dim_skill. Feeds the skill rank (bump) chart.'
+}
+
+// ---------- Earlier draft (#14), not implemented ----------
+// Category trends could later reuse the star above (a dim_category and a
+// job-category fact) instead of this table.
 Table gold.CategoryTrendSnapshot {
   snapshot_id uuid [pk, default: `gen_random_uuid()`]
   scrape_id uuid [note: 'references silver.ScrapeLog.scrape_id, kept as plain field since this mart is decoupled from Silver schema']

@@ -1,0 +1,327 @@
+"""DOC-13: land one scrape run's classification output in silver.
+
+Silver is the last layer that cleans data: this validates each row of the
+run's av_jobs.jsonl, normalizes skill names and resolves the job's
+main_type, then writes three primitive silver tables. The gold dbt models
+(models/gold, tag "gold") only reshape these into the star schema - no
+further sanitizing happens after silver - and gold_sync copies the result
+to the gold database when GOLD_DATABASE_URL is set.
+
+    python -m scrapers.service.silver_cleaning.classification_ingest \
+        data/job_classification/av_jobs.jsonl --scraped-at 2026-08-31T14:17:29Z
+"""
+import argparse
+import json
+import logging
+import re
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+
+import psycopg2
+from psycopg2.extras import execute_values
+from scrapers.config.dbt import DbtConfig
+from scrapers.config.postgres import PostgresConfig
+from scrapers.service.llm.category_hierarchy import load_main_types
+from scrapers.service.silver_cleaning.gold_sync import sync_gold_if_configured
+
+logger = logging.getLogger(__name__)
+
+RUN_SOURCES = ("live", "backfill")
+# Same values as the backend SkillType enum.
+SKILL_TYPES = frozenset({"tool", "programming_language", "framework", "domain_concept", "certification"})
+_DEDUP_KEY = re.compile(r"^[0-9a-f]{32}$")
+
+TABLES_SQL = """
+CREATE SCHEMA IF NOT EXISTS silver;
+
+-- One row per scrape run. Only a completed run has jobs; a failed or
+-- partial run is registered with completed = false so it can never become
+-- a month's snapshot.
+CREATE TABLE IF NOT EXISTS silver.classification_run (
+    scraped_at timestamptz PRIMARY KEY,
+    source text NOT NULL CHECK (source IN ('live', 'backfill')),
+    classifier_version text,
+    completed boolean NOT NULL,
+    jobs_seen integer NOT NULL CHECK (jobs_seen >= 0),
+    ingested_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- One row per (run, AV job).
+CREATE TABLE IF NOT EXISTS silver.classified_job (
+    scraped_at timestamptz NOT NULL REFERENCES silver.classification_run (scraped_at) ON DELETE CASCADE,
+    deduplication_key text NOT NULL CHECK (deduplication_key ~ '^[0-9a-f]{32}$'),
+    job_title text NOT NULL,
+    main_type text,
+    PRIMARY KEY (scraped_at, deduplication_key)
+);
+
+-- One row per (run, AV job, skill). skill_name is normalized like the
+-- backend skill table (whitespace collapsed, lower case).
+CREATE TABLE IF NOT EXISTS silver.classified_job_skill (
+    scraped_at timestamptz NOT NULL,
+    deduplication_key text NOT NULL,
+    skill_name text NOT NULL,
+    skill_type text NOT NULL CHECK (skill_type IN ('tool', 'programming_language', 'framework', 'domain_concept', 'certification')),
+    display_name text NOT NULL,
+    PRIMARY KEY (scraped_at, deduplication_key, skill_name, skill_type),
+    FOREIGN KEY (scraped_at, deduplication_key)
+        REFERENCES silver.classified_job (scraped_at, deduplication_key) ON DELETE CASCADE
+);
+"""
+
+
+@dataclass(frozen=True)
+class ClassifiedJob:
+    deduplication_key: str
+    title: str
+    main_type: str | None
+    skills: tuple[tuple[str, str, str], ...]  # (skill_name, skill_type, display_name)
+
+
+def parse_scraped_at(value: str) -> datetime:
+    """ISO 8601 with a timezone; "Z" is accepted for UTC."""
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"scraped_at is not an ISO 8601 timestamp: {value!r}") from exc
+    if parsed.tzinfo is None:
+        raise ValueError("scraped_at must include a timezone, e.g. 2026-08-31T12:00:00Z")
+    return parsed
+
+
+def read_jsonl(path: Path) -> list:
+    records = []
+    with path.open("r", encoding="utf-8-sig") as stream:
+        for number, line in enumerate(stream, start=1):
+            if not line.strip():
+                continue
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Line {number}: invalid JSON ({exc.msg})") from exc
+    return records
+
+
+def _normalized(value: str) -> str:
+    return " ".join(value.split()).lower()
+
+
+def _is_av_relevant(classification: dict) -> bool:
+    # The pipeline writes this as a bool or as the string "True"/"False".
+    value = classification.get("is_av_relevant", True)
+    if isinstance(value, str):
+        return value.strip().casefold() != "false"
+    return bool(value)
+
+
+def _skills(raw) -> tuple[tuple[str, str, str], ...]:
+    if not isinstance(raw, list):
+        raise TypeError("skills must be an array")
+    skills = {}
+    for item in raw:
+        if (
+            not isinstance(item, dict)
+            or not isinstance(item.get("name"), str)
+            or not item["name"].strip()
+            or item.get("skill_type") not in SKILL_TYPES
+        ):
+            raise ValueError(f"Invalid skill: {item!r}")
+        skills.setdefault((_normalized(item["name"]), item["skill_type"]), item["name"].strip())
+    return tuple((name, skill_type, display) for (name, skill_type), display in skills.items())
+
+
+def _main_type(categories, main_types: dict[str, str]) -> str | None:
+    # The enricher already keeps only the dominant main_type's sub_types,
+    # so the first recognized one decides it.
+    if not isinstance(categories, list) or not all(isinstance(c, str) for c in categories):
+        raise TypeError("categories must be an array of strings")
+    for category in categories:
+        if category in main_types:
+            return main_types[category]
+    return None
+
+
+def parse_run(records: list, main_types: dict[str, str] | None = None) -> tuple[list[ClassifiedJob], int]:
+    """Returns (AV jobs, rows skipped as not AV-relevant). A malformed row
+    rejects the whole run, as the backend imports do."""
+    if main_types is None:
+        main_types = load_main_types()
+    jobs, seen, skipped = [], set(), 0
+    for index, row in enumerate(records):
+        try:
+            if not isinstance(row, dict):
+                raise TypeError("Each record must be an object")
+            classification = row.get("_classification")
+            if not isinstance(classification, dict):
+                raise TypeError("_classification must be an object")
+            if not _is_av_relevant(classification):
+                skipped += 1
+                continue
+            key = row.get("deduplication_key")
+            if not isinstance(key, str) or not _DEDUP_KEY.match(key):
+                raise ValueError("deduplication_key must be a 32-character md5 hex string")
+            if key in seen:
+                raise ValueError("Duplicate deduplication_key in this run")
+            seen.add(key)
+            title = row.get("job_name")
+            if not isinstance(title, str) or not title.strip():
+                raise ValueError("job_name must be a non-empty string")
+            jobs.append(ClassifiedJob(
+                deduplication_key=key,
+                title=" ".join(title.split()),
+                main_type=_main_type(classification.get("categories") or [], main_types),
+                skills=_skills(classification.get("skills") or []),
+            ))
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"Row {index + 1}: {exc}") from exc
+    return jobs, skipped
+
+
+class ClassificationIngest:
+    def __init__(self, postgres_config: PostgresConfig | None = None, dbt_config: DbtConfig | None = None):
+        self.postgres_config = postgres_config or PostgresConfig()
+        self.dbt_config = dbt_config or DbtConfig()
+
+    def ingest(self, jobs: list[ClassifiedJob], *, scraped_at: datetime, source: str = "live",
+               classifier_version: str | None = None, completed: bool = True, replace: bool = False) -> dict:
+        """One transaction per run. Ingesting an existing scraped_at is a
+        no-op unless replace=True, which swaps the run's rows (e.g. after
+        re-running the classifier on the same scrape)."""
+        if source not in RUN_SOURCES:
+            raise ValueError(f"source must be one of {', '.join(RUN_SOURCES)}")
+        if scraped_at.tzinfo is None:
+            raise ValueError("scraped_at must be timezone-aware")
+        connection = psycopg2.connect(self.postgres_config.dsn())
+        try:
+            with connection, connection.cursor() as cursor:
+                cursor.execute(TABLES_SQL)
+                if replace:
+                    cursor.execute("DELETE FROM silver.classification_run WHERE scraped_at = %s", (scraped_at,))
+                cursor.execute(
+                    "INSERT INTO silver.classification_run (scraped_at, source, classifier_version, completed, jobs_seen) "
+                    "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (scraped_at) DO NOTHING",
+                    (scraped_at, source, classifier_version, completed, len(jobs) if completed else 0),
+                )
+                if cursor.rowcount == 0:
+                    return {"status": "already_ingested", "scraped_at": scraped_at.isoformat()}
+                if not completed:
+                    return {"status": "registered_incomplete", "scraped_at": scraped_at.isoformat()}
+                execute_values(
+                    cursor,
+                    "INSERT INTO silver.classified_job (scraped_at, deduplication_key, job_title, main_type) VALUES %s",
+                    [(scraped_at, job.deduplication_key, job.title, job.main_type) for job in jobs],
+                )
+                skill_rows = [
+                    (scraped_at, job.deduplication_key, name, skill_type, display)
+                    for job in jobs for name, skill_type, display in job.skills
+                ]
+                execute_values(
+                    cursor,
+                    "INSERT INTO silver.classified_job_skill "
+                    "(scraped_at, deduplication_key, skill_name, skill_type, display_name) VALUES %s",
+                    skill_rows,
+                )
+        finally:
+            connection.close()
+        return {
+            "status": "replaced" if replace else "ingested",
+            "scraped_at": scraped_at.isoformat(),
+            "jobs": len(jobs),
+            "jobs_without_skills": sum(1 for job in jobs if not job.skills),
+            "skill_rows": len(skill_rows),
+        }
+
+    def build_gold(self) -> int:
+        return self.dbt_config.run("tag:gold", self.postgres_config)
+
+    def latest_fetched_at(self) -> datetime | None:
+        """When the current bronze payloads were fetched: bronze.raw_responses
+        keeps the latest payload per company, so its newest fetched_at is the
+        latest scrape."""
+        connection = psycopg2.connect(self.postgres_config.dsn())
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT max(fetched_at) FROM bronze.raw_responses")
+                return cursor.fetchone()[0]
+        finally:
+            connection.close()
+
+
+def publish(records: list, *, scraped_at: datetime, source: str = "live", classifier_version: str | None = None,
+            completed: bool = True, replace: bool = False, skip_gold: bool = False,
+            ingest: ClassificationIngest | None = None) -> int:
+    """Silver ingest, then the gold dbt models, then the copy to the gold
+    database. Returns a process status (0 = ok)."""
+    ingest = ingest or ClassificationIngest()
+    try:
+        jobs, skipped = parse_run(records) if completed else ([], 0)
+        result = ingest.ingest(
+            jobs, scraped_at=scraped_at, source=source, classifier_version=classifier_version,
+            completed=completed, replace=replace,
+        )
+    except (TypeError, ValueError, psycopg2.Error) as exc:
+        logger.error("Classification ingest failed: %s", exc)
+        return 1
+    if skipped:
+        result["skipped_not_av"] = skipped
+    logger.info("Silver classification: %s", json.dumps(result))
+    if skip_gold:
+        return 0
+    if ingest.build_gold() != 0:
+        return 1
+    return sync_gold_if_configured(ingest.postgres_config)
+
+
+def publish_pipeline_run(av_jobs_path: Path, current_run_path: Path, scraped_at: datetime | None = None) -> int:
+    """Pipeline stage 9. The enricher resumes from its output directory, so
+    av_jobs.jsonl can still hold jobs classified in earlier runs; only the
+    jobs in this run's Silver export (current_run_path) belong to this
+    scrape. scraped_at defaults to the newest bronze fetch."""
+    ingest = ClassificationIngest()
+    try:
+        records = read_jsonl(av_jobs_path) if av_jobs_path.is_file() else []
+        if not records:
+            logger.warning("No AV jobs in %s; skipping the gold update.", av_jobs_path)
+            return 0
+        current = {row.get("deduplication_key") for row in read_jsonl(current_run_path) if isinstance(row, dict)}
+        in_run = [row for row in records if isinstance(row, dict) and row.get("deduplication_key") in current]
+        if len(in_run) < len(records):
+            logger.info("Dropped %d AV jobs from earlier runs that are not in this scrape.", len(records) - len(in_run))
+        scraped_at = scraped_at or ingest.latest_fetched_at()
+    except (OSError, ValueError, psycopg2.Error) as exc:
+        logger.error("Could not prepare the gold update: %s", exc)
+        return 1
+    if scraped_at is None:
+        logger.error("No fetched_at in bronze.raw_responses; pass --scraped-at.")
+        return 1
+    return publish(in_run, scraped_at=scraped_at, source="live", ingest=ingest)
+
+
+def main(argv: list[str] | None = None) -> int:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+    parser = argparse.ArgumentParser(description="Land a scrape run's av_jobs.jsonl in silver and rebuild gold")
+    parser.add_argument("input", type=Path, help="The run's av_jobs.jsonl")
+    parser.add_argument("--scraped-at", required=True, type=parse_scraped_at,
+                        help="When the run scraped, ISO 8601 with a timezone (not the processing time)")
+    parser.add_argument("--source", choices=RUN_SOURCES, default="live")
+    parser.add_argument("--classifier-version", help="Classifier/prompt/vocabulary version that produced the skills")
+    parser.add_argument("--incomplete", action="store_true", help="Register a failed or partial run without its jobs")
+    parser.add_argument("--replace", action="store_true", help="Replace a run that was already ingested")
+    parser.add_argument("--skip-gold", action="store_true",
+                        help="Don't rebuild gold (dbt) or copy it to the gold database afterwards")
+    args = parser.parse_args(argv)
+
+    try:
+        records = [] if args.incomplete else read_jsonl(args.input)
+    except (OSError, ValueError) as exc:
+        logger.error("Classification ingest failed: %s", exc)
+        return 1
+    return publish(
+        records, scraped_at=args.scraped_at, source=args.source, classifier_version=args.classifier_version,
+        completed=not args.incomplete, replace=args.replace, skip_gold=args.skip_gold,
+    )
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
