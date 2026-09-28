@@ -16,6 +16,31 @@ _SQL_DIR = Path(__file__).resolve().parent.parent / "sql"
 _IDLE_PING_AFTER_SECONDS = 30
 
 
+def register_idle_ping_listeners(engine) -> None:
+    """Ping a pooled connection only when it has been idle for a while,
+    instead of pool_pre_ping's round trip on every checkout."""
+
+    @event.listens_for(engine, "checkout")
+    def _ping_if_idle(dbapi_connection, connection_record, _connection_proxy):
+        last_ok = connection_record.info.get("last_ok")
+        if last_ok is not None and monotonic() - last_ok < _IDLE_PING_AFTER_SECONDS:
+            return
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        except Exception as error:
+            connection_record.invalidate(error)
+            raise exc.DisconnectionError() from error
+        finally:
+            cursor.close()
+        connection_record.info["last_ok"] = monotonic()
+
+    @event.listens_for(engine, "checkin")
+    def _mark_checkin(_dbapi_connection, connection_record):
+        connection_record.info["last_ok"] = monotonic()
+
+
 class Database:
     """Owns the process's one SQLAlchemy engine/session factory/declarative
     base. A second instance would mean two connection pools racing against
@@ -87,27 +112,7 @@ class Database:
         self.Base = declarative_base()
 
     def _register_idle_ping_listeners(self) -> None:
-        engine = self.engine
-
-        @event.listens_for(engine, "checkout")
-        def _ping_if_idle(dbapi_connection, connection_record, _connection_proxy):
-            last_ok = connection_record.info.get("last_ok")
-            if last_ok is not None and monotonic() - last_ok < _IDLE_PING_AFTER_SECONDS:
-                return
-            cursor = dbapi_connection.cursor()
-            try:
-                cursor.execute("SELECT 1")
-                cursor.fetchone()
-            except Exception as error:
-                connection_record.invalidate(error)
-                raise exc.DisconnectionError() from error
-            finally:
-                cursor.close()
-            connection_record.info["last_ok"] = monotonic()
-
-        @event.listens_for(engine, "checkin")
-        def _mark_checkin(_dbapi_connection, connection_record):
-            connection_record.info["last_ok"] = monotonic()
+        register_idle_ping_listeners(self.engine)
 
     def init_db(self) -> None:
         self.Base.metadata.create_all(bind=self.engine)

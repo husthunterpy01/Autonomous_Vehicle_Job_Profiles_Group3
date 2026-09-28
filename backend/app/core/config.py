@@ -10,6 +10,13 @@ load_dotenv()
 class Settings:
     def __init__(self):
         self.database_url = os.getenv("DATABASE_URL")
+        # DOC-13: separate, read-only database holding the gold trend mart.
+        gold_database_url = os.getenv("GOLD_DATABASE_URL")
+        self.gold_database_url = (
+            gold_database_url.strip()
+            if gold_database_url and gold_database_url.strip()
+            else None
+        )
         self.app_name = os.getenv("APP_NAME", "AV Job Profiles API")
         self.api_prefix = os.getenv("API_PREFIX", "/api/v1")
         self.seed_on_startup = os.getenv("SEED_ON_STARTUP", "false").strip().lower() in {
