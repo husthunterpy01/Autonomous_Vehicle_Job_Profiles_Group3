@@ -46,8 +46,6 @@ export type TrendSeries = {
   skillType: string;
   color: string;
   points: TrendPoint[];
-  /** Job count in the latest month shown. */
-  latestCount: number;
   path: string;
 };
 
@@ -127,7 +125,6 @@ export function layoutSkillTrend(data: SkillTrends): SkillTrendLayout {
       skillType: skill.skill_type,
       color: SERIES_COLORS[i],
       points,
-      latestCount: counts[i][counts[i].length - 1] ?? 0,
       path: points
         .map((p, index) => `${index === 0 ? "M" : "L"}${p.x} ${p.y}`)
         .join(" "),

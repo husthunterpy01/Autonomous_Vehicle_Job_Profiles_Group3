@@ -78,14 +78,14 @@ describe("SkillTrendChartView", () => {
     }
   });
 
-  it("the legend lists each skill with its latest count and type", () => {
+  it("the legend lists each skill and its type, without counts", () => {
     const { getByRole } = renderChart();
     const python = getByRole("button", { name: /Python/ });
-    assert.match(python.textContent!, /Python.*Language.*806/);
+    assert.equal(python.textContent, "PythonLanguage");
     assert.equal(python.getAttribute("aria-pressed"), "false");
-    assert.match(
-      getByRole("button", { name: /ROS 2/ }).textContent!,
-      /Framework.*81/,
+    assert.equal(
+      getByRole("button", { name: /ROS 2/ }).textContent,
+      "ROS 2Framework",
     );
   });
 

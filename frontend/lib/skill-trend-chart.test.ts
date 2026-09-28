@@ -86,13 +86,13 @@ test("months spread across the plot and a missing month counts as 0", () => {
   assert.match(ros.path, /^M\S+ \S+ L\S+ \S+$/);
 });
 
-test("colors follow the API order and the latest count is kept", () => {
+test("colors follow the API order", () => {
   const layout = layoutSkillTrend(DATA);
   assert.deepEqual(
-    layout.series.map((s) => [s.name, s.color, s.latestCount]),
+    layout.series.map((s) => [s.name, s.color]),
     [
-      ["Python", SERIES_COLORS[0], 806],
-      ["ROS 2", SERIES_COLORS[1], 81],
+      ["Python", SERIES_COLORS[0]],
+      ["ROS 2", SERIES_COLORS[1]],
     ],
   );
 });

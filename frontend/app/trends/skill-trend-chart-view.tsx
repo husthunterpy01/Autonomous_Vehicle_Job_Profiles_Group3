@@ -70,23 +70,22 @@ function LineKey({ color }: { color: string }) {
   );
 }
 
+/* Names only: the job counts live in the month tooltip, so the legend
+   stays a key rather than a second data table. */
 function Legend({
   series,
-  latestLabel,
   highlighted,
   onSelect,
 }: {
   series: TrendSeries[];
-  latestLabel: string;
   highlighted: string | null;
   onSelect: (key: string) => void;
 }) {
   return (
     <aside className="border-t border-line p-4 lg:w-72 lg:shrink-0 lg:border-t-0 lg:border-l">
-      <div className="flex items-baseline justify-between text-xs font-semibold tracking-wide text-ink-muted uppercase">
-        <span>Skills</span>
-        <span className="normal-case">{latestLabel}</span>
-      </div>
+      <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">
+        Skills
+      </p>
       <ul className="mt-3 space-y-1.5" aria-label="Skills">
         {series.map((s) => {
           const active = s.key === highlighted;
@@ -112,17 +111,14 @@ function Legend({
                     {SKILL_TYPE_LABELS[s.skillType] ?? s.skillType}
                   </span>
                 </span>
-                <span className="text-sm font-bold text-ink">
-                  {s.latestCount.toLocaleString("en-US")}
-                </span>
               </button>
             </li>
           );
         })}
       </ul>
       <p className="mt-4 border-t border-line pt-3 text-xs text-ink-muted">
-        Click a skill to highlight it in the chart. Counts are job postings in{" "}
-        {latestLabel}.
+        Click a skill to highlight it in the chart. Hover over a month to see
+        each skill&apos;s job count.
       </p>
     </aside>
   );
@@ -542,7 +538,6 @@ function TrendChart({ data }: { data: SkillTrends }) {
           </div>
           <Legend
             series={layout.series}
-            latestLabel={layout.months[lastMonth].label}
             highlighted={highlighted}
             onSelect={(key) =>
               setHighlighted((current) => (current === key ? null : key))
