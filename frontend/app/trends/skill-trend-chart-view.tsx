@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -9,10 +8,13 @@ import {
   type KeyboardEvent,
   type PointerEvent,
   type ReactNode,
+  type RefObject,
 } from "react";
 import {
+  CHART,
   layoutSkillTrend,
   nearestMonthIndex,
+  scrollAfterZoom,
   type SkillTrendLayout,
   type TrendSeries,
 } from "@/lib/skill-trend-chart";
@@ -23,12 +25,14 @@ export type SkillTrendsState =
   | { status: "error" }
   | { status: "success"; data: SkillTrends };
 
-export const MIN_ZOOM = 1;
-export const MAX_ZOOM = 3;
-const ZOOM_STEP = 0.25;
-// How fast the mouse wheel zooms: one notch (deltaY 100) is about 16%.
-const WHEEL_ZOOM_SPEED = 0.0015;
-const MIN_RENDERED_WIDTH = 560;
+// Zoom scales both axes; the frame around the plot keeps its size.
+export const ZOOM_LEVELS = [1, 1.5, 2, 3, 4] as const;
+// Room for the count labels and the rotated "Job postings" title.
+const Y_AXIS_WIDTH = 72;
+// Room for the month labels and the "Month" title.
+const X_AXIS_HEIGHT = 48;
+// Used until the frame is measured (and in tests, which have no layout).
+const FALLBACK_PLOT_WIDTH = 640;
 const GRID = "#eef0f4";
 const SURFACE = "#ffffff";
 
@@ -39,10 +43,6 @@ const SKILL_TYPE_LABELS: Record<string, string> = {
   domain_concept: "Domain concept",
   certification: "Certification",
 };
-
-export function clampZoom(zoom: number): number {
-  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(zoom * 100) / 100));
-}
 
 function Notice({ title, children }: { title: string; children?: ReactNode }) {
   return (
@@ -125,16 +125,15 @@ function Legend({
 }
 
 function ZoomControls({
-  zoom,
-  onZoom,
-  onReset,
+  level,
+  onLevel,
 }: {
-  zoom: number;
-  onZoom: (change: (zoom: number) => number) => void;
-  onReset: () => void;
+  level: number;
+  onLevel: (level: number) => void;
 }) {
   const button =
     "rounded-md border border-line px-2.5 py-1 text-sm text-ink-secondary transition-colors hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40";
+  const last = ZOOM_LEVELS.length - 1;
   return (
     <div className="flex items-center gap-2">
       <div
@@ -145,20 +144,20 @@ function ZoomControls({
           type="button"
           className={button}
           aria-label="Zoom out"
-          onClick={() => onZoom((z) => clampZoom(z - ZOOM_STEP))}
-          disabled={zoom <= MIN_ZOOM}
+          onClick={() => onLevel(level - 1)}
+          disabled={level === 0}
         >
           −
         </button>
         <span className="w-12 text-center text-sm text-ink-secondary">
-          {Math.round(zoom * 100)}%
+          {ZOOM_LEVELS[level] * 100}%
         </span>
         <button
           type="button"
           className={button}
           aria-label="Zoom in"
-          onClick={() => onZoom((z) => clampZoom(z + ZOOM_STEP))}
-          disabled={zoom >= MAX_ZOOM}
+          onClick={() => onLevel(level + 1)}
+          disabled={level === last}
         >
           +
         </button>
@@ -167,8 +166,8 @@ function ZoomControls({
         type="button"
         className={button}
         aria-label="Reset zoom"
-        onClick={onReset}
-        disabled={zoom === MIN_ZOOM}
+        onClick={() => onLevel(0)}
+        disabled={level === 0}
       >
         ↺
       </button>
@@ -182,25 +181,30 @@ function Tooltip({
   layout,
   monthIndex,
   highlighted,
+  x,
+  viewWidth,
 }: {
   layout: SkillTrendLayout;
   monthIndex: number;
   highlighted: string | null;
+  /** The month's position in the visible frame, in pixels. */
+  x: number;
+  viewWidth: number;
 }) {
   const month = layout.months[monthIndex];
   const rows = layout.series
     .map((s) => ({ s, count: s.points[monthIndex].jobCount }))
     .sort((a, b) => b.count - a.count);
-  const leftPercent = (month.x / layout.width) * 100;
-  const alignRight = leftPercent > 60;
+  // Sits beside the month line, on whichever side has more room.
+  const alignRight = x > viewWidth * 0.6;
   return (
     <div
       role="status"
       className="pointer-events-none absolute top-2 z-10 min-w-[190px] rounded-lg border border-line bg-surface p-3 text-sm shadow-md"
       style={
         alignRight
-          ? { right: `${100 - leftPercent + 2}%` }
-          : { left: `${leftPercent + 2}%` }
+          ? { right: viewWidth - x + 12 }
+          : { left: Math.max(x, 0) + 12 }
       }
     >
       <p className="mb-1.5 text-xs font-medium text-ink-muted">{month.label}</p>
@@ -262,82 +266,182 @@ function SkillTable({ layout }: { layout: SkillTrendLayout }) {
   );
 }
 
+/* The plot frame's width at 100%, following the card as it resizes. */
+function usePlotWidth(ref: RefObject<HTMLDivElement | null>): number {
+  const [width, setWidth] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => setWidth(Math.floor(el.clientWidth) - Y_AXIS_WIDTH);
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref]);
+  return width > 0 ? width : FALLBACK_PLOT_WIDTH;
+}
+
+/* Count labels and the axis title, pinned left of the plot. The labels
+   follow the plot as it scrolls up and down. */
+function YAxis({
+  layout,
+  scrollTop,
+}: {
+  layout: SkillTrendLayout;
+  scrollTop: number;
+}) {
+  const middle = CHART.height / 2;
+  return (
+    <svg width={Y_AXIS_WIDTH} height={CHART.height} className="shrink-0">
+      {layout.yTicks.map((tick) => (
+        <text
+          key={tick.value}
+          x={Y_AXIS_WIDTH - 8}
+          y={tick.y - scrollTop}
+          textAnchor="end"
+          dominantBaseline="middle"
+          className="fill-ink-muted text-xs"
+        >
+          {tick.value.toLocaleString("en-US")}
+        </text>
+      ))}
+      <text
+        x={14}
+        y={middle}
+        textAnchor="middle"
+        transform={`rotate(-90 14 ${middle})`}
+        className="fill-ink-secondary text-xs font-medium"
+      >
+        Job postings
+      </text>
+    </svg>
+  );
+}
+
+/* Month labels and the axis title, pinned below the plot. The labels
+   follow the plot as it scrolls left and right. */
+function XAxis({
+  layout,
+  scrollLeft,
+}: {
+  layout: SkillTrendLayout;
+  scrollLeft: number;
+}) {
+  return (
+    <div className="flex">
+      <div className="shrink-0" style={{ width: Y_AXIS_WIDTH }} />
+      <svg height={X_AXIS_HEIGHT} className="min-w-0 flex-1">
+        {layout.months
+          .filter((m) => m.showLabel)
+          .map((m) => (
+            <text
+              key={m.key}
+              x={m.x - scrollLeft}
+              y={16}
+              textAnchor="middle"
+              className="fill-ink-secondary text-xs"
+            >
+              {m.label}
+            </text>
+          ))}
+        <text
+          x="50%"
+          y={X_AXIS_HEIGHT - 6}
+          textAnchor="middle"
+          className="fill-ink-secondary text-xs font-medium"
+        >
+          Month
+        </text>
+      </svg>
+    </div>
+  );
+}
+
 function TrendChart({ data }: { data: SkillTrends }) {
-  // The geometry only depends on the data: zooming, hovering and
-  // highlighting re-render without recomputing it.
-  const layout = useMemo(() => layoutSkillTrend(data), [data]);
-  const [highlighted, setHighlighted] = useState<string | null>(null);
-  const [zoom, setZoom] = useState(MIN_ZOOM);
-  const [activeMonth, setActiveMonth] = useState<number | null>(null);
-  const [dragging, setDragging] = useState(false);
+  const frameRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const zoomRef = useRef(zoom);
-  // Where to keep the content under the cursor after a zoom.
-  const anchorRef = useRef<{
-    contentX: number;
-    offsetX: number;
+  const viewWidth = usePlotWidth(frameRef);
+  const [level, setLevel] = useState(0);
+  const zoom = ZOOM_LEVELS[level];
+  const zoomed = level > 0;
+  // Hovering and highlighting re-render without recomputing the geometry.
+  const layout = useMemo(
+    () =>
+      layoutSkillTrend(data, {
+        width: viewWidth * zoom,
+        height: CHART.height * zoom,
+        zoom,
+      }),
+    [data, viewWidth, zoom],
+  );
+  const [highlighted, setHighlighted] = useState<string | null>(null);
+  const [activeMonth, setActiveMonth] = useState<number | null>(null);
+  const [scroll, setScroll] = useState({ left: 0, top: 0 });
+  const [dragging, setDragging] = useState(false);
+  // The view before a zoom, to place the scroll once the plot has resized.
+  const pendingZoom = useRef<{
+    left: number;
+    top: number;
+    width: number;
     ratio: number;
   } | null>(null);
-  const dragRef = useRef<{ x: number; scrollLeft: number } | null>(null);
+  const dragRef = useRef<{
+    x: number;
+    y: number;
+    left: number;
+    top: number;
+  } | null>(null);
   const lastMonth = layout.months.length - 1;
 
-  const zoomAround = (next: number, offsetX: number) => {
+  const changeLevel = (next: number) => {
     const el = scrollRef.current;
-    const current = zoomRef.current;
-    if (!el || next === current) return;
-    anchorRef.current = {
-      contentX: el.scrollLeft + offsetX,
-      offsetX,
-      ratio: next / current,
+    if (!el || next === level) return;
+    pendingZoom.current = {
+      left: el.scrollLeft,
+      top: el.scrollTop,
+      width: el.clientWidth || viewWidth,
+      ratio: ZOOM_LEVELS[next] / zoom,
     };
-    zoomRef.current = next;
-    setZoom(next);
+    setLevel(next);
   };
 
-  const zoomBy = (change: (zoom: number) => number) => {
-    const el = scrollRef.current;
-    zoomAround(change(zoomRef.current), el ? el.clientWidth / 2 : 0);
-  };
-
+  // Once the resized plot is in the DOM, before the browser paints.
   useLayoutEffect(() => {
     const el = scrollRef.current;
-    const anchor = anchorRef.current;
-    if (!el || !anchor) return;
-    el.scrollLeft = anchor.contentX * anchor.ratio - anchor.offsetX;
-    anchorRef.current = null;
-  }, [zoom]);
+    const before = pendingZoom.current;
+    if (!el || !before) return;
+    pendingZoom.current = null;
+    const target = scrollAfterZoom(
+      before,
+      { before: before.width, after: el.clientWidth || viewWidth },
+      before.ratio,
+    );
+    el.scrollLeft = target.left;
+    el.scrollTop = target.top;
+    setScroll({ left: el.scrollLeft, top: el.scrollTop });
+  }, [level, viewWidth]);
 
-  // Wheel zoom needs a non-passive listener to stop the page scrolling. At
-  // the zoom limits the wheel scrolls the page as usual.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const onWheel = (event: WheelEvent) => {
-      if (event.deltaY === 0) return;
-      const next = clampZoom(
-        zoomRef.current * Math.exp(-event.deltaY * WHEEL_ZOOM_SPEED),
-      );
-      if (next === zoomRef.current) return;
-      event.preventDefault();
-      zoomAround(next, event.clientX - el.getBoundingClientRect().left);
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-    // Registered once: zoomAround only reads refs, so it never goes stale.
-  }, []);
-
+  // Touch and trackpads scroll natively; a mouse can also drag to pan.
   const onPanStart = (event: PointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
-    if (!el || event.button !== 0 || el.scrollWidth <= el.clientWidth) return;
-    dragRef.current = { x: event.clientX, scrollLeft: el.scrollLeft };
+    if (!el || !zoomed || event.pointerType !== "mouse" || event.button !== 0)
+      return;
+    dragRef.current = {
+      x: event.clientX,
+      y: event.clientY,
+      left: el.scrollLeft,
+      top: el.scrollTop,
+    };
     el.setPointerCapture?.(event.pointerId);
     setDragging(true);
   };
   const onPanMove = (event: PointerEvent<HTMLDivElement>) => {
     const el = scrollRef.current;
-    if (!el || !dragRef.current) return;
-    el.scrollLeft =
-      dragRef.current.scrollLeft - (event.clientX - dragRef.current.x);
+    const drag = dragRef.current;
+    if (!el || !drag) return;
+    el.scrollLeft = drag.left - (event.clientX - drag.x);
+    el.scrollTop = drag.top - (event.clientY - drag.y);
   };
   const onPanEnd = () => {
     dragRef.current = null;
@@ -347,17 +451,27 @@ function TrendChart({ data }: { data: SkillTrends }) {
   const onHover = (event: PointerEvent<SVGRectElement>) => {
     const svg = event.currentTarget.ownerSVGElement;
     if (!svg) return;
-    const box = svg.getBoundingClientRect();
-    const x = ((event.clientX - box.left) / box.width) * layout.width;
+    const x = event.clientX - svg.getBoundingClientRect().left;
     setActiveMonth(nearestMonthIndex(layout, x));
+  };
+
+  // From the keyboard, a month scrolled out of view is brought back.
+  const showMonth = (index: number) => {
+    setActiveMonth(index);
+    const el = scrollRef.current;
+    if (!el || !zoomed) return;
+    const x = layout.months[index].x;
+    if (x < el.scrollLeft || x > el.scrollLeft + el.clientWidth) {
+      el.scrollLeft = x - el.clientWidth / 2;
+    }
   };
 
   const onKeyDown = (event: KeyboardEvent<SVGRectElement>) => {
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       const step = event.key === "ArrowLeft" ? -1 : 1;
-      setActiveMonth((current) =>
-        Math.min(lastMonth, Math.max(0, (current ?? lastMonth) + step)),
+      showMonth(
+        Math.min(lastMonth, Math.max(0, (activeMonth ?? lastMonth) + step)),
       );
     } else if (event.key === "Escape") {
       setActiveMonth(null);
@@ -369,171 +483,141 @@ function TrendChart({ data }: { data: SkillTrends }) {
     ...layout.series.filter((s) => s.key !== highlighted),
     ...layout.series.filter((s) => s.key === highlighted),
   ];
-  const plotMiddleY = (layout.plotTop + layout.plotBottom) / 2;
-  const plotMiddleX = (layout.plotLeft + layout.plotRight) / 2;
 
   return (
     <div>
       <div className="mb-3 flex justify-end">
-        <ZoomControls
-          zoom={zoom}
-          onZoom={zoomBy}
-          onReset={() => zoomAround(MIN_ZOOM, 0)}
-        />
+        <ZoomControls level={level} onLevel={changeLevel} />
       </div>
       <div className="overflow-hidden rounded-xl border border-line">
         <div className="flex flex-col lg:flex-row">
           <div className="min-w-0 flex-1 p-4">
-            <div
-              ref={scrollRef}
-              data-testid="chart-scroll"
-              className={`overflow-x-auto overscroll-x-contain ${
-                zoom > MIN_ZOOM
-                  ? dragging
-                    ? "cursor-grabbing"
-                    : "cursor-grab"
-                  : ""
-              }`}
-              onPointerDown={onPanStart}
-              onPointerMove={onPanMove}
-              onPointerUp={onPanEnd}
-              onPointerCancel={onPanEnd}
-            >
-              <div
-                className="relative"
-                style={{
-                  width: `${zoom * 100}%`,
-                  minWidth: `${MIN_RENDERED_WIDTH * zoom}px`,
-                }}
-              >
-                <svg
-                  viewBox={`0 0 ${layout.width} ${layout.height}`}
-                  className="block w-full select-none"
-                  role="group"
-                  aria-label={`Job postings per month for ${layout.series.map((s) => s.name).join(", ")}`}
+            <div ref={frameRef}>
+              <div className="flex">
+                <YAxis layout={layout} scrollTop={scroll.top} />
+                {/* A fixed frame: zooming grows the plot inside it, and the
+                    plot scrolls within it. */}
+                <div
+                  className="relative min-w-0 flex-1"
+                  style={{ height: CHART.height }}
                 >
-                  {layout.yTicks.map((tick) => (
-                    <g key={tick.value}>
-                      <line
-                        x1={layout.plotLeft}
-                        x2={layout.plotRight}
-                        y1={tick.y}
-                        y2={tick.y}
-                        stroke={GRID}
-                        strokeWidth={1}
-                      />
-                      <text
-                        x={layout.plotLeft - 10}
-                        y={tick.y}
-                        textAnchor="end"
-                        dominantBaseline="middle"
-                        className="fill-ink-muted text-xs"
-                      >
-                        {tick.value.toLocaleString("en-US")}
-                      </text>
-                    </g>
-                  ))}
-                  <text
-                    x={16}
-                    y={plotMiddleY}
-                    textAnchor="middle"
-                    transform={`rotate(-90 16 ${plotMiddleY})`}
-                    className="fill-ink-secondary text-xs font-medium"
+                  <div
+                    ref={scrollRef}
+                    data-testid="chart-scroll"
+                    className={`absolute inset-0 ${
+                      zoomed
+                        ? `overflow-auto ${dragging ? "cursor-grabbing" : "cursor-grab"}`
+                        : "overflow-hidden"
+                    }`}
+                    onScroll={(event) =>
+                      setScroll({
+                        left: event.currentTarget.scrollLeft,
+                        top: event.currentTarget.scrollTop,
+                      })
+                    }
+                    onPointerDown={onPanStart}
+                    onPointerMove={onPanMove}
+                    onPointerUp={onPanEnd}
+                    onPointerCancel={onPanEnd}
                   >
-                    Job postings
-                  </text>
-                  {layout.months.map((m) => (
-                    <text
-                      key={m.key}
-                      x={m.x}
-                      y={layout.plotBottom + 22}
-                      textAnchor="middle"
-                      className="fill-ink-secondary text-xs"
+                    <svg
+                      data-testid="chart-plot"
+                      width={layout.width}
+                      height={layout.height}
+                      className="block select-none"
+                      role="group"
+                      aria-label={`Job postings per month for ${layout.series.map((s) => s.name).join(", ")}`}
                     >
-                      {m.label}
-                    </text>
-                  ))}
-                  <text
-                    x={plotMiddleX}
-                    y={layout.height - 8}
-                    textAnchor="middle"
-                    className="fill-ink-secondary text-xs font-medium"
-                  >
-                    Month
-                  </text>
-                  {activeMonth !== null && (
-                    <line
-                      x1={layout.months[activeMonth].x}
-                      x2={layout.months[activeMonth].x}
-                      y1={layout.plotTop}
-                      y2={layout.plotBottom}
-                      stroke="#94a3b8"
-                      strokeWidth={1}
+                      {layout.yTicks.map((tick) => (
+                        <line
+                          key={tick.value}
+                          x1={0}
+                          x2={layout.width}
+                          y1={tick.y}
+                          y2={tick.y}
+                          stroke={GRID}
+                          strokeWidth={1}
+                        />
+                      ))}
+                      {activeMonth !== null && (
+                        <line
+                          x1={layout.months[activeMonth].x}
+                          x2={layout.months[activeMonth].x}
+                          y1={layout.plotTop}
+                          y2={layout.plotBottom}
+                          stroke="#94a3b8"
+                          strokeWidth={1}
+                        />
+                      )}
+                      {ordered.map((s) => {
+                        const active = s.key === highlighted;
+                        const dimmed = highlighted !== null && !active;
+                        return (
+                          <g
+                            key={s.key}
+                            data-skill={s.name}
+                            opacity={dimmed ? 0.2 : 1}
+                          >
+                            <path
+                              d={s.path}
+                              fill="none"
+                              stroke={s.color}
+                              strokeWidth={active ? 3 : 2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                            {s.points.map((p, index) => (
+                              <circle
+                                key={p.monthKey}
+                                cx={p.x}
+                                cy={p.y}
+                                r={index === activeMonth || active ? 5 : 4}
+                                fill={s.color}
+                                stroke={SURFACE}
+                                strokeWidth={2}
+                              />
+                            ))}
+                          </g>
+                        );
+                      })}
+                      {/* The whole plot is the hover target, so any x picks the
+                          nearest month; arrow keys do the same from the keyboard. */}
+                      <rect
+                        x={0}
+                        y={0}
+                        width={layout.width}
+                        height={layout.height}
+                        fill="transparent"
+                        tabIndex={0}
+                        role="group"
+                        aria-label="Hover, or focus and use the left and right arrow keys, to read each month's job counts"
+                        className="outline-none"
+                        onPointerMove={onHover}
+                        onPointerLeave={() => setActiveMonth(null)}
+                        onFocus={() =>
+                          setActiveMonth((current) => current ?? lastMonth)
+                        }
+                        onBlur={() => setActiveMonth(null)}
+                        onKeyDown={onKeyDown}
+                      />
+                    </svg>
+                  </div>
+                  {activeMonth !== null && !dragging && (
+                    <Tooltip
+                      layout={layout}
+                      monthIndex={activeMonth}
+                      highlighted={highlighted}
+                      x={layout.months[activeMonth].x - scroll.left}
+                      viewWidth={viewWidth}
                     />
                   )}
-                  {ordered.map((s) => {
-                    const active = s.key === highlighted;
-                    const dimmed = highlighted !== null && !active;
-                    return (
-                      <g
-                        key={s.key}
-                        data-skill={s.name}
-                        opacity={dimmed ? 0.2 : 1}
-                      >
-                        <path
-                          d={s.path}
-                          fill="none"
-                          stroke={s.color}
-                          strokeWidth={active ? 3 : 2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        {s.points.map((p, index) => (
-                          <circle
-                            key={p.monthKey}
-                            cx={p.x}
-                            cy={p.y}
-                            r={index === activeMonth || active ? 5 : 4}
-                            fill={s.color}
-                            stroke={SURFACE}
-                            strokeWidth={2}
-                          />
-                        ))}
-                      </g>
-                    );
-                  })}
-                  {/* The whole plot is the hover target, so any x picks the
-                      nearest month; arrow keys do the same from the keyboard. */}
-                  <rect
-                    x={0}
-                    y={0}
-                    width={layout.width}
-                    height={layout.plotBottom + 8}
-                    fill="transparent"
-                    tabIndex={0}
-                    role="group"
-                    aria-label="Hover, or focus and use the left and right arrow keys, to read each month's job counts"
-                    className="outline-none"
-                    onPointerMove={onHover}
-                    onPointerLeave={() => setActiveMonth(null)}
-                    onFocus={() =>
-                      setActiveMonth((current) => current ?? lastMonth)
-                    }
-                    onBlur={() => setActiveMonth(null)}
-                    onKeyDown={onKeyDown}
-                  />
-                </svg>
-                {activeMonth !== null && !dragging && (
-                  <Tooltip
-                    layout={layout}
-                    monthIndex={activeMonth}
-                    highlighted={highlighted}
-                  />
-                )}
+                </div>
               </div>
+              <XAxis layout={layout} scrollLeft={scroll.left} />
             </div>
             <p className="mt-2 text-xs text-ink-muted">
-              Scroll to zoom · Drag to pan when zoomed in
+              Zoom with + and −, then scroll or drag inside the chart to see the
+              other counts and months.
             </p>
           </div>
           <Legend
