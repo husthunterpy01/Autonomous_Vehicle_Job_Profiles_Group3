@@ -6,6 +6,7 @@ import yaml
 from scrapers.utils.build_classification_handoff import (
     DEFAULT_MAIN_TYPES_PATH,
     _load_main_types,
+    build_clear_handoff_records,
     build_handoff_records,
     main,
 )
@@ -297,3 +298,53 @@ def test_salary_source_counts_are_logged(tmp_path, caplog):
         _build([path])
 
     assert any("Salary resolved for 1/2" in message for message in caplog.messages)
+
+
+def test_dropped_jobs_get_clear_only_rows_so_their_old_labels_are_removed(tmp_path):
+    no_category = tmp_path / "no_category_jobs.jsonl"
+    non_engineering = tmp_path / "non_engineering_jobs.jsonl"
+    _write_jsonl(no_category, [{"deduplication_key": "a"}, {"deduplication_key": "b"}])
+    _write_jsonl(non_engineering, [{"deduplication_key": "b"}, {"deduplication_key": "c"}])
+
+    records = build_clear_handoff_records([no_category, non_engineering])
+
+    assert sorted(records, key=lambda r: r["deduplication_key"]) == [
+        {"deduplication_key": "a", "functional_area": []},
+        {"deduplication_key": "b", "functional_area": []},
+        {"deduplication_key": "c", "functional_area": []},
+    ]
+
+
+def test_a_job_that_is_also_accepted_this_run_is_not_cleared(tmp_path):
+    dropped = tmp_path / "no_category_jobs.jsonl"
+    _write_jsonl(dropped, [{"deduplication_key": "accepted-now"}, {"deduplication_key": "dropped"}])
+
+    records = build_clear_handoff_records([dropped], exclude_keys={"accepted-now"})
+
+    assert [r["deduplication_key"] for r in records] == ["dropped"]
+
+
+def test_a_missing_dropped_file_is_skipped_not_an_error(tmp_path):
+    assert build_clear_handoff_records([tmp_path / "never_written.jsonl"]) == []
+
+
+def test_main_writes_a_separate_clear_only_file_and_leaves_the_av_handoff_untouched(tmp_path):
+    av = tmp_path / "av_jobs.jsonl"
+    dropped = tmp_path / "no_category_jobs.jsonl"
+    _write_jsonl(av, [{"deduplication_key": "keep", "_classification": {"categories": ["Perception"], "skills": []}}])
+    _write_jsonl(dropped, [{"deduplication_key": "drop"}])
+
+    status = main(
+        [
+            "--input", str(av), "--output", str(tmp_path / "handoff.json"),
+            "--main-types", str(tmp_path / "none.yaml"), "--company-salary-cache", str(tmp_path / "none.yaml"),
+            "--dropped", str(dropped), "--dropped-output", str(tmp_path / "handoff_dropped.json"),
+        ]
+    )
+
+    assert status == 0
+    handoff = json.loads((tmp_path / "handoff.json").read_text())
+    assert [r["deduplication_key"] for r in handoff] == ["keep"]
+    assert json.loads((tmp_path / "handoff_dropped.json").read_text()) == [
+        {"deduplication_key": "drop", "functional_area": []}
+    ]

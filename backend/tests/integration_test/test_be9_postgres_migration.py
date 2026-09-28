@@ -116,12 +116,28 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             drop_location_migration = (root / "backend/app/sql/be15_drop_job_location_migration.sql").read_text(encoding="utf-8")
             cursor.execute(drop_location_migration)
             cursor.execute(drop_location_migration)
+            job_details_migration = (root / "backend/app/sql/be19_job_details_migration.sql").read_text(encoding="utf-8")
+            cursor.execute(job_details_migration)
+            cursor.execute(job_details_migration)
             # be9 must stay repeatable once the column it used to relax is gone.
             cursor.execute(migration)
             cursor.execute("SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'jobposting' AND column_name = 'job_location'", (schema,))
             assert cursor.fetchone()[0] == 0
-            cursor.execute("SELECT title, raw_description FROM jobposting")
-            assert cursor.fetchall() == [("Legacy Engineer", "Original description")]
+            cursor.execute("SELECT title, raw_description, requirements FROM jobposting")
+            assert cursor.fetchall() == [("Legacy Engineer", "Original description", None)]
+            cursor.execute("SELECT indexname FROM pg_indexes WHERE schemaname = %s AND indexname LIKE 'ix_job%%'", (schema,))
+            index_names = {row[0] for row in cursor.fetchall()}
+            assert {
+                "ix_jobposting_company_id", "ix_jobposting_employment_type",
+                "ix_jobposting_posted_date", "ix_jobposting_salary_period",
+                "ix_job_location_location_id", "ix_job_skill_skill_id",
+                "ix_job_category_category_id",
+            } <= index_names
+            description_migration = (root / "backend/app/sql/company_description_migration.sql").read_text(encoding="utf-8")
+            cursor.execute(description_migration)
+            cursor.execute(description_migration)
+            cursor.execute("SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'company' AND column_name = 'description'", (schema,))
+            assert cursor.fetchone()[0] == 1
         test_engine = create_engine(database_url, connect_args={"options": f"-csearch_path={schema}"})
         locations = [f"Office {i:02d} - Long location name" for i in range(12)]
         with Session(test_engine) as db, db.begin():

@@ -74,11 +74,50 @@ def test_unknown_category_is_skipped_and_single_job_enrich_raises():
         JobEnricher(complete).enrich("Engineer", "Autonomous vehicle work.")
 
 
-def test_missing_category_is_skipped_and_single_job_enrich_raises():
-    complete = complete_with({"results": [{"id": "job", "categories": [], "skills": []}]})
+def test_explicit_empty_categories_means_no_fit_and_is_not_an_error():
+    complete = complete_with({"results": [{"id": "job", "area": "", "evidence": "", "categories": [], "skills": []}]})
+
+    result = JobEnricher(complete).enrich("Business Systems Engineer", "NetSuite and Workday integrations.")
+
+    assert result.categories == ()
+    assert result.has_category is False
+
+
+def test_missing_categories_key_is_still_unusable_so_truncation_is_retried_not_dropped():
+    complete = complete_with({"results": [{"id": "job", "skills": []}]})
 
     with pytest.raises(ValueError, match="did not return a usable enrichment"):
         JobEnricher(complete).enrich("Engineer", "Autonomous vehicle work.")
+
+
+def test_declared_area_overrides_a_higher_weighted_category_in_another_area():
+    complete = complete_with(
+        {
+            "results": [
+                {
+                    "id": "job",
+                    "area": "System",
+                    "evidence": "validation of controllers on HiL benches",
+                    "categories": [_category("Infrastructure", "High"), _category("System and Safety", "Medium")],
+                    "skills": [],
+                }
+            ]
+        }
+    )
+
+    result = JobEnricher(complete).enrich("Systems Engineer I - Test Automation", "HiL validation.")
+
+    assert result.categories == ("System and Safety",)
+    assert result.area == "System"
+    assert result.evidence == "validation of controllers on HiL benches"
+
+
+def test_unknown_area_falls_back_to_the_confidence_weighted_choice():
+    complete = complete_with(
+        {"results": [{"id": "job", "area": "Nonsense", "categories": [_category("Planning")], "skills": []}]}
+    )
+
+    assert JobEnricher(complete).enrich("Planner", "Motion planning.").categories == ("Planning",)
 
 
 def test_response_missing_a_job_id_returns_partial_results_instead_of_raising():

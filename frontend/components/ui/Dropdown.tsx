@@ -11,6 +11,8 @@ export default function Dropdown({
   options,
   className = "",
   id,
+  variant = "default",
+  "aria-label": ariaLabel,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -18,17 +20,25 @@ export default function Dropdown({
   className?: string;
   /* Lets a visible <label htmlFor=...> point at the control. */
   id?: string;
+  variant?: "default" | "plain";
+  "aria-label"?: string;
 }) {
   const [open, setOpen] = useState(false);
   const current = options.find((o) => o.value === value);
+  const triggerClass =
+    variant === "plain"
+      ? "flex w-full items-center justify-between gap-2 bg-transparent px-2 py-2 text-sm font-medium text-ink"
+      : "flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary";
 
   return (
     <div className={`relative ${className}`}>
       <button
         id={id}
         type="button"
+        aria-label={ariaLabel}
+        aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center justify-between gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary"
+        className={triggerClass}
       >
         {current ? current.label : value}
         <svg
@@ -46,7 +56,7 @@ export default function Dropdown({
         <>
           {/* click-away backdrop */}
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 right-0 z-20 mt-2 max-h-72 overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-lg">
+          <div className="absolute right-0 z-20 mt-2 max-h-72 min-w-full overflow-y-auto rounded-xl border border-line bg-surface p-2 shadow-lg lg:min-w-64">
             {options.map((o) => (
               <button
                 key={o.value}

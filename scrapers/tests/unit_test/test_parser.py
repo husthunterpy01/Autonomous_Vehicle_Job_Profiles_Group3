@@ -51,3 +51,13 @@ def test_parse_job_prefilter_args(tmp_path):
     assert args.input == input_path
     assert args.output_dir == output_path
     assert args.config is None
+
+
+def test_parse_pipeline_args_defaults_embedding_hub_repo():
+    args = ScraperParser.parse_pipeline_args([])
+    assert args.embedding_hf_repo_id == "husthunterpy01/av-job-relevance-embedding"
+
+
+def test_parse_pipeline_args_accepts_empty_embedding_hub_repo():
+    args = ScraperParser.parse_pipeline_args(["--embedding-hf-repo-id", ""])
+    assert args.embedding_hf_repo_id == ""

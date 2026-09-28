@@ -8,6 +8,7 @@
 # ["Perception", "Sensing"] would otherwise display as main_type
 # "Perception" containing a sub_type "Perception", reading as a duplicate.
 Control: System
+Infrastructure: Platform
 Localization: Localization & Mapping
 Mapping: Localization & Mapping
 Perception: Perception & Sensing

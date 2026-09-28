@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -16,6 +16,7 @@ class Company(Base):
     website_url = Column(String(255), unique=True, nullable=True)
     career_page_url = Column(String(255), unique=True, nullable=True)
     datasource_status = Column(String(255), nullable=False)
+    description = Column(Text, nullable=True)
 
     locations = relationship(
         "CompanyLocation",

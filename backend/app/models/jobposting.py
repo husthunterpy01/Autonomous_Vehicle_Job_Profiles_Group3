@@ -44,6 +44,7 @@ class JobPosting(Base):
     salary_period = Column(String(255), nullable=True)
     salary_source = Column(String(255), nullable=True)
     raw_description = Column(Text, nullable=False)
+    requirements = Column(Text, nullable=True)
     posted_date = Column(DateTime(timezone=True), nullable=True)
     source_platform = Column(String(255), nullable=True)
     extraction_confidence = Column(Float, nullable=True)

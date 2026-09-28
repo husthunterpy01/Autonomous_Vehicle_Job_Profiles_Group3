@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from starlette.middleware.gzip import GZipMiddleware
 
 from app.core.config import settings
 from app.core.database import init_db, seed_db
@@ -29,6 +30,7 @@ app = FastAPI(
 )
 
 add_cors(app)
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.include_router(api_router, prefix=settings.api_prefix)
 
 

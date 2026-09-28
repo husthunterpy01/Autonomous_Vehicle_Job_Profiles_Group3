@@ -1,0 +1,20 @@
+{
+  "cleanUrls": true,
+  "directoryListing": false,
+  "rewrites": [
+    { "source": "/search", "destination": "/search.html" },
+    { "source": "/jobs", "destination": "/jobs.html" },
+    { "source": "/jobs/:id", "destination": "/jobs.html" },
+    { "source": "/companies", "destination": "/companies.html" },
+    {
+      "source": "/companies/profile",
+      "destination": "/companies/profile.html"
+    },
+    { "source": "/favorites", "destination": "/favorites.html" },
+    { "source": "/trends", "destination": "/trends.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/signup", "destination": "/signup.html" },
+    { "source": "/account", "destination": "/account.html" },
+    { "source": "/forgot-password", "destination": "/forgot-password.html" }
+  ]
+}

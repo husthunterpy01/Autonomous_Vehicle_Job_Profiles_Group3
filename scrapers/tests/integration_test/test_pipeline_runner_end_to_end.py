@@ -4,21 +4,25 @@ tests/unit_test/test_pipeline_runner.py mocks every stage class wholesale
 and only checks that PipelineRunner calls them in the right order with the
 right argv. It never proves the *real* stage classes actually hand each
 other usable files. These tests wire the real classes together (JobPrefilter,
-SilverExport, JobPrefilterMain, JobClassifierMain, JobEnricherMain, ...)
+SilverExport, JobPrefilterMain, embedding relevance, JobEnricherMain, ...)
 exactly as pipeline_main does, mocking the true external boundaries: the ATS
 HTTP endpoints, MinIO, Postgres, and the `dbt` subprocess - the same
 boundary the existing scraper integration test (test_scraper_pipeline.py)
 mocks at. The one exception is JobClassifier/JobEnricher themselves (faked
 with a simple classify_batch/enrich_batch, same pattern as
-test_job_enricher_cli.py's _EchoEnricher): mocking one layer lower, at
-GroqCompletion, and round-tripping through real prompt-building + JSON
-response parsing, proved unreliable in CI in a way that resisted diagnosis.
+test_job_enricher_cli.py's _EchoEnricher): JobClassifier only runs when the
+embedding probe puts jobs in the 0.45-0.55 mid-band.
 """
 
 import json
 from unittest.mock import MagicMock, patch
 
-from scrapers.service.llm import ExtractedSkill, JobEnrichment, RelevanceDecision
+from scrapers.service.llm import (
+    ExtractedSkill,
+    FunctionDecision,
+    JobEnrichment,
+    RelevanceDecision,
+)
 from scrapers.utils.pipeline_runner import PipelineRunner
 
 
@@ -112,8 +116,27 @@ class _FakeEnricher:
         }
 
 
+# Every fixture job in this file is meant to reach enrichment (these tests
+# are about the real Silver -> pre-filter -> relevance -> enrichment
+# handoffs, not about which jobs the function filter excludes - that's
+# covered by test_av_function_filter.py / test_av_function_filter_cli.py
+# instead), so this always confirms "engineering" regardless of title,
+# including the "AV Program Manager" fixture below (whose title genuinely
+# matches the real title_flags_review() pre-filter and so is genuinely
+# routed through this fake, exercising that code path for real).
+class _FakeFunctionFilter:
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def classify_batch(self, jobs):
+        return {job["id"]: FunctionDecision(True, "High", "test fixture") for job in jobs}
+
+
+@patch("scrapers.utils.pipeline_runner.publish_pipeline_run", return_value=0)
 @patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
 @patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
+@patch("scrapers.utils.av_function_filter_cli.AVFunctionFilter", _FakeFunctionFilter)
+@patch("scrapers.utils.av_function_filter_cli.GroqCompletion", lambda: None)
 @patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
 @patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
 @patch("scrapers.service.silver_cleaning.silver_export.psycopg2.connect")
@@ -131,6 +154,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     mock_dbt_subprocess,
     _mock_which,
     mock_silver_connect,
+    mock_publish_gold,
     tmp_path,
 ):
     mock_urlopen.return_value = _urlopen_json(
@@ -149,7 +173,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
             {
                 "deduplication_key": "dk-perception-1",
                 "company_name": "Stack AV",
-                "job_name": "Perception Engineer",
+                "job_name": "Object Detection Engineer",
                 "job_description": (
                     "Build sensor fusion and computer vision pipelines for autonomous "
                     "vehicle perception, including lidar object detection."
@@ -161,7 +185,7 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
                 "job_name": "AV Program Manager",
                 "job_description": (
                     "Coordinate roadmap execution across engineering teams building the "
-                    "autonomy product line, tracking milestones and dependencies."
+                    "autonomy product line on ROS 2, tracking milestones and dependencies."
                 ),
             },
         ],
@@ -185,6 +209,10 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     )
 
     assert status == 0
+    # Stage 9 gets this run's enrichment output and Silver export.
+    mock_publish_gold.assert_called_once_with(
+        classification_output_dir / "av_jobs.jsonl", silver_export_path, scraped_at=None
+    )
 
     # Scrape -> bronze -> dbt Silver build all ran for real (against mocked
     # boundaries): dbt runs once for bronze's `+job_postings` and once for
@@ -206,15 +234,20 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     assert sum(company["before_count"] for company in filter_metrics) == 2
     assert sum(company["after_count"] for company in filter_metrics) == 2
 
-    # Relevance -> enrichment handoff.
+    # Embedding relevance -> enrichment handoff. Both jobs scored as confident
+    # AV, so Groq mid-band is skipped and relevance_metrics.json is not written.
     av_candidates_path = classification_output_dir / "av_candidates.jsonl"
     assert av_candidates_path.is_file()
-    relevance_metrics = json.loads(
-        (classification_output_dir / "relevance_metrics.json").read_text(encoding="utf-8")
-    )
-    assert relevance_metrics["av_candidates"] == 2
-    assert relevance_metrics["non_av_count"] == 0
-    assert relevance_metrics["failed_count"] == 0
+    av_candidates = [
+        json.loads(line)
+        for line in av_candidates_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert {row["deduplication_key"] for row in av_candidates} == {"dk-perception-1", "dk-program-2"}
+    assert all(row["_classification"]["_source"] == "classifier" for row in av_candidates)
+    low_confidence_path = classification_output_dir / "low_confidence_jobs.jsonl"
+    assert not any(line.strip() for line in low_confidence_path.read_text(encoding="utf-8").splitlines())
+    assert not (classification_output_dir / "relevance_metrics.json").is_file()
 
     # Final enrichment output: the actual deliverable of the whole pipeline.
     av_jobs_path = classification_output_dir / "av_jobs.jsonl"
@@ -232,7 +265,12 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     llm_enriched = av_jobs["dk-program-2"]["_classification"]
     assert llm_enriched["category_source"] == "llm_enriched"
     assert llm_enriched["categories"] == ["System and Safety"]
-    assert llm_enriched["skills"] == [{"name": "Program Management", "skill_type": "domain_concept"}]
+    # Skills come from the deterministic keyword extractor against the full
+    # description, not from _FakeEnricher's own (fabricated) skills output -
+    # "Program Management" was never a real vocabulary term, so asserting it
+    # here was only ever checking that the fake's output passed through
+    # unchanged, not that skill extraction actually worked.
+    assert llm_enriched["skills"] == [{"name": "ROS 2", "skill_type": "framework"}]
 
     enrichment_metrics = json.loads(
         (classification_output_dir / "enrichment_metrics.json").read_text(encoding="utf-8")
@@ -243,8 +281,11 @@ def test_pipeline_runs_every_real_stage_and_hands_off_correct_files(
     assert enrichment_metrics["llm_enriched"] == 1
 
 
+@patch("scrapers.utils.pipeline_runner.publish_pipeline_run", return_value=0)
 @patch("scrapers.utils.job_enricher.JobEnricher", _FakeEnricher)
 @patch("scrapers.utils.job_enricher.GroqCompletion", lambda: None)
+@patch("scrapers.utils.av_function_filter_cli.AVFunctionFilter", _FakeFunctionFilter)
+@patch("scrapers.utils.av_function_filter_cli.GroqCompletion", lambda: None)
 @patch("scrapers.utils.job_classifier.JobClassifier", _FakeRelevanceClassifier)
 @patch("scrapers.utils.job_classifier.GroqCompletion", lambda: None)
 @patch("scrapers.service.silver_cleaning.silver_export.psycopg2.connect")
@@ -256,6 +297,7 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
     mock_minio,
     mock_dbt_subprocess,
     mock_silver_connect,
+    mock_publish_gold,
     tmp_path,
 ):
     _stub_silver_export_rows(
@@ -264,7 +306,7 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
             {
                 "deduplication_key": "dk-perception-1",
                 "company_name": "Stack AV",
-                "job_name": "Perception Engineer",
+                "job_name": "Object Detection Engineer",
                 "job_description": "Build sensor fusion and lidar perception software for autonomous vehicles.",
             }
         ],
@@ -287,6 +329,7 @@ def test_pipeline_skip_flags_bypass_scrape_and_dbt_but_still_run_real_downstream
     )
 
     assert status == 0
+    mock_publish_gold.assert_called_once()
     mock_urlopen.assert_not_called()
     mock_minio.assert_not_called()
     mock_dbt_subprocess.assert_not_called()

@@ -35,7 +35,6 @@ export default function NavBar(props: NavBarProps = {}) {
   return (
     <nav className="sticky top-0 z-50 border-b border-line bg-surface">
       <div className="flex h-16 w-full items-center justify-between px-6 md:px-8 xl:px-10 2xl:px-12">
-        {/* Logo — acts as the home link */}
         <Link
           href="/"
           className="flex items-center gap-2 font-bold text-ink transition-opacity hover:opacity-75"

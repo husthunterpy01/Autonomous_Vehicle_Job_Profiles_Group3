@@ -60,19 +60,42 @@ python3 -m scrapers.utils.job_prefilter \
 Writes `llm_candidates.jsonl` (rows that need an LLM call) plus
 `excluded_jobs.jsonl`, `filter_metrics.json`, and `filter_decisions.csv`.
 
-**3. LLM AV-relevance classification**
+**3. Distilled embedding AV-relevance (Groq only for the mid-band)**
+
+The live pipeline scores `llm_candidates.jsonl` with the frozen MiniLM +
+logistic probe (`scrapers/service/ml/embedding_classifier.py`). Local
+`data/job_classification/relevance_model_embedding.joblib` is used when
+present; otherwise weights are downloaded from
+[husthunterpy01/av-job-relevance-embedding](https://huggingface.co/husthunterpy01/av-job-relevance-embedding).
+Jobs with p≥0.55 go to `av_candidates.jsonl`, p<0.45 to `non_av_jobs.jsonl`,
+and 0.45–0.55 to `low_confidence_jobs.jsonl` for Groq.
+
+`relevance_classifier_cli train` and `score` default to `--backend embedding`,
+so a flagless CLI run needs `sentence-transformers` (and thus torch), which
+`scrapers/requirements.txt` installs. Use `--backend tfidf` for the
+sklearn-only path; `--backend setfit` also needs the `setfit` package from
+that same file.
+
+```bash
+python3 -m scrapers.utils.relevance_classifier_cli score \
+  --input data/job_prefilter/llm_candidates.jsonl \
+  --output-dir data/job_classification \
+  --backend embedding \
+  --low-confidence-low 0.45 \
+  --low-confidence-high 0.55
+```
 
 ```bash
 python3 -m scrapers.utils.job_classifier \
-  --input data/job_prefilter/llm_candidates.jsonl \
+  --input data/job_classification/low_confidence_jobs.jsonl \
   --output-dir data/job_classification
 ```
 
-Batches jobs (default 20/request) through Groq to screen for AV relevance
-only - cheap, no category taxonomy in the prompt. Writes
+The Groq CLI still screens a whole candidate file (default 20/request) when
+you want an LLM-only seed instead of the distilled probe. Writes
 `av_candidates.jsonl` (AV-relevant), `non_av_jobs.jsonl`, `relevance_failed_jobs.jsonl`,
-and `relevance_metrics.json`. Resumable: rerunning the same command skips job
-IDs already present in those output files. Key flags: `--relevance-batch-size`
+and `relevance_metrics.json`. Resumable: rerunning skips job IDs already
+present in those output files. Key flags: `--relevance-batch-size`
 (default `20`), `--sample-size` (label a random subset instead of everything,
 for training the distilled classifier in `scrapers/service/ml/`).
 
@@ -87,7 +110,7 @@ python3 -m scrapers.utils.job_enricher \
 Each job is first run through `KeywordCategoryClassifier` - deterministic,
 zero-LLM category matching against the same curated vocabulary in
 `categories_definition.txt`. Only jobs its vocabulary doesn't cover (an empty
-result) fall back to Groq (default 10/request) against the 9-category
+result) fall back to Groq (default 10/request) against the 10-category
 taxonomy, extracting categories and skills. Writes `av_jobs.jsonl` - **the
 final, complete Silver-layer output** with `categories` and `skills` per job,
 each tagged `category_source: "keyword_resolved"` or `"llm_enriched"` - plus
@@ -97,7 +120,7 @@ resumable across interrupted runs. Key flag: `--batch-size` (default `10`;
 larger batches amortize the ~850-token taxonomy prompt further but risk
 nearing Groq's per-request token ceiling).
 
-**Groq setup for steps 3-4:** set `GROQ_API_KEY` in `scrapers/.env`. It accepts
+**Groq setup for the mid-band and enrichment stages:** set `GROQ_API_KEY` in `scrapers/.env`. It accepts
 one key or a comma-separated pool (`key1,key2,key3`); if the active key gets
 rate-limited on more than 3 consecutive attempts, the client automatically
 rotates to the next key in the pool. See `scrapers/config/groq.py` and
@@ -113,8 +136,9 @@ python3 -m scrapers.pipeline_main
 ```
 
 This runs: scrape -> MinIO -> bronze -> Silver (dbt) -> export -> pre-filter ->
-LLM relevance -> LLM enrichment, stopping at the first stage that fails so a
-bad stage can't silently feed corrupt input downstream.
+embedding relevance (Groq only for p in 0.45–0.55) -> LLM enrichment, stopping
+at the first stage that fails so a bad stage can't silently feed corrupt input
+downstream.
 
 | Flag | Default | Meaning |
 |---|---|---|
@@ -125,6 +149,7 @@ bad stage can't silently feed corrupt input downstream.
 | `--prefilter-output-dir` | `data/job_prefilter` | Output directory for the pre-filter stage |
 | `--classification-output-dir` | `data/job_classification` | Output directory for the relevance and enrichment stages |
 | `--prefilter-config` | `scrapers/config/job_prefilter.yaml` | Optional pre-filter rules YAML |
+| `--embedding-hf-repo-id` | `husthunterpy01/av-job-relevance-embedding` | Hub repo for the embedding probe when no local joblib exists |
 
 To rerun just the LLM stages against data already sitting in Postgres (for
 example after fixing a prompt or rotating Groq keys), skip the first two
@@ -155,6 +180,29 @@ the static sub_type -> main_type mapping itself, in
 `backend/app/config/category_main_types.yaml`, since main_type is a property
 of the category and not something a per-job record should be able to set),
 `skills`, and salary fields.
+
+**Removing dropped jobs' old labels.** Jobs the pipeline drops (a role that fits
+no category goes to `no_category_jobs.jsonl`, a non-engineering one to
+`non_engineering_jobs.jsonl`, an AV-irrelevant one to `non_av_jobs.jsonl`) never
+reach `av_jobs.jsonl`, so the handoff above never mentions them and a job
+labeled on an earlier run (often Infrastructure) would keep that label forever.
+Pass them with `--dropped` to also write a **separate** clear-only file:
+
+```bash
+python3 -m scrapers.utils.build_classification_handoff \
+  --input data/job_classification/av_jobs.jsonl \
+  --dropped data/job_classification/no_category_jobs.jsonl \
+  --dropped data/job_classification/non_engineering_jobs.jsonl \
+  --output data/job_classification/handoff.json \
+  --dropped-output data/job_classification/handoff_dropped.json
+```
+
+`handoff_dropped.json` holds `{"deduplication_key": ..., "functional_area": []}`
+rows and must go to `python -m app.import_categories` **only** - the backend
+treats `[]` as "clear" and skips a clear row whose job was never inserted, but
+`import_skills`/`import_salary` would fail on those unknown jobs. A job that is
+accepted in the same run is not cleared. This removes the category label only;
+skills and salary are left as they are.
 
 **Salary derivation** tries three sources per job, in order, and stops at the
 first that resolves - never inventing a number:

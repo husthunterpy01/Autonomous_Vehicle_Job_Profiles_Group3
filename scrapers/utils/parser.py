@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+from scrapers.service.silver_cleaning.classification_ingest import parse_scraped_at
+
 
 class ScraperParser:
     @classmethod
@@ -192,12 +194,55 @@ class ScraperParser:
         return args
 
     @classmethod
+    def parse_av_function_filter_args(
+        cls, argv: list[str] | None = None
+    ) -> argparse.Namespace:
+        parser = argparse.ArgumentParser(
+            description=(
+                "Filter AV-relevant jobs down to hands-on engineering/technical roles, "
+                "excluding business/program/product management, operations, policy, "
+                "sales, recruiting, HR, and executive-generalist functions."
+            )
+        )
+        parser.add_argument(
+            "--input",
+            type=Path,
+            default=Path("data") / "job_classification" / "av_candidates.jsonl",
+            help="JSONL of AV-relevant jobs, e.g. job_classifier.py's av_candidates.jsonl output",
+        )
+        parser.add_argument(
+            "--output-dir",
+            type=Path,
+            default=Path("data") / "job_classification",
+            help="Directory for av_engineering_candidates.jsonl, non_engineering_jobs.jsonl, and metrics",
+        )
+        parser.add_argument(
+            "--batch-size",
+            type=int,
+            default=10,
+            help="Jobs per Groq request, for titles the pre-filter flags for review (default: 10)",
+        )
+        parser.add_argument(
+            "--max-description-chars",
+            type=int,
+            default=1200,
+            help="Description length sent to the LLM for a flagged job (default: 1200)",
+        )
+        args = parser.parse_args(argv)
+        if args.batch_size < 1:
+            parser.error("--batch-size must be at least 1")
+        if args.max_description_chars < 1:
+            parser.error("--max-description-chars must be at least 1")
+        return args
+
+    @classmethod
     def parse_pipeline_args(cls, argv: list[str] | None = None) -> argparse.Namespace:
         parser = argparse.ArgumentParser(
             description=(
                 "Run the full pipeline end to end: scrape -> MinIO -> bronze -> "
-                "Silver (dbt) -> export -> AV pre-filter -> LLM relevance -> "
-                "LLM category/skill enrichment."
+                "Silver (dbt) -> export -> AV pre-filter -> embedding relevance "
+                "(Groq only for the mid-band) -> LLM category/skill enrichment -> "
+                "silver classification tables -> gold (dbt) -> gold database."
             )
         )
         parser.add_argument(
@@ -237,5 +282,24 @@ class ScraperParser:
             type=Path,
             default=None,
             help="Optional YAML config for the pre-filter stage (see job_prefilter.py --config)",
+        )
+        parser.add_argument(
+            "--skip-gold",
+            action="store_true",
+            help="Skip stage 9 (silver classification tables, gold dbt models, gold database copy)",
+        )
+        parser.add_argument(
+            "--scraped-at",
+            type=parse_scraped_at,
+            default=None,
+            help="When this run scraped (ISO 8601 with a timezone); defaults to the newest bronze fetched_at",
+        )
+        parser.add_argument(
+            "--embedding-hf-repo-id",
+            default="husthunterpy01/av-job-relevance-embedding",
+            help=(
+                "Hugging Face repo for the distilled embedding probe when no local "
+                "relevance_model_embedding.joblib exists (pass '' to require a local file)"
+            ),
         )
         return parser.parse_args(argv)

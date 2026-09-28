@@ -28,6 +28,7 @@ class CompanyService:
             website_url=company.website_url,
             career_page_url=company.career_page_url,
             datasource_status=company.datasource_status,
+            description=company.description,
         )
 
     @classmethod
@@ -147,6 +148,7 @@ class CompanyService:
                 website_url=data.website_url,
                 career_page_url=data.career_page_url,
                 datasource_status=data.datasource_status,
+                description=data.description,
             )
             db.add(company)
             db.commit()

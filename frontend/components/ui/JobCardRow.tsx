@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { mockJobSalary, type Job } from "@/lib/mock-data";
+import { jobDetailHref } from "@/lib/services/job";
 import CompanyLogo from "./CompanyLogo";
 import StatusBadge from "./StatusBadge";
 import Salary from "./Salary";
@@ -10,7 +11,7 @@ import CategoryTag from "./CategoryTag";
 export default function JobCardRow({ job }: { job: Job }) {
   return (
     <Link
-      href={`/jobs/${job.id}`}
+      href={jobDetailHref(job.id)}
       className="flex items-start gap-4 rounded-xl border border-line bg-surface p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md"
     >
       <CompanyLogo text={job.company.charAt(0)} />

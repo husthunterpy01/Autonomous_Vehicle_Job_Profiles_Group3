@@ -2,11 +2,12 @@
 skill/job_skill, nothing else on the job (locations, title, etc. are left
 alone) - safe to run against a handoff that only carries identity + skills.
 """
+from app.enums.skill_type import SkillType
 from app.models import Skill
 from app.services.job_identity import resolve_job
 from app.utils.normalization import normalized
 
-SKILL_TYPES = {"tool", "programming_language", "framework", "domain_concept", "certification"}
+SKILL_TYPES = {skill_type.value for skill_type in SkillType}
 
 
 def _validate_skills(skills) -> list[tuple[str, str, str]]:

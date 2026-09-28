@@ -157,13 +157,23 @@ class _ExplodingEnricher:
 def test_keyword_resolvable_job_never_reaches_the_llm(tmp_path):
     # Regression test: KeywordCategoryClassifier existed but nothing in the
     # pipeline called it, so every job - even ones its curated vocabulary
-    # covers - went through Groq. A description matching known category
-    # keywords should now be resolved by the keyword pass alone.
+    # covers - went through Groq. A job whose TITLE matches a known category
+    # keyword should now be resolved by the keyword pass alone. The title
+    # must be the one carrying the match: KeywordCategoryClassifier no
+    # longer trusts a description-only match once a title is supplied (see
+    # its own docstring) - a company's boilerplate "about us" paragraph
+    # regularly lists unrelated departments ("...cloud platforms, mapping,
+    # sensors...") and a bare word like "mapping" in that list previously
+    # keyword-matched real jobs (a cybersecurity engineer, several vehicle
+    # test operators) to the wrong category with no LLM involved. Bare
+    # "Perception" is deliberately not a keyword (Perception is not "the ML
+    # category" - see categories_definition.txt), so the title here names
+    # the specific keyword phrase instead.
     candidates = [
         {
             "deduplication_key": "j1",
             "company_name": "Company A",
-            "job_title": "Perception Engineer",
+            "job_title": "Object Detection Engineer",
             "job_description": "We build object detection and object tracking pipelines using LiDAR.",
             "_classification": {"relevant": True},
         },
@@ -174,8 +184,6 @@ def test_keyword_resolvable_job_never_reaches_the_llm(tmp_path):
     av_lines = (output_dir / "av_jobs.jsonl").read_text().splitlines()
     assert len(av_lines) == 1
     record = json.loads(av_lines[0])
-    # "LiDAR" legitimately matches both Sensing (hardware) and Perception
-    # (what the sensor feeds) - see KeywordCategoryClassifier's own tests.
     assert "Perception" in record["_classification"]["categories"]
     assert record["_classification"]["category_source"] == "keyword_resolved"
 
@@ -185,7 +193,7 @@ def test_keyword_resolvable_job_never_reaches_the_llm(tmp_path):
 
 
 def test_keyword_unresolvable_job_falls_back_to_the_llm(tmp_path):
-    # A description matching none of the 9 categories' keywords must still
+    # A description matching none of the categories' keywords must still
     # fall back to Groq, per KeywordCategoryClassifier's own documented
     # contract (empty result = "not covered, ask the LLM").
     candidates = [
@@ -215,7 +223,7 @@ def test_mixed_batch_splits_between_keyword_and_llm_resolution(tmp_path):
         {
             "deduplication_key": "j1",
             "company_name": "Company A",
-            "job_title": "Perception Engineer",
+            "job_title": "Object Detection Engineer",
             "job_description": "We build object detection and object tracking pipelines using LiDAR.",
             "_classification": {"relevant": True},
         },
@@ -237,3 +245,118 @@ def test_mixed_batch_splits_between_keyword_and_llm_resolution(tmp_path):
     metrics = json.loads((output_dir / "enrichment_metrics.json").read_text())
     assert metrics["keyword_resolved"] == 1
     assert metrics["llm_enriched"] == 1
+
+
+class _NoFitEnricher:
+    """Finds no category for titles containing "Business Systems", one for the rest."""
+
+    def __init__(self, *_args, **_kwargs):
+        pass
+
+    def enrich_batch(self, jobs):
+        return {
+            job["id"]: JobEnrichment(
+                categories=() if "Business Systems" in job["title"] else ("Perception",), skills=()
+            )
+            for job in jobs
+        }
+
+
+def test_job_with_no_fitting_category_is_dropped_not_given_a_fallback_category(tmp_path):
+    candidates = [
+        {
+            "deduplication_key": "fits",
+            "company_name": "Company A",
+            "job_title": "Vague Role",
+            "job_description": "General AV-adjacent responsibilities, details TBD.",
+            "_classification": {"relevant": True},
+        },
+        {
+            "deduplication_key": "nofit",
+            "company_name": "Company A",
+            "job_title": "Business Systems Engineer",
+            "job_description": "NetSuite and Workday integrations for finance and HR.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _NoFitEnricher)
+
+    av = [json.loads(line) for line in (output_dir / "av_jobs.jsonl").read_text().splitlines()]
+    assert [r["deduplication_key"] for r in av] == ["fits"]
+
+    dropped = [json.loads(line) for line in (output_dir / "no_category_jobs.jsonl").read_text().splitlines()]
+    assert [r["deduplication_key"] for r in dropped] == ["nofit"]
+    assert dropped[0]["_classification"]["categories"] == []
+    assert dropped[0]["_classification"]["is_av_relevant"] == "False"
+
+    metrics = json.loads((output_dir / "enrichment_metrics.json").read_text())
+    assert metrics["av_count"] == 1
+    assert metrics["no_category_count"] == 1
+    assert metrics["failed_count"] == 0
+
+
+def test_keyword_resolved_job_extracts_skills_from_the_full_description_not_just_the_compressed_one(tmp_path):
+    # Regex skill extraction has no per-job token cost, so it must not be
+    # bounded by the LLM's compress_job_text budget - a skill term placed
+    # past that cutoff must still be found.
+    filler = "We build autonomous driving technology for the future of mobility. " * 40
+    assert len(filler) > 1200
+    candidates = [
+        {
+            "deduplication_key": "j1",
+            "company_name": "Company A",
+            "job_title": "Object Detection Engineer",
+            "job_description": filler + "You will use Kubernetes to manage our deployment infrastructure.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _EchoEnricher)
+
+    record = json.loads((output_dir / "av_jobs.jsonl").read_text().splitlines()[0])
+    assert record["_classification"]["category_source"] == "keyword_resolved"
+    skill_names = [s["name"] for s in record["_classification"]["skills"]]
+    assert "Kubernetes" in skill_names
+
+
+def test_llm_enriched_job_gets_skills_from_regex_on_full_text_not_from_the_llm(tmp_path):
+    # _EchoEnricher always returns skills=() - any skill in the output here
+    # can only have come from the keyword extractor's own full-text pass.
+    filler = "We build autonomous driving technology for the future of mobility. " * 40
+    assert len(filler) > 1200
+    candidates = [
+        {
+            "deduplication_key": "j1",
+            "company_name": "Company A",
+            "job_title": "Vague Role",
+            "job_description": filler + "You will use Kubernetes to manage our deployment infrastructure.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _EchoEnricher)
+
+    record = json.loads((output_dir / "av_jobs.jsonl").read_text().splitlines()[0])
+    assert record["_classification"]["category_source"] == "llm_enriched"
+    skill_names = [s["name"] for s in record["_classification"]["skills"]]
+    assert "Kubernetes" in skill_names
+
+
+def test_a_dropped_no_category_job_is_not_given_skills(tmp_path):
+    candidates = [
+        {
+            "deduplication_key": "j1",
+            "company_name": "Company A",
+            "job_title": "Business Systems Engineer",
+            "job_description": "NetSuite and Workday integrations, uses Kubernetes for internal tooling.",
+            "_classification": {"relevant": True},
+        },
+    ]
+
+    output_dir = _run(tmp_path, candidates, _NoFitEnricher)
+
+    assert not (output_dir / "av_jobs.jsonl").read_text().strip()
+    dropped = json.loads((output_dir / "no_category_jobs.jsonl").read_text().splitlines()[0])
+    assert dropped["_classification"]["categories"] == []
+    assert "skills" not in dropped["_classification"]

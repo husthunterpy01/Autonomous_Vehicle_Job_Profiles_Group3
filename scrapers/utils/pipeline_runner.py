@@ -2,22 +2,39 @@ from __future__ import annotations
 
 import logging
 import sys
+from pathlib import Path
 
+from scrapers.service.silver_cleaning.classification_ingest import publish_pipeline_run
 from scrapers.service.silver_cleaning.silver_export import SilverExport
 from scrapers.service.silver_cleaning.silver_ingest import SilverIngest
+from scrapers.utils.av_function_filter_cli import AVFunctionFilterMain
 from scrapers.utils.job_classifier import JobClassifierMain
 from scrapers.utils.job_enricher import JobEnricherMain
 from scrapers.utils.job_prefilter import JobPrefilterMain
 from scrapers.utils.parser import ScraperParser
+from scrapers.utils.relevance_classifier_cli import main as relevance_classifier_main
 from scrapers.utils.runner import ScraperRunner
 
 logger = logging.getLogger(__name__)
 
+# Tight gates: only the true middle band goes to Groq. Confident AV/non-AV
+# stay on the local probe (see scrapers/data/snapshots/).
+_EMBEDDING_LOW_CONFIDENCE_LOW = "0.45"
+_EMBEDDING_LOW_CONFIDENCE_HIGH = "0.55"
+
+
+def _jsonl_has_rows(path: Path) -> bool:
+    if not path.is_file():
+        return False
+    with path.open(encoding="utf-8") as stream:
+        return any(line.strip() for line in stream)
+
 
 class PipelineRunner:
     """Chains the whole pipeline: scrape -> MinIO -> bronze -> Silver (dbt)
-    -> export -> AV pre-filter -> LLM relevance -> LLM category/skill
-    enrichment, producing the final Silver-layer AV jobs file.
+    -> export -> AV pre-filter -> distilled embedding relevance -> Groq
+    mid-band -> AV function filter -> LLM category/skill enrichment ->
+    silver classification tables -> gold (dbt) -> gold database.
 
     Each stage is an existing, independently testable CLI entrypoint; this
     just sequences them in-process and stops at the first failure, so a bad
@@ -36,7 +53,7 @@ class PipelineRunner:
         args = ScraperParser.parse_pipeline_args(argv)
 
         if not args.skip_scrape:
-            logger.info("Stage 1/6: scraping sources -> MinIO -> bronze.")
+            logger.info("Stage 1/9: scraping sources -> MinIO -> bronze.")
             status = ScraperRunner.scrape_data_from_sources(
                 ["--company", args.company] if args.company else []
             )
@@ -44,24 +61,24 @@ class PipelineRunner:
                 logger.error("Scrape stage failed; stopping pipeline.")
                 return status
         else:
-            logger.info("Stage 1/6: skipped (--skip-scrape).")
+            logger.info("Stage 1/9: skipped (--skip-scrape).")
 
         if not args.skip_silver_build:
-            logger.info("Stage 2/6: building the dbt Silver model.")
+            logger.info("Stage 2/9: building the dbt Silver model.")
             status = SilverIngest().run()
             if status:
                 logger.error("Silver dbt build failed; stopping pipeline.")
                 return status
         else:
-            logger.info("Stage 2/6: skipped (--skip-silver-build).")
+            logger.info("Stage 2/9: skipped (--skip-silver-build).")
 
-        logger.info("Stage 3/6: exporting Silver rows to %s.", args.silver_export_path)
+        logger.info("Stage 3/9: exporting Silver rows to %s.", args.silver_export_path)
         row_count = SilverExport().export(args.silver_export_path)
         if row_count == 0:
             logger.error("Silver export produced no rows; stopping pipeline.")
             return 1
 
-        logger.info("Stage 4/6: AV pre-filter.")
+        logger.info("Stage 4/9: AV pre-filter.")
         prefilter_argv = [
             "--input", str(args.silver_export_path),
             "--output-dir", str(args.prefilter_output_dir),
@@ -73,30 +90,73 @@ class PipelineRunner:
             logger.error("Pre-filter stage failed; stopping pipeline.")
             return status
 
-        logger.info("Stage 5/6: LLM AV-relevance classification.")
-        status = JobClassifierMain.main(
+        classification_dir = args.classification_output_dir
+        logger.info("Stage 5/9: distilled embedding AV-relevance scoring.")
+        score_argv = [
+            "score",
+            "--input", str(args.prefilter_output_dir / "llm_candidates.jsonl"),
+            "--output-dir", str(classification_dir),
+            "--backend", "embedding",
+            "--low-confidence-low", _EMBEDDING_LOW_CONFIDENCE_LOW,
+            "--low-confidence-high", _EMBEDDING_LOW_CONFIDENCE_HIGH,
+        ]
+        if args.embedding_hf_repo_id is not None:
+            score_argv += ["--hf-repo-id", args.embedding_hf_repo_id]
+        status = relevance_classifier_main(score_argv)
+        if status:
+            logger.error("Embedding relevance stage failed; stopping pipeline.")
+            return status
+
+        mid_band_path = classification_dir / "low_confidence_jobs.jsonl"
+        if _jsonl_has_rows(mid_band_path):
+            logger.info("Stage 6/9: Groq AV-relevance for embedding mid-band.")
+            status = JobClassifierMain.main(
+                [
+                    "--input", str(mid_band_path),
+                    "--output-dir", str(classification_dir),
+                ]
+            )
+            if status:
+                logger.error("Groq mid-band relevance stage failed; stopping pipeline.")
+                return status
+        else:
+            logger.info("Stage 6/9: skipped (no embedding mid-band rows).")
+
+        logger.info("Stage 7/9: AV function filter (engineering vs. non-engineering).")
+        status = AVFunctionFilterMain.main(
             [
-                "--input", str(args.prefilter_output_dir / "llm_candidates.jsonl"),
-                "--output-dir", str(args.classification_output_dir),
+                "--input", str(classification_dir / "av_candidates.jsonl"),
+                "--output-dir", str(classification_dir),
             ]
         )
         if status:
-            logger.error("Relevance classification stage failed; stopping pipeline.")
+            logger.error("Function-filter stage failed; stopping pipeline.")
             return status
 
-        logger.info("Stage 6/6: LLM category/skill enrichment.")
+        logger.info("Stage 8/9: LLM category/skill enrichment.")
         status = JobEnricherMain.main(
             [
-                "--input", str(args.classification_output_dir / "av_candidates.jsonl"),
-                "--output-dir", str(args.classification_output_dir),
+                "--input", str(classification_dir / "av_engineering_candidates.jsonl"),
+                "--output-dir", str(classification_dir),
             ]
         )
         if status:
             logger.error("Enrichment stage failed; stopping pipeline.")
             return status
 
+        if args.skip_gold:
+            logger.info("Stage 9/9: skipped (--skip-gold).")
+        else:
+            logger.info("Stage 9/9: silver classification tables -> gold (dbt) -> gold database.")
+            status = publish_pipeline_run(
+                classification_dir / "av_jobs.jsonl", args.silver_export_path, scraped_at=args.scraped_at
+            )
+            if status:
+                logger.error("Gold stage failed; the AV jobs above are still valid.")
+                return status
+
         logger.info(
             "Pipeline complete. Final Silver-layer AV jobs: %s",
-            args.classification_output_dir / "av_jobs.jsonl",
+            classification_dir / "av_jobs.jsonl",
         )
         return 0

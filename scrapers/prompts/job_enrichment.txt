@@ -12,15 +12,47 @@ For EACH job object in <jobs_json>, do both of the following:
    technologies, normalized per the guidance below. Do not infer skills that
    are not present in the text.
 
+Category assignment must be based on what the role actually DOES day to day
+- its primary responsibilities and duties - not on which technical terms
+merely appear somewhere in the posting. Check the title first: if it names a
+category or an unambiguous synonym (Perception, Planning, Localization,
+Mapping, Sensing, Prediction, "GNC"/Controls, etc.), that decides the
+category - do not let the company's own "about us" boilerplate talk you out
+of an explicit title. Two failure modes to actively avoid when the title
+alone doesn't decide it:
+- Company boilerplate. Postings often open with a generic "about us"
+  paragraph describing the company's overall mission (e.g. "we're building
+  AI for self-driving cars", or "we build the infrastructure/platform for
+  physical AI") that applies to every job the company posts, including
+  recruiters, technicians, and unrelated engineering roles. That paragraph
+  is not evidence for this specific role's category - only the
+  responsibilities/requirements sections describing what this job actually
+  does are. This applies to Infrastructure exactly as it does to every other
+  category: a company whose mission statement happens to say "infrastructure"
+  does not make every role there Infrastructure - a "Perception Engineer" at
+  that company is still Perception.
+- Generic AI/ML language. "Machine learning", "deep learning", "neural
+  network", "AI" describe a technique used across nearly every category
+  here (Prediction models are ML, Planning can be learned, even Control can
+  use learned MPC) - they say nothing about which category applies on their
+  own. A job is not "Perception" just because it mentions deep learning;
+  it's Perception because it's actually about detecting and understanding
+  objects and the scene. If a posting's only category-relevant signal is
+  generic AI/ML terminology with no category-specific responsibility
+  described, that alone does not justify High or Medium confidence - assign
+  whichever category the actual responsibilities best support and mark it
+  Low, or - if nothing else in the posting supports any category - return no category (see the rules below).
+
 {{categories_definition}}
 
 Respond with ONLY this JSON shape, no extra text, with exactly one result per
 input job matched by "id":
-{"results":[{"id":"<same id as input>","categories":[{"name":"Perception","confidence":"High"},{"name":"Planning","confidence":"Low"}],"skills":[{"name":"ROS 2","skill_type":"framework"}]}]}
+{"results":[{"id":"<same id as input>","area":"Perception & Sensing","evidence":"<short phrase quoted from the responsibilities>","categories":[{"name":"Perception","confidence":"High"},{"name":"Sensing","confidence":"Low"}],"skills":[{"name":"ROS 2","skill_type":"framework"}]}]}
+For a job that fits no category use exactly: {"id":"<same id>","area":"","evidence":"","categories":[],"skills":[]}
 
 Rules:
 - Return exactly one result object per input job, using the same "id" value.
-- Every job must get at least one category from the taxonomy above.
+- Give a category only when the role's responsibilities clearly fit; otherwise return "categories": [] (never invent a category name, and never pick Infrastructure just because nothing else fits). "area" must be one of: Perception & Sensing, Localization & Mapping, Decision, System, Platform, and every category you list must belong to that area.
 - confidence must be one of: High, Medium, Low - how strongly the job
   posting's own text supports that specific category, not how AV-relevant
   the job is overall (relevance was already decided in an earlier pass).

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Dropdown from "@/components/ui/Dropdown";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
@@ -31,10 +30,15 @@ import {
   parseJobSort,
   type JobSortField,
 } from "@/lib/job-sort";
+import {
+  DEFAULT_PER_PAGE,
+  MAX_PER_PAGE,
+  parsePositiveInt,
+  searchQueryString,
+} from "@/lib/search-url";
 import { getCategoryStatsRaw } from "@/lib/services/home";
 import { getJobs, type JobListItem } from "@/lib/services/job";
 
-const DEFAULT_PER_PAGE = 6;
 /* Debounce keyword input before hitting the API — unlike the Companies list
    (fetched once, filtered client-side), jobs are paginated server-side, so
    every keystroke would otherwise be a new request. */
@@ -44,6 +48,9 @@ export default function SearchClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [keyword, setKeyword] = useState(searchParams.get("q") ?? "");
+  // The keyword as last submitted - only that one goes into the URL, so the
+  // address bar doesn't change on every keystroke.
+  const [urlKeyword, setUrlKeyword] = useState(searchParams.get("q") ?? "");
   const [sort, setSort] = useState(() =>
     parseJobSort(searchParams.get("sort"), searchParams.get("direction")),
   );
@@ -57,9 +64,18 @@ export default function SearchClient() {
     resolveCountry(searchParams.get("country")),
   );
   const [view, setView] = useState<ViewMode>("table");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(DEFAULT_PER_PAGE);
-  const [perPageInput, setPerPageInput] = useState(String(DEFAULT_PER_PAGE));
+  // ?page=50 opens page 50 directly; ?per_page= is kept too.
+  const [page, setPage] = useState(() =>
+    parsePositiveInt(searchParams.get("page"), 1),
+  );
+  const [perPage, setPerPage] = useState(() =>
+    parsePositiveInt(
+      searchParams.get("per_page"),
+      DEFAULT_PER_PAGE,
+      MAX_PER_PAGE,
+    ),
+  );
+  const [perPageInput, setPerPageInput] = useState(() => String(perPage));
 
   const [jobs, setJobs] = useState<JobListItem[]>([]);
   const [total, setTotal] = useState(0);
@@ -67,6 +83,7 @@ export default function SearchClient() {
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading",
   );
+  const [listBusy, setListBusy] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [reloadToken, setReloadToken] = useState(0);
 
@@ -128,39 +145,56 @@ export default function SearchClient() {
   }, []);
 
   useEffect(() => {
-    let cancelled = false;
+    const controller = new AbortController();
     const handle = setTimeout(
       () => {
-        getJobs({
+        setListBusy(true);
+        const query = {
           q: keyword.trim() || undefined,
           category_id: category || undefined,
           location: country || undefined,
           sort,
-          page,
           page_size: perPage,
-        })
-          .then((response) => {
-            if (cancelled) return;
+        };
+        getJobs({ ...query, page }, controller.signal)
+          .then(async (response) => {
+            // A page past the end (e.g. ?page=999 from a hand-edited or old
+            // link) jumps to the last page instead of showing an empty list.
+            // The API reports total 0 for an out-of-range page, so page 1 is
+            // asked once for the real page count.
+            if (page > 1 && response.items.length === 0) {
+              const first = await getJobs(
+                { ...query, page: 1 },
+                controller.signal,
+              );
+              setPage(Math.max(1, first.total_pages));
+              return;
+            }
             setJobs(response.items);
             setTotal(response.total);
             setTotalPages(Math.max(1, response.total_pages));
             setStatus("success");
           })
           .catch((error: unknown) => {
-            if (cancelled) return;
+            if (error instanceof Error && error.name === "AbortError") {
+              return;
+            }
             setErrorMessage(
               error instanceof ApiError
                 ? error.message
                 : "Something went wrong loading jobs. Please try again.",
             );
             setStatus("error");
+          })
+          .finally(() => {
+            if (!controller.signal.aborted) setListBusy(false);
           });
       },
       keyword ? SEARCH_DEBOUNCE_MS : 0,
     );
 
     return () => {
-      cancelled = true;
+      controller.abort();
       clearTimeout(handle);
     };
   }, [keyword, category, country, sort, page, perPage, reloadToken]);
@@ -171,36 +205,29 @@ export default function SearchClient() {
     country !== ALL_COUNTRIES ||
     !isDefaultJobSort(sort);
 
-  const syncUrl = (
-    kw: string,
-    nextSort = sort,
-    nextCategory = category,
-    nextCountry = country,
-  ) => {
-    const params = new URLSearchParams();
-    if (kw.trim()) params.set("q", kw.trim());
-    if (nextCategory) params.set("category", nextCategory);
-    if (nextCountry) params.set("country", nextCountry);
-    // The default sort is what the API does anyway, so it stays out of the
-    // URL and a plain /search link keeps working.
-    if (!isDefaultJobSort(nextSort)) {
-      params.set("sort", nextSort.field);
-      params.set("direction", nextSort.direction);
-    }
-    const qs = params.toString();
+  // One place keeps the URL in step with the list (keyword as submitted,
+  // category, country, sort, page and per page), so a page can be shared or
+  // jumped to by editing ?page= directly. Defaults stay out of the URL.
+  useEffect(() => {
+    const qs = searchQueryString({
+      q: urlKeyword,
+      category,
+      country,
+      sort,
+      page,
+      perPage,
+    });
     router.replace(qs ? `/search?${qs}` : "/search");
-  };
+  }, [urlKeyword, category, country, sort, page, perPage, router]);
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
     setPage(1);
-    syncUrl(keyword, sort, value);
   };
 
   const handleCountryChange = (value: string) => {
     setCountry(value);
     setPage(1);
-    syncUrl(keyword, sort, category, value);
   };
 
   const handleSortChange = (field: JobSortField) => {
@@ -209,7 +236,6 @@ export default function SearchClient() {
     // A re-sorted list starts from the first page, otherwise page 3 of the
     // old order silently becomes page 3 of the new one.
     setPage(1);
-    syncUrl(keyword, updated);
   };
 
   const handleKeyword = (value: string) => {
@@ -239,11 +265,11 @@ export default function SearchClient() {
 
   const resetFilters = () => {
     setKeyword("");
+    setUrlKeyword("");
     setCategory(ALL_CATEGORIES);
     setCountry(ALL_COUNTRIES);
     setSort(DEFAULT_JOB_SORT);
     setPage(1);
-    router.replace("/search");
   };
 
   return (
@@ -258,23 +284,19 @@ export default function SearchClient() {
         keyword={keyword}
         onKeywordChange={handleKeyword}
         placeholder="Job title, skill or keyword"
+        dropdownId="category-filter"
+        dropdownAriaLabel="Category"
+        dropdownValue={category}
+        onDropdownChange={handleCategoryChange}
+        dropdownOptions={categoryOptionList}
+        dropdownClassName="sm:w-64"
         onSubmit={(e) => {
           e.preventDefault();
-          syncUrl(keyword);
+          setUrlKeyword(keyword);
         }}
       />
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-[auto_16rem_auto_16rem] sm:items-center">
-        <label htmlFor="category-filter" className="text-sm text-ink-secondary">
-          Category
-        </label>
-        <Dropdown
-          id="category-filter"
-          className="w-full"
-          value={category}
-          onChange={handleCategoryChange}
-          options={categoryOptionList}
-        />
+      <div className="mt-4 grid gap-2 sm:grid-cols-[auto_16rem] sm:items-center">
         <label htmlFor="country-filter" className="text-sm text-ink-secondary">
           Country
         </label>
@@ -330,6 +352,7 @@ export default function SearchClient() {
                 <span className="font-semibold text-ink">{total}</span>{" "}
                 {total === 1 ? "job" : "jobs"} found
                 {keyword.trim() !== "" ? ` for "${keyword.trim()}"` : ""}
+                {totalPages > 1 ? ` · page ${page} of ${totalPages}` : ""}
               </p>
               {hasFilters && (
                 <button
@@ -348,9 +371,13 @@ export default function SearchClient() {
 
           {jobs.length > 0 && (
             <>
-              <div className="mt-4">
+              <div
+                className={`mt-4 ${listBusy ? "pointer-events-none opacity-60" : ""}`}
+                aria-busy={listBusy}
+              >
                 {view === "table" ? (
                   <JobsTable
+                    key={`page-${page}-${jobs[0]?.job_id ?? "empty"}`}
                     jobs={jobs}
                     renderAction={renderFavoriteAction}
                     actionColumnLabel="Favorite"

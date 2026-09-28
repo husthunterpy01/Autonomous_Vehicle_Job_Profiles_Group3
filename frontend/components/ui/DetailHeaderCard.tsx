@@ -4,14 +4,16 @@ import PageHeader from "./PageHeader";
 
 /* Shared header card for Job Detail and Company Detail — logo + title/subtitle
    on the left, an optional external action link on the right, an optional
-   `meta` block under the subtitle (e.g. badges), and an optional `footer`
-   block below the whole row (e.g. a stats row), separated by a divider. */
+   `meta` block under the subtitle (e.g. badges), an optional `description`
+   paragraph (e.g. a company's About blurb), and an optional `footer` block
+   below the whole row (e.g. a stats row), separated by a divider. */
 export default function DetailHeaderCard({
   logoText,
   title,
   subtitle,
   action,
   meta,
+  description,
   footer,
 }: {
   logoText: string;
@@ -19,6 +21,7 @@ export default function DetailHeaderCard({
   subtitle: string;
   action?: { href: string; label: string };
   meta?: ReactNode;
+  description?: string | null;
   footer?: ReactNode;
 }) {
   return (
@@ -43,6 +46,12 @@ export default function DetailHeaderCard({
           </a>
         )}
       </div>
+
+      {description && (
+        <p className="mt-4 text-sm leading-relaxed text-ink-secondary">
+          {description}
+        </p>
+      )}
 
       {footer && <div className="mt-6 border-t border-line pt-6">{footer}</div>}
     </div>

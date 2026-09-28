@@ -76,6 +76,7 @@ describe("country filter", () => {
     await waitFor(() => {
       expect(mocks.getJobs).toHaveBeenCalledWith(
         expect.objectContaining({ location: "Germany" }),
+        expect.any(AbortSignal),
       );
     });
   });
@@ -101,6 +102,7 @@ describe("country filter", () => {
             location: "Japan",
             sort: { field: "company", direction: "desc" },
           }),
+          expect.any(AbortSignal),
         );
       },
       { timeout: 1000 },
@@ -121,6 +123,7 @@ describe("country filter", () => {
     await waitFor(() => {
       expect(mocks.getJobs).toHaveBeenCalledWith(
         expect.objectContaining({ location: undefined }),
+        expect.any(AbortSignal),
       );
     });
   });

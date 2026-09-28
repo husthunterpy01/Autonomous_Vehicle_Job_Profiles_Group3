@@ -122,6 +122,12 @@ The CLI commits the entire batch or rolls it back and uses the same PostgreSQL
 advisory lock as Silver sync. Library callers must supply a transaction and
 serialize writers. SilverSync also accepts the same inline classification fields.
 
+A record with `"functional_area": []` clears that job's categories. If no
+backend job matches a *clear-only* record it is skipped (counted as
+`skipped_unmatched_clears` in the result) instead of failing the batch - the
+scrapers emit one for every job the pipeline drops, and most were never
+inserted. A record that assigns categories to an unknown job is still an error.
+
 `functional_area` is one label string or an array of strings. Each label becomes
 Category.sub_type. main_type is never accepted from a record - it's a property
 of the category, not of any individual job, so it comes only from the backend's
@@ -155,6 +161,10 @@ separate work. A later curated taxonomy needs explicit mapping/version migration
 Response fields: `job_id`, `title`, `company_id`, `company_name`, `locations`,
 `skills`, `employment_type` (existing integer enum), `raw_description`, `source_url`,
 `posted_date`, `categories` (category_id, main_type, sub_type, taxonomy_version).
+`raw_description` is `null` on `GET /jobs` list items (the body is skipped there
+for speed) and always a string on `GET /jobs/{job_id}` - not the same thing as a
+job whose description is genuinely empty, which `GET /jobs/{job_id}` still
+reports as `""`.
 Pagination is `{items,total,page,page_size,total_pages}`.
 Location/skill filters use EXISTS semantics so multiple associations do not inflate
 counts. Ordering is posted date descending then UUID for stable page boundaries.
