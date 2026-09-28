@@ -61,7 +61,15 @@ function ScaleAxis({ scaleMax, step }: { scaleMax: number; step: number }) {
    narrow range doesn't read as if it's using the whole card's width. A job
    with no disclosed range (min == max, a levels.fyi average only) renders
    as a dot rather than a zero-width bar, so it stays visible instead of
-   disappearing. */
+   disappearing.
+
+   FE-21 (AC7 - accessibility): the bar itself is purely visual - a colored
+   div conveys nothing to a screen reader - so Chart View would otherwise
+   go completely silent on salary for every row (List View's text figures
+   aren't rendered in this mode). The sr-only span carries the same range a
+   sighted user reads off the bar's position, using the exact wording
+   comparisonRange() already produces so both views describe salary
+   identically. */
 function SalarySpanBar({
   job,
   scaleMax,
@@ -74,13 +82,18 @@ function SalarySpanBar({
   const isPoint = job.estimated_annual_usd_min === job.estimated_annual_usd_max;
   return (
     <div className="relative h-2 w-40 shrink-0 rounded-full bg-line sm:w-56">
+      <span className="sr-only">
+        Estimated annual salary: {comparisonRange(job)}
+      </span>
       {isPoint ? (
         <div
+          aria-hidden="true"
           className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-surface bg-primary"
           style={{ left: `calc(${left}% - 6px)` }}
         />
       ) : (
         <div
+          aria-hidden="true"
           className="absolute h-2 rounded-full bg-primary"
           style={{ left: `${left}%`, width: `${right - left}%` }}
         />
@@ -98,7 +111,12 @@ const PAY_VIEW_LABELS: Record<PayView, string> = {
 
 /* Two-button pill matching the app's ViewToggle pattern (components/ui/
    ViewToggle.tsx), but smaller and local to this panel since it's a
-   two-state text choice rather than an icon-labeled table/cards switch. */
+   two-state text choice rather than an icon-labeled table/cards switch.
+   FE-21 (AC7): each button is already keyboard-focusable and its visible
+   text is its accessible name, but the pair reads as two unrelated buttons
+   without a group label explaining what they're switching between -
+   role="group" + aria-label ties them together for assistive tech the same
+   way the visible pill border does for sighted users. */
 function PayViewToggle({
   view,
   onChange,
@@ -107,7 +125,11 @@ function PayViewToggle({
   onChange: (view: PayView) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
+    <div
+      role="group"
+      aria-label="Salary display format"
+      className="inline-flex rounded-lg border border-line bg-surface p-0.5"
+    >
       {(["list", "chart"] as const).map((option) => (
         <button
           key={option}
