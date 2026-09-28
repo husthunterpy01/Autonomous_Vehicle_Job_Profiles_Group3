@@ -7,30 +7,36 @@ import { getTopPaidJobs, type TopPaidJob } from "@/lib/services/home";
 import { jobDetailHref } from "@/lib/services/job";
 import CompanyLogo from "./ui/CompanyLogo";
 
-/* Rounds to the nearest thousand for a compact "US$210k" figure - this
-   comparison line is deliberately less precise than the exact posted salary
-   shown underneath it, since its job is a fast side-by-side scan, not a
-   quoted number. */
-function compactUsd(amount: number): string {
+/* Compact USD figure for fast scanning - "US$210k" below a million,
+   "US$2.6M" at or above it, so an outlier salary reads as "$2.6M" instead
+   of an unwieldy "$2600k" (FE-21: formatting must stay consistent
+   regardless of magnitude). Shared by the comparison range text below and
+   the chart's axis ticks, so both use identical formatting. */
+function formatCompactUsd(amount: number): string {
+  if (amount >= 1_000_000) {
+    const millions = Math.round((amount / 1_000_000) * 10) / 10;
+    return `US$${millions}M`;
+  }
   return `US$${Math.round(amount / 1000)}k`;
 }
 
-/* The annualized/converted comparison range, e.g. "US$210k – 275k" (min
-   carries the currency prefix, max doesn't, to read as one range) or a
+/* The annualized/converted comparison range, e.g. "US$210k – US$275k" or a
    single "US$180k" when there's no disclosed span (a levels.fyi average
-   only - see SalaryStatsService). Prefixed with "≈" whenever this isn't
-   already the literal posted figure (period != yearly and/or currency !=
-   USD) - matches the same "~" convention the Salary component already uses
-   for estimates, so an approximation always reads as one. */
+   only - see SalaryStatsService). Each side is formatted independently
+   (rather than a bare number on the max side) so a range that crosses the
+   k/M boundary, e.g. "US$850k – US$1.2M", still reads correctly. Prefixed
+   with "≈" whenever this isn't already the literal posted figure (period
+   != yearly and/or currency != USD) - matches the same "~" convention the
+   Salary component already uses for estimates, so an approximation always
+   reads as one. */
 function comparisonRange(job: TopPaidJob): string {
   const isExact =
     job.salary_currency === "USD" && job.salary_period === "yearly";
   const prefix = isExact ? "" : "≈";
   if (job.estimated_annual_usd_min === job.estimated_annual_usd_max) {
-    return `${prefix}${compactUsd(job.estimated_annual_usd_max)}`;
+    return `${prefix}${formatCompactUsd(job.estimated_annual_usd_max)}`;
   }
-  const min = compactUsd(job.estimated_annual_usd_min).replace("US$", "");
-  return `${prefix}US$${min} – ${Math.round(job.estimated_annual_usd_max / 1000)}k`;
+  return `${prefix}${formatCompactUsd(job.estimated_annual_usd_min)} – ${formatCompactUsd(job.estimated_annual_usd_max)}`;
 }
 
 /* The literal posted figure, small and muted underneath the comparison
@@ -55,27 +61,44 @@ function PostedSalary({ job }: { job: TopPaidJob }) {
   );
 }
 
-/* A round upper bound for the shared scale, e.g. 275_000 -> 300_000 - always
-   rounds up to the next $100k so a bar never clips at the right edge, and
-   ticks land on clean numbers ($0/$100k/$200k/...) instead of whatever the
-   highest job's exact figure happens to be. */
-function niceScaleMax(highest: number): number {
-  return Math.max(100_000, Math.ceil(highest / 100_000) * 100_000);
+/* Rounds a raw step (highest / target tick count) up to a "nice" 1/2/5 x
+   10^n number, e.g. 74_000 -> 100_000, 1_400_000 -> 2_000_000 - the
+   standard approach for chart axes, so ticks always land on clean numbers
+   no matter the scale. */
+function niceStep(roughStep: number): number {
+  const magnitude = 10 ** Math.floor(Math.log10(roughStep));
+  const normalized = roughStep / magnitude;
+  const niceNormalized =
+    normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+  return niceNormalized * magnitude;
 }
 
-/* Ticks every $100k from 0 up to the scale max, e.g. [0, 100000, 200000,
-   300000] - shown once above the list of bars (right-aligned and the same
-   width as SalarySpanBar's track, so the ticks land above the bars they
-   describe) rather than each row drawing its own axis. */
-function ScaleAxis({ scaleMax }: { scaleMax: number }) {
-  const step = 100_000;
-  const tickCount = scaleMax / step + 1;
-  const ticks = Array.from({ length: tickCount }, (_, i) => i * step);
+const TARGET_TICKS = 4;
+
+/* Picks a step size that keeps the axis to a small, fixed number of ticks
+   regardless of how large the highest value is (FE-21: a fixed $100k step
+   previously produced 30+ overlapping ticks once an outlier salary pushed
+   the scale past $3M), then rounds the max up to a whole number of that
+   step so a bar never clips at the right edge. */
+function computeScale(highest: number): { max: number; step: number } {
+  const step = niceStep(Math.max(highest, 1) / TARGET_TICKS);
+  const max = Math.ceil(Math.max(highest, step) / step) * step;
+  return { max, step };
+}
+
+/* Ticks from 0 to the scale max in steps of `step`, e.g. [0, 100000,
+   200000, 300000] - shown once above the list of bars, the same width as
+   SalarySpanBar's track so the ticks land above the bars they describe,
+   rather than each row drawing its own axis. Left-aligned to match where
+   the bars sit once the card stacks vertically on mobile (FE-21); the bars
+   move to the right-hand side of the row from sm: up, so the axis does too. */
+function ScaleAxis({ scaleMax, step }: { scaleMax: number; step: number }) {
+  const ticks = Array.from({ length: scaleMax / step + 1 }, (_, i) => i * step);
   return (
-    <div className="mb-2 flex justify-end">
+    <div className="mb-2 flex justify-start sm:justify-end">
       <div className="flex w-40 justify-between text-xs text-ink-muted sm:w-56">
         {ticks.map((tick) => (
-          <span key={tick}>${tick / 1000}k</span>
+          <span key={tick}>{formatCompactUsd(tick).replace("US$", "$")}</span>
         ))}
       </div>
     </div>
@@ -205,7 +228,7 @@ export default function TopPaidJobsPanel() {
     );
   }
 
-  const scaleMax = niceScaleMax(
+  const { max: scaleMax, step: scaleStep } = computeScale(
     Math.max(...jobs.map((job) => job.estimated_annual_usd_max)),
   );
 
@@ -214,28 +237,30 @@ export default function TopPaidJobsPanel() {
       <div className="mb-3">
         <PayViewToggle view={view} onChange={setView} />
       </div>
-      {view === "chart" && <ScaleAxis scaleMax={scaleMax} />}
+      {view === "chart" && <ScaleAxis scaleMax={scaleMax} step={scaleStep} />}
       <div className="flex flex-col gap-3">
         {jobs.map((job, index) => (
           <Link
             key={job.job_id}
             href={jobDetailHref(job.job_id)}
-            className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-5"
+            className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5"
           >
-            <span className="w-6 shrink-0 text-center text-lg font-extrabold text-ink-muted">
-              {index + 1}
-            </span>
-            <CompanyLogo text={job.company_name.charAt(0)} />
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate font-semibold text-ink">{job.title}</h3>
-              <p className="mt-1 truncate text-sm text-ink-secondary">
-                {job.company_name}
-              </p>
+            <div className="flex min-w-0 items-center gap-4 sm:max-w-sm">
+              <span className="w-6 shrink-0 text-center text-lg font-extrabold text-ink-muted">
+                {index + 1}
+              </span>
+              <CompanyLogo text={job.company_name.charAt(0)} />
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-semibold text-ink">{job.title}</h3>
+                <p className="mt-1 truncate text-sm text-ink-secondary">
+                  {job.company_name}
+                </p>
+              </div>
             </div>
             {view === "chart" ? (
               <SalarySpanBar job={job} scaleMax={scaleMax} />
             ) : (
-              <div className="shrink-0 text-right">
+              <div className="sm:shrink-0 sm:text-right">
                 <p className="text-base font-bold text-primary">
                   {comparisonRange(job)}
                 </p>
