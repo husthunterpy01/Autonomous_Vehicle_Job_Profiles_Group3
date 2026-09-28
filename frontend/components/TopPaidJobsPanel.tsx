@@ -34,20 +34,44 @@ function PostedSalary({ job }: { job: TopPaidJob }) {
   );
 }
 
+// Shared by ScaleAxis and SalarySpanBar so the ticks land exactly above the
+// bars they describe - both the track and the range-label column need to be
+// the same size in both places, or the two drift apart (see SalarySpanBar).
+const _TRACK_WIDTH = "w-40 sm:w-56";
+const _LABEL_WIDTH = "min-w-[8.5rem] sm:min-w-[10.5rem]";
+
 /* Ticks from 0 to the scale max in steps of `step`, e.g. [0, 100000,
-   200000, 300000] - shown once above the list of bars, the same width as
-   SalarySpanBar's track so the ticks land above the bars they describe,
-   rather than each row drawing its own axis. Left-aligned to match where
-   the bars sit once the card stacks vertically on mobile (FE-21); the bars
-   move to the right-hand side of the row from sm: up, so the axis does too. */
+   200000, 300000] - shown once above the list of bars, rather than each row
+   drawing its own axis. Left-aligned to match where the bars sit once the
+   card stacks vertically on mobile (FE-21); the bars move to the right-hand
+   side of the row from sm: up, so the axis does too.
+
+   The ticks track is the same fixed width as SalarySpanBar's track, but that
+   alone isn't enough to land ticks above bars: each row is a [track][range
+   label] pair right-aligned as a whole (see SalarySpanBar), so the track's
+   own position depends on how wide that row's label is. The trailing spacer
+   below reserves the same width as the label column, unlabeled and empty,
+   so the ticks track sits exactly where every row's track sits rather than
+   where the row's right edge (label included) sits.
+
+   The row cards have their own inner padding (p-4/sm:p-5) that insets their
+   content from the card edge - the axis sits outside any card, so without
+   matching px-4/sm:px-5 here it right-aligns to the card's outer edge
+   instead of its padded content edge, landing a card-padding's-width to the
+   right of the actual bars beneath it. */
 function ScaleAxis({ scaleMax, step }: { scaleMax: number; step: number }) {
   const ticks = Array.from({ length: scaleMax / step + 1 }, (_, i) => i * step);
   return (
-    <div className="mb-2 flex justify-start sm:justify-end">
-      <div className="flex w-40 justify-between text-xs text-ink-muted sm:w-56">
-        {ticks.map((tick) => (
-          <span key={tick}>{formatCompactUsd(tick).replace("US$", "$")}</span>
-        ))}
+    <div className="mb-2 flex justify-start px-4 sm:justify-end sm:px-5">
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex justify-between text-xs text-ink-muted ${_TRACK_WIDTH}`}
+        >
+          {ticks.map((tick) => (
+            <span key={tick}>{formatCompactUsd(tick).replace("US$", "$")}</span>
+          ))}
+        </div>
+        <div aria-hidden="true" className={`shrink-0 ${_LABEL_WIDTH}`} />
       </div>
     </div>
   );
@@ -63,13 +87,21 @@ function ScaleAxis({ scaleMax, step }: { scaleMax: number; step: number }) {
    as a dot rather than a zero-width bar, so it stays visible instead of
    disappearing.
 
-   FE-21 (AC7 - accessibility): the bar itself is purely visual - a colored
-   div conveys nothing to a screen reader - so Chart View would otherwise
-   go completely silent on salary for every row (List View's text figures
-   aren't rendered in this mode). The sr-only span carries the same range a
-   sighted user reads off the bar's position, using the exact wording
-   comparisonRange() already produces so both views describe salary
-   identically. */
+   Martin's follow-up review: the shared axis above only ticks round numbers,
+   so a row's actual range had no label anywhere near it - reading exact
+   figures off the bar alone meant interpolating between distant gridlines,
+   and got worse the narrower a bar was. comparisonRange() is now printed
+   next to every bar rather than left to the axis to imply. The label column
+   is a fixed min-width (_LABEL_WIDTH, shared with ScaleAxis's spacer) rather
+   than sized to its own text - each row is right-aligned as a [track][label]
+   pair (the card's justify-between), so if the label were left to size
+   itself, a longer or shorter range string would shift that row's track
+   left or right by the difference, throwing off both the shared axis above
+   and comparisons between rows' bars. A fixed column keeps every track at
+   the same x regardless of that row's own number of digits. Because the
+   range is real visible text now (not just implied by the bar's position),
+   it doubles as the bar's accessible name and no separate sr-only
+   description is needed. */
 function SalarySpanBar({
   job,
   scaleMax,
@@ -81,23 +113,28 @@ function SalarySpanBar({
   const right = (job.estimated_annual_usd_max / scaleMax) * 100;
   const isPoint = job.estimated_annual_usd_min === job.estimated_annual_usd_max;
   return (
-    <div className="relative h-2 w-40 shrink-0 rounded-full bg-line sm:w-56">
-      <span className="sr-only">
-        Estimated annual salary: {comparisonRange(job)}
+    <div className="flex shrink-0 items-center gap-3">
+      <div
+        aria-hidden="true"
+        className={`relative h-2 shrink-0 rounded-full bg-line ${_TRACK_WIDTH}`}
+      >
+        {isPoint ? (
+          <div
+            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-surface bg-primary"
+            style={{ left: `calc(${left}% - 6px)` }}
+          />
+        ) : (
+          <div
+            className="absolute h-2 rounded-full bg-primary"
+            style={{ left: `${left}%`, width: `${right - left}%` }}
+          />
+        )}
+      </div>
+      <span
+        className={`shrink-0 whitespace-nowrap text-right text-sm font-bold text-primary ${_LABEL_WIDTH}`}
+      >
+        {comparisonRange(job)}
       </span>
-      {isPoint ? (
-        <div
-          aria-hidden="true"
-          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-surface bg-primary"
-          style={{ left: `calc(${left}% - 6px)` }}
-        />
-      ) : (
-        <div
-          aria-hidden="true"
-          className="absolute h-2 rounded-full bg-primary"
-          style={{ left: `${left}%`, width: `${right - left}%` }}
-        />
-      )}
     </div>
   );
 }
