@@ -67,21 +67,25 @@ jobs:
       - name: Build
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
-      # The Python function bundles every file it can reach in the repo,
-      # with no tree-shaking and (confirmed) no working per-function
-      # exclusion config on this CLI version - so .vercel/output/functions
-      # ends up with symlinks to notebooks/*.ipynb and a scrapers/data/
-      # snapshots/ image that .vercelignore correctly keeps out of the
-      # actual upload, producing a dangling symlink (readlink ENOENT) on
-      # Vercel's remote finalize step. None of this is used at runtime;
-      # stripping the symlinks here is more reliable than fighting for a
-      # vercel.json/next.config option that doesn't apply to a static
-      # export anyway.
-      - name: Strip unused files from the built Python function
+      # Something under .vercel/output ends up with symlinks to
+      # notebooks/*.ipynb and a scrapers/data/snapshots/ image that
+      # .vercelignore correctly keeps out of the actual upload, producing
+      # a dangling symlink (readlink ENOENT) on Vercel's remote finalize
+      # step - confirmed across two live runs, exact same 6 files both
+      # times. None of this is used at runtime; stripping the symlinks
+      # here is more reliable than fighting for a vercel.json/next.config
+      # exclusion option (two tried, neither worked - see the PR
+      # discussion). Matches by symlink target (-lname) across the whole
+      # .vercel/output tree rather than assuming a specific subdirectory,
+      # since local reproduction to confirm the exact location hit
+      # environment issues unrelated to the actual bug.
+      - name: Strip unused files from the built output
         run: |
-          find .vercel/output/functions -type l \
-            \( -path '*/notebooks/*' -o -path '*/scrapers/data/snapshots/*' \) \
+          find .vercel/output -type l \
+            \( -lname '*/notebooks/*' -o -lname '*/scrapers/data/snapshots/*' \) \
             -print -delete
+          echo "Remaining symlinks under .vercel/output (diagnostic, in case the error recurs):"
+          find .vercel/output -type l
 
       - name: Deploy prebuilt output
         id: deploy
