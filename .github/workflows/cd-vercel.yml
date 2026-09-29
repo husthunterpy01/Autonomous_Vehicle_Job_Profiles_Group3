@@ -1,11 +1,5 @@
 name: Deploy to Vercel
 
-# Vercel's own Git integration is switched off in vercel.json
-# ("git.deploymentEnabled": false), so this workflow is the only thing that
-# deploys. It runs the Vercel CLI, which builds remotely on Vercel from the
-# checked-out source (vercel.json + api/ + frontend/), same as a local
-# `vercel --prod`.
-#
 # One-time setup - add these in GitHub: Settings > Secrets and variables > Actions
 #   VERCEL_TOKEN       token from https://vercel.com/account/tokens
 #   VERCEL_ORG_ID      "orgId" in the local .vercel/project.json
