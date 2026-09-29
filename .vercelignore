@@ -10,7 +10,7 @@
 .venv/
 node_modules/
 .next/
-out/
+
 
 # ML/data tooling - not part of the deployed frontend or API
 notebooks/
@@ -25,4 +25,4 @@ scrapers/data/snapshots/
 .coverage
 app.log
 *.log
-.vercel/
+
