@@ -3,6 +3,7 @@ ats_sources:
     api_base: "https://api.smartrecruiters.com/v1/companies/{slug}/postings"
   greenhouse:
     api_base: "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true"
+    job_with_salary_base: "https://boards-api.greenhouse.io/v1/boards/{slug}/jobs/{job_id}?pay_transparency=true"
   workday:
     api_base: "https://{host}/wday/cxs/{tenant}/{site}/jobs"
     method: "POST"
@@ -11,7 +12,7 @@ ats_sources:
     api_base: "https://api.lever.co/v0/postings/{slug}"
     api_base_v2: "https://api.eu.lever.co/v0/postings/{slug}?mode=json"
   ashby:
-    api_base: "https://api.ashbyhq.com/posting-api/job-board/{slug}"
+    api_base: "https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true"
   personio:
     api_base: "https://api.personio.com/v1/companies/{slug}/postings"
   workable:
