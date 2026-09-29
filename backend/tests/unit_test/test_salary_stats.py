@@ -134,6 +134,75 @@ def test_excludes_a_job_with_an_unrecognized_currency(db_session):
     assert SalaryStatsService(db_session).get_top_paid_jobs() == []
 
 
+def test_caps_levels_fyi_estimates_to_one_per_company(db_session):
+    # Regression test for the exact bug Weishan reported: a levels.fyi
+    # estimate is company-wide (salary_sync.py), so every job at a company
+    # with no disclosed range shares the identical figure. Without a cap,
+    # one such company (Stack AV in the real report) filled the entire top
+    # N with duplicates of itself instead of a genuine spread of companies.
+    for i in range(3):
+        seed(db_session, f"stack-{i}", f"Stack Role {i}", company_name="Stack AV")
+    seed(db_session, "real-1", "Real Role 1", company_name="RealCo1")
+    seed(db_session, "real-2", "Real Role 2", company_name="RealCo2")
+    import_salary(db_session, [
+        {
+            "deduplication_key": f"stack-{i}",
+            "salary_average": 500000,
+            "salary_currency": "USD",
+            "salary_period": "yearly",
+            "salary_source": "levels_fyi_average",
+        }
+        for i in range(3)
+    ] + [
+        _salary_row(deduplication_key="real-1", salary_min=300000, salary_max=350000),
+        _salary_row(deduplication_key="real-2", salary_min=200000, salary_max=250000),
+    ])
+
+    stats = SalaryStatsService(db_session).get_top_paid_jobs()
+
+    stack_av_entries = [s for s in stats if s.company_name == "Stack AV"]
+    assert len(stack_av_entries) == 1
+    assert [s.company_name for s in stats] == ["Stack AV", "RealCo1", "RealCo2"]
+
+
+def test_does_not_cap_real_disclosed_ranges_from_the_same_company(db_session):
+    # The cap only applies to levels.fyi estimates, which are company-wide
+    # and therefore redundant when repeated - a real disclosed range is
+    # genuinely per-job, so two different real ranges at the same company
+    # are both legitimate results and must not be capped.
+    seed(db_session, "one", "Role One", company_name="SameCo")
+    seed(db_session, "two", "Role Two", company_name="SameCo")
+    import_salary(db_session, [
+        _salary_row(deduplication_key="one", salary_min=300000, salary_max=350000),
+        _salary_row(deduplication_key="two", salary_min=200000, salary_max=250000),
+    ])
+
+    stats = SalaryStatsService(db_session).get_top_paid_jobs()
+
+    assert len(stats) == 2
+    assert {s.title for s in stats} == {"Role One", "Role Two"}
+
+
+def test_still_respects_the_limit_after_capping_estimates(db_session):
+    for i in range(5):
+        seed(db_session, f"stack-{i}", f"Stack Role {i}", company_name="Stack AV")
+    seed(db_session, "real-1", "Real Role 1", company_name="RealCo1")
+    import_salary(db_session, [
+        {
+            "deduplication_key": f"stack-{i}",
+            "salary_average": 500000,
+            "salary_currency": "USD",
+            "salary_period": "yearly",
+            "salary_source": "levels_fyi_average",
+        }
+        for i in range(5)
+    ] + [_salary_row(deduplication_key="real-1", salary_min=300000, salary_max=350000)])
+
+    stats = SalaryStatsService(db_session).get_top_paid_jobs(limit=1)
+
+    assert len(stats) == 1
+
+
 def test_respects_the_limit(db_session):
     for i in range(3):
         seed(db_session, str(i), f"Role {i}")

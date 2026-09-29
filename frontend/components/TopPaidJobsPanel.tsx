@@ -3,35 +3,14 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { formatSalary } from "@/lib/salary";
+import {
+  comparisonRange,
+  computeScale,
+  formatCompactUsd,
+} from "@/lib/salary-scale";
 import { getTopPaidJobs, type TopPaidJob } from "@/lib/services/home";
 import { jobDetailHref } from "@/lib/services/job";
 import CompanyLogo from "./ui/CompanyLogo";
-
-/* Rounds to the nearest thousand for a compact "US$210k" figure - this
-   comparison line is deliberately less precise than the exact posted salary
-   shown underneath it, since its job is a fast side-by-side scan, not a
-   quoted number. */
-function compactUsd(amount: number): string {
-  return `US$${Math.round(amount / 1000)}k`;
-}
-
-/* The annualized/converted comparison range, e.g. "US$210k – 275k" (min
-   carries the currency prefix, max doesn't, to read as one range) or a
-   single "US$180k" when there's no disclosed span (a levels.fyi average
-   only - see SalaryStatsService). Prefixed with "≈" whenever this isn't
-   already the literal posted figure (period != yearly and/or currency !=
-   USD) - matches the same "~" convention the Salary component already uses
-   for estimates, so an approximation always reads as one. */
-function comparisonRange(job: TopPaidJob): string {
-  const isExact =
-    job.salary_currency === "USD" && job.salary_period === "yearly";
-  const prefix = isExact ? "" : "≈";
-  if (job.estimated_annual_usd_min === job.estimated_annual_usd_max) {
-    return `${prefix}${compactUsd(job.estimated_annual_usd_max)}`;
-  }
-  const min = compactUsd(job.estimated_annual_usd_min).replace("US$", "");
-  return `${prefix}US$${min} – ${Math.round(job.estimated_annual_usd_max / 1000)}k`;
-}
 
 /* The literal posted figure, small and muted underneath the comparison
    range above - deliberately not the shared Salary component, which always
@@ -55,28 +34,44 @@ function PostedSalary({ job }: { job: TopPaidJob }) {
   );
 }
 
-/* A round upper bound for the shared scale, e.g. 275_000 -> 300_000 - always
-   rounds up to the next $100k so a bar never clips at the right edge, and
-   ticks land on clean numbers ($0/$100k/$200k/...) instead of whatever the
-   highest job's exact figure happens to be. */
-function niceScaleMax(highest: number): number {
-  return Math.max(100_000, Math.ceil(highest / 100_000) * 100_000);
-}
+// Shared by ScaleAxis and SalarySpanBar so the ticks land exactly above the
+// bars they describe - both the track and the range-label column need to be
+// the same size in both places, or the two drift apart (see SalarySpanBar).
+const _TRACK_WIDTH = "w-40 sm:w-56";
+const _LABEL_WIDTH = "min-w-[8.5rem] sm:min-w-[10.5rem]";
 
-/* Ticks every $100k from 0 up to the scale max, e.g. [0, 100000, 200000,
-   300000] - shown once above the list of bars (right-aligned and the same
-   width as SalarySpanBar's track, so the ticks land above the bars they
-   describe) rather than each row drawing its own axis. */
-function ScaleAxis({ scaleMax }: { scaleMax: number }) {
-  const step = 100_000;
-  const tickCount = scaleMax / step + 1;
-  const ticks = Array.from({ length: tickCount }, (_, i) => i * step);
+/* Ticks from 0 to the scale max in steps of `step`, e.g. [0, 100000,
+   200000, 300000] - shown once above the list of bars, rather than each row
+   drawing its own axis. Left-aligned to match where the bars sit once the
+   card stacks vertically on mobile (FE-21); the bars move to the right-hand
+   side of the row from sm: up, so the axis does too.
+
+   The ticks track is the same fixed width as SalarySpanBar's track, but that
+   alone isn't enough to land ticks above bars: each row is a [track][range
+   label] pair right-aligned as a whole (see SalarySpanBar), so the track's
+   own position depends on how wide that row's label is. The trailing spacer
+   below reserves the same width as the label column, unlabeled and empty,
+   so the ticks track sits exactly where every row's track sits rather than
+   where the row's right edge (label included) sits.
+
+   The row cards have their own inner padding (p-4/sm:p-5) that insets their
+   content from the card edge - the axis sits outside any card, so without
+   matching px-4/sm:px-5 here it right-aligns to the card's outer edge
+   instead of its padded content edge, landing a card-padding's-width to the
+   right of the actual bars beneath it. */
+function ScaleAxis({ scaleMax, step }: { scaleMax: number; step: number }) {
+  const ticks = Array.from({ length: scaleMax / step + 1 }, (_, i) => i * step);
   return (
-    <div className="mb-2 flex justify-end">
-      <div className="flex w-40 justify-between text-xs text-ink-muted sm:w-56">
-        {ticks.map((tick) => (
-          <span key={tick}>${tick / 1000}k</span>
-        ))}
+    <div className="mb-2 flex justify-start px-4 sm:justify-end sm:px-5">
+      <div className="flex items-center gap-3">
+        <div
+          className={`flex justify-between text-xs text-ink-muted ${_TRACK_WIDTH}`}
+        >
+          {ticks.map((tick) => (
+            <span key={tick}>{formatCompactUsd(tick).replace("US$", "$")}</span>
+          ))}
+        </div>
+        <div aria-hidden="true" className={`shrink-0 ${_LABEL_WIDTH}`} />
       </div>
     </div>
   );
@@ -90,7 +85,23 @@ function ScaleAxis({ scaleMax }: { scaleMax: number }) {
    narrow range doesn't read as if it's using the whole card's width. A job
    with no disclosed range (min == max, a levels.fyi average only) renders
    as a dot rather than a zero-width bar, so it stays visible instead of
-   disappearing. */
+   disappearing.
+
+   Martin's follow-up review: the shared axis above only ticks round numbers,
+   so a row's actual range had no label anywhere near it - reading exact
+   figures off the bar alone meant interpolating between distant gridlines,
+   and got worse the narrower a bar was. comparisonRange() is now printed
+   next to every bar rather than left to the axis to imply. The label column
+   is a fixed min-width (_LABEL_WIDTH, shared with ScaleAxis's spacer) rather
+   than sized to its own text - each row is right-aligned as a [track][label]
+   pair (the card's justify-between), so if the label were left to size
+   itself, a longer or shorter range string would shift that row's track
+   left or right by the difference, throwing off both the shared axis above
+   and comparisons between rows' bars. A fixed column keeps every track at
+   the same x regardless of that row's own number of digits. Because the
+   range is real visible text now (not just implied by the bar's position),
+   it doubles as the bar's accessible name and no separate sr-only
+   description is needed. */
 function SalarySpanBar({
   job,
   scaleMax,
@@ -102,18 +113,28 @@ function SalarySpanBar({
   const right = (job.estimated_annual_usd_max / scaleMax) * 100;
   const isPoint = job.estimated_annual_usd_min === job.estimated_annual_usd_max;
   return (
-    <div className="relative h-2 w-40 shrink-0 rounded-full bg-line sm:w-56">
-      {isPoint ? (
-        <div
-          className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-surface bg-primary"
-          style={{ left: `calc(${left}% - 6px)` }}
-        />
-      ) : (
-        <div
-          className="absolute h-2 rounded-full bg-primary"
-          style={{ left: `${left}%`, width: `${right - left}%` }}
-        />
-      )}
+    <div className="flex shrink-0 items-center gap-3">
+      <div
+        aria-hidden="true"
+        className={`relative h-2 shrink-0 rounded-full bg-line ${_TRACK_WIDTH}`}
+      >
+        {isPoint ? (
+          <div
+            className="absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-surface bg-primary"
+            style={{ left: `calc(${left}% - 6px)` }}
+          />
+        ) : (
+          <div
+            className="absolute h-2 rounded-full bg-primary"
+            style={{ left: `${left}%`, width: `${right - left}%` }}
+          />
+        )}
+      </div>
+      <span
+        className={`shrink-0 whitespace-nowrap text-right text-sm font-bold text-primary ${_LABEL_WIDTH}`}
+      >
+        {comparisonRange(job)}
+      </span>
     </div>
   );
 }
@@ -127,7 +148,12 @@ const PAY_VIEW_LABELS: Record<PayView, string> = {
 
 /* Two-button pill matching the app's ViewToggle pattern (components/ui/
    ViewToggle.tsx), but smaller and local to this panel since it's a
-   two-state text choice rather than an icon-labeled table/cards switch. */
+   two-state text choice rather than an icon-labeled table/cards switch.
+   FE-21 (AC7): each button is already keyboard-focusable and its visible
+   text is its accessible name, but the pair reads as two unrelated buttons
+   without a group label explaining what they're switching between -
+   role="group" + aria-label ties them together for assistive tech the same
+   way the visible pill border does for sighted users. */
 function PayViewToggle({
   view,
   onChange,
@@ -136,7 +162,11 @@ function PayViewToggle({
   onChange: (view: PayView) => void;
 }) {
   return (
-    <div className="inline-flex rounded-lg border border-line bg-surface p-0.5">
+    <div
+      role="group"
+      aria-label="Salary display format"
+      className="inline-flex rounded-lg border border-line bg-surface p-0.5"
+    >
       {(["list", "chart"] as const).map((option) => (
         <button
           key={option}
@@ -205,7 +235,7 @@ export default function TopPaidJobsPanel() {
     );
   }
 
-  const scaleMax = niceScaleMax(
+  const { max: scaleMax, step: scaleStep } = computeScale(
     Math.max(...jobs.map((job) => job.estimated_annual_usd_max)),
   );
 
@@ -214,28 +244,30 @@ export default function TopPaidJobsPanel() {
       <div className="mb-3">
         <PayViewToggle view={view} onChange={setView} />
       </div>
-      {view === "chart" && <ScaleAxis scaleMax={scaleMax} />}
+      {view === "chart" && <ScaleAxis scaleMax={scaleMax} step={scaleStep} />}
       <div className="flex flex-col gap-3">
         {jobs.map((job, index) => (
           <Link
             key={job.job_id}
             href={jobDetailHref(job.job_id)}
-            className="flex items-center gap-4 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:p-5"
+            className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-md sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:p-5"
           >
-            <span className="w-6 shrink-0 text-center text-lg font-extrabold text-ink-muted">
-              {index + 1}
-            </span>
-            <CompanyLogo text={job.company_name.charAt(0)} />
-            <div className="min-w-0 flex-1">
-              <h3 className="truncate font-semibold text-ink">{job.title}</h3>
-              <p className="mt-1 truncate text-sm text-ink-secondary">
-                {job.company_name}
-              </p>
+            <div className="flex min-w-0 items-center gap-4 sm:max-w-sm">
+              <span className="w-6 shrink-0 text-center text-lg font-extrabold text-ink-muted">
+                {index + 1}
+              </span>
+              <CompanyLogo text={job.company_name.charAt(0)} />
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-semibold text-ink">{job.title}</h3>
+                <p className="mt-1 truncate text-sm text-ink-secondary">
+                  {job.company_name}
+                </p>
+              </div>
             </div>
             {view === "chart" ? (
               <SalarySpanBar job={job} scaleMax={scaleMax} />
             ) : (
-              <div className="shrink-0 text-right">
+              <div className="sm:shrink-0 sm:text-right">
                 <p className="text-base font-bold text-primary">
                   {comparisonRange(job)}
                 </p>

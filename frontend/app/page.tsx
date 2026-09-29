@@ -1,7 +1,6 @@
 import Link from "next/link";
 import CategoryGridPanel from "@/components/CategoryGridPanel";
 import TopPaidJobsPanel from "@/components/TopPaidJobsPanel";
-import TopSkillsPanel from "@/components/TopSkillsPanel";
 import HomeSearchForm from "./home-search-form";
 import {
   FeaturedJobsGrid,
@@ -102,24 +101,6 @@ function JobCategories() {
         />
 
         <CategoryGridPanel />
-      </div>
-    </section>
-  );
-}
-
-function TopSkills() {
-  return (
-    <section className="bg-surface py-20">
-      <div className="mx-auto max-w-[1200px] px-6">
-        <SectionHeader
-          title="Top Skills in"
-          highlight="Demand"
-          subtitle="Most requested skills across current AV job postings."
-          linkHref="/search"
-          linkLabel="View all jobs"
-        />
-
-        <TopSkillsPanel />
       </div>
     </section>
   );
@@ -237,7 +218,6 @@ export default function HomePage() {
     <>
       <Hero />
       <JobCategories />
-      <TopSkills />
       <TopPaidJobs />
       <LatestJobs />
       <FeaturedJobs />

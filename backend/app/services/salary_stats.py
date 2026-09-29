@@ -1,8 +1,21 @@
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
+from app.enums.salary_source import SalarySource
 from app.models import Company, JobPosting
 from app.schemas.job import TopPaidJobResponse
+
+# A levels.fyi estimate is company-wide, not job-specific (see
+# salary_sync.py) - every job at a company with no disclosed range gets the
+# identical figure. Ranking purely by value let one company with several
+# estimate-only jobs fill the entire top N with duplicates of the same
+# number (FE-21, reported by Weishan). Real disclosed ranges are genuinely
+# per-job and stay uncapped - only estimates are capped, one per company.
+_MAX_ESTIMATE_ONLY_PER_COMPANY = 1
+# How many extra candidates to pull past `limit` so the per-company cap
+# above has real rows to fall back on instead of returning fewer than
+# `limit` results when one company dominates the top of the ranking.
+_OVERFETCH_MULTIPLIER = 10
 
 # Annualizes a period-denominated salary using a standard work year (52
 # weeks x 5 days x 8 hours = 2080 hours) - a labor-statistics convention,
@@ -78,7 +91,19 @@ class SalaryStatsService:
             .join(Company, Company.company_id == JobPosting.company_id)
             .filter(estimated_annual_usd_max.isnot(None))
             .order_by(estimated_annual_usd_max.desc(), JobPosting.job_id)
-            .limit(limit)
+            .limit(limit * _OVERFETCH_MULTIPLIER)
             .all()
         )
-        return [TopPaidJobResponse(**row._mapping) for row in rows]
+
+        results: list[TopPaidJobResponse] = []
+        estimate_count_by_company: dict = {}
+        for row in rows:
+            if row.salary_source == SalarySource.LEVELS_FYI_AVERAGE.value:
+                seen = estimate_count_by_company.get(row.company_id, 0)
+                if seen >= _MAX_ESTIMATE_ONLY_PER_COMPANY:
+                    continue
+                estimate_count_by_company[row.company_id] = seen + 1
+            results.append(TopPaidJobResponse(**row._mapping))
+            if len(results) >= limit:
+                break
+        return results

@@ -279,7 +279,7 @@ def test_ashby_scrape_lands_multi_location_payload(
 
     assert status == 0
     request = mock_urlopen.call_args[0][0]
-    assert request.full_url.endswith("/posting-api/job-board/42dot")
+    assert request.full_url.endswith("/posting-api/job-board/42dot?includeCompensation=true")
     assert stored["object_name"].startswith("api/42dot/")
     inserted = mock_execute_values.call_args.args[2][0]
     assert inserted[0] == "42dot"
