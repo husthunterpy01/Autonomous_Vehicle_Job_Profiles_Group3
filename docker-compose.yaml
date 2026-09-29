@@ -8,6 +8,10 @@ services:
       DATABASE_URL: ${SUPABASE_DATABASE_URL:?missing, see .env.sample}
       SEED_ON_STARTUP: "false"
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:?missing, see .env.sample}
+      # Optional: DOC-13 skill trends. Unset is fine (Market Trends shows
+      # its "not configured" placeholder) - unlike the vars above, this one
+      # doesn't fail the container when it's missing.
+      GOLD_DATABASE_URL: ${GOLD_DATABASE_URL:-}
     ports:
       - "8000:8000"
     networks:
