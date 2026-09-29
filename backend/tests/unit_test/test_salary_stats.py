@@ -204,14 +204,13 @@ def test_still_respects_the_limit_after_capping_estimates(db_session):
 
 
 def test_still_returns_the_full_limit_when_one_company_dwarfs_the_others(db_session):
-    # Regression test for Weishan's PR #147 follow-up report: the previous
-    # implementation over-fetched limit*10 rows in SQL and capped
-    # per-company duplicates in Python afterward, so a single company with
-    # more estimate-only jobs than that window could hold (his real-world
-    # numbers: Waymo ~300, NVIDIA ~700) filled the entire window with its
-    # own duplicates before any other company's rows were even fetched -
-    # capping afterward then returned far fewer than `limit` results (his
-    # repro below: 60 duplicates + 5 real ranges, limit=5, returned just 1).
+    # The previous implementation over-fetched limit*10 rows in SQL and
+    # capped per-company duplicates in Python afterward, so a single
+    # company with more estimate-only jobs than that window could hold
+    # filled the entire window with its own duplicates before any other
+    # company's rows were even fetched - capping afterward then returned
+    # far fewer than `limit` results (repro below: 60 duplicates + 5 real
+    # ranges, limit=5, used to return just 1).
     for i in range(60):
         seed(db_session, f"stack-{i}", f"Stack Role {i}", company_name="Stack AV")
     for i in range(5):

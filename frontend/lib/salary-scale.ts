@@ -9,8 +9,7 @@ import type { TopPaidJob } from "@/lib/services/home";
    Rounds to the nearest thousand FIRST, then checks that rounded value
    against the 1M threshold - checking the raw amount let a value just
    under a million (e.g. 999,600) fail the >= 1_000_000 check, then round
-   up to "1000k" instead of "1M" once it hit Math.round(amount / 1000)
-   (Weishan, PR #147 follow-up). */
+   up to "1000k" instead of "1M" once it hit Math.round(amount / 1000). */
 export function formatCompactUsd(amount: number): string {
   const roundedToThousand = Math.round(amount / 1000) * 1000;
   if (roundedToThousand >= 1_000_000) {

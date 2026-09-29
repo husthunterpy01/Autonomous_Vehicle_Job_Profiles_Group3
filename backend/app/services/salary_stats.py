@@ -71,14 +71,14 @@ class SalaryStatsService:
 
         # Ranks each company's levels.fyi estimate-only jobs against each
         # other so the per-company cap can be applied inside SQL, before
-        # LIMIT. Doing the cap in Python after an overfetched LIMIT (the
-        # previous approach) broke down whenever a single company had more
-        # estimate-only jobs than the overfetch window could hold - Waymo
-        # with ~300 and NVIDIA with ~700 in Weishan's report - because the
-        # window filled entirely with that company's duplicates before any
-        # other company's rows were even fetched, so capping afterward left
-        # far fewer than `limit` results. A real disclosed range is already
-        # per-job, so its rank here is never used to filter anything out.
+        # LIMIT. Capping in Python after an overfetched LIMIT instead would
+        # break down whenever a single company had more estimate-only jobs
+        # than the overfetch window could hold: the window would fill
+        # entirely with that company's duplicates before any other
+        # company's rows were even fetched, so capping afterward could
+        # leave far fewer than `limit` results. A real disclosed range is
+        # already per-job, so its rank here is never used to filter
+        # anything out.
         estimate_rank = func.row_number().over(
             partition_by=[JobPosting.company_id, JobPosting.salary_source],
             order_by=[estimated_annual_usd_max.desc(), JobPosting.job_id],

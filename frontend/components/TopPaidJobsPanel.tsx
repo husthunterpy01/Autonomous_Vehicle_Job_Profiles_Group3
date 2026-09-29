@@ -196,8 +196,7 @@ function PayViewToggle({
    that company happened to rank first (SalaryStatsService picks one to
    represent the company-wide figure) - the number isn't really that job's
    own salary, so the "Company estimate" label under it says so explicitly
-   rather than letting it read as a normal, job-specific listing (Weishan,
-   PR #147 follow-up). */
+   rather than letting it read as a normal, job-specific listing. */
 export default function TopPaidJobsPanel() {
   const [jobs, setJobs] = useState<TopPaidJob[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
