@@ -184,8 +184,36 @@ describe("SkillTrendChartView", () => {
       [...row.querySelectorAll("th, td")].map((cell) => cell.textContent),
     );
     assert.deepEqual(cells, [
-      ["Python", "664 jobs", "806 jobs"],
-      ["ROS 2", "0 jobs", "81 jobs"],
+      ["Python", "664", "806"],
+      ["ROS 2", "0", "81"],
     ]);
+  });
+
+  it("a year of months scrolls under a pinned skill column, opening on the latest", () => {
+    const year: SkillTrends = {
+      months: Array.from({ length: 12 }, (_, i) => ({
+        month_key: 202601 + i,
+        label: `Month ${i + 1}`,
+        snapshot_at: "2026-09-01T00:00:00Z",
+        jobs_with_skills: 1000,
+      })),
+      skills: DATA.skills,
+    };
+    const { container, getByTestId } = render(
+      <SkillTrendChartView state={{ status: "success", data: year }} />,
+    );
+    const header = [...container.querySelectorAll("thead th")];
+    assert.equal(header.length, 13);
+    assert.match(header[0].className, /sticky left-0/);
+    for (const row of container.querySelectorAll("tbody tr")) {
+      assert.match(row.querySelector("th")!.className, /sticky left-0/);
+    }
+
+    const scroll = getByTestId("skill-table-scroll");
+    Object.defineProperty(scroll, "scrollWidth", { value: 1400 });
+    const details = container.querySelector("details")!;
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
+    assert.equal(scroll.scrollLeft, 1400);
   });
 });

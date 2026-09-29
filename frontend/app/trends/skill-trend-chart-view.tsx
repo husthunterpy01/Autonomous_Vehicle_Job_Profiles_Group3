@@ -55,10 +55,6 @@ function Notice({ title, children }: { title: string; children?: ReactNode }) {
   );
 }
 
-function jobsLabel(count: number): string {
-  return `${count.toLocaleString("en-US")} ${count === 1 ? "job" : "jobs"}`;
-}
-
 /* A short stroke of the series color: the key in the legend and tooltip. */
 function LineKey({ color }: { color: string }) {
   return (
@@ -228,19 +224,44 @@ function Tooltip({
   );
 }
 
+/* Skills down, months across, like the chart. With many months the months
+   scroll while the skill column stays pinned, and the table opens on the
+   latest month. Plain numbers keep the columns narrow and easy to compare;
+   the note under the chart says they are job postings. */
 function SkillTable({ layout }: { layout: SkillTrendLayout }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  // The inset shadow draws the divider: a border on a sticky cell would
+  // scroll away with the collapsed table borders.
+  const pinned =
+    "sticky left-0 z-10 bg-surface py-2 pr-4 text-left whitespace-nowrap shadow-[inset_-1px_0_0_var(--color-line)]";
+  const count = "py-2 pl-4 text-right whitespace-nowrap tabular-nums";
   return (
-    <details className="mt-4">
+    <details
+      className="mt-4"
+      onToggle={(event) => {
+        const el = scrollRef.current;
+        if (event.currentTarget.open && el) el.scrollLeft = el.scrollWidth;
+      }}
+    >
       <summary className="cursor-pointer text-sm font-medium text-primary">
         Show as table
       </summary>
-      <div className="mt-3 overflow-x-auto">
-        <table className="w-full min-w-[480px] text-left text-sm">
+      <div
+        ref={scrollRef}
+        data-testid="skill-table-scroll"
+        className="mt-3 overflow-x-auto"
+      >
+        <table className="min-w-full text-sm">
+          <caption className="sr-only">
+            Job postings per skill and month
+          </caption>
           <thead>
             <tr className="border-b border-line text-ink-secondary">
-              <th className="py-2 pr-4 font-medium">Skill</th>
+              <th scope="col" className={`${pinned} font-medium`}>
+                Skill
+              </th>
               {layout.months.map((m) => (
-                <th key={m.key} className="py-2 pr-4 font-medium">
+                <th key={m.key} scope="col" className={`${count} font-medium`}>
                   {m.label}
                 </th>
               ))}
@@ -249,12 +270,15 @@ function SkillTable({ layout }: { layout: SkillTrendLayout }) {
           <tbody>
             {layout.series.map((s) => (
               <tr key={s.key} className="border-b border-line last:border-0">
-                <th scope="row" className="py-2 pr-4 font-medium text-ink">
+                <th scope="row" className={`${pinned} font-medium text-ink`}>
                   {s.name}
                 </th>
                 {s.points.map((p) => (
-                  <td key={p.monthKey} className="py-2 pr-4 text-ink-secondary">
-                    {jobsLabel(p.jobCount)}
+                  <td
+                    key={p.monthKey}
+                    className={`${count} text-ink-secondary`}
+                  >
+                    {p.jobCount.toLocaleString("en-US")}
                   </td>
                 ))}
               </tr>
