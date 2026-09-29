@@ -78,11 +78,19 @@ jobs:
       # confirmed via local inspection that filePathMap is a plain JSON
       # object, not filesystem symlinks. Stripping the matching entries
       # from filePathMap directly is the actual fix.
+      #
+      # frontend/out/ is also stripped here despite NOT being in
+      # .vercelignore: the frontend's own @vercel/next build step needs it
+      # uploaded (that's the deployed site), but the Python function's
+      # tracer picks it up too, duplicating the entire static export (~345
+      # files) inside a function that never touches it - confirmed via a
+      # local build. That duplication was burning through the free-tier
+      # upload-request quota on every deploy attempt.
       - name: Strip unused files from the function's filePathMap
         run: |
           shopt -s globstar nullglob
           for f in .vercel/output/functions/**/.vc-config.json; do
-            jq '.filePathMap |= with_entries(select(.key | (startswith("notebooks/") or startswith("scrapers/data/snapshots/")) | not))' "$f" > "$f.tmp"
+            jq '.filePathMap |= with_entries(select(.key | (startswith("notebooks/") or startswith("scrapers/data/snapshots/") or startswith("frontend/out/")) | not))' "$f" > "$f.tmp"
             mv "$f.tmp" "$f"
           done
 
