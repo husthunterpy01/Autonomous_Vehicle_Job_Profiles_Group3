@@ -67,6 +67,22 @@ jobs:
       - name: Build
         run: vercel build --prod --token="$VERCEL_TOKEN"
 
+      # The Python function bundles every file it can reach in the repo,
+      # with no tree-shaking and (confirmed) no working per-function
+      # exclusion config on this CLI version - so .vercel/output/functions
+      # ends up with symlinks to notebooks/*.ipynb and a scrapers/data/
+      # snapshots/ image that .vercelignore correctly keeps out of the
+      # actual upload, producing a dangling symlink (readlink ENOENT) on
+      # Vercel's remote finalize step. None of this is used at runtime;
+      # stripping the symlinks here is more reliable than fighting for a
+      # vercel.json/next.config option that doesn't apply to a static
+      # export anyway.
+      - name: Strip unused files from the built Python function
+        run: |
+          find .vercel/output/functions -type l \
+            \( -path '*/notebooks/*' -o -path '*/scrapers/data/snapshots/*' \) \
+            -print -delete
+
       - name: Deploy prebuilt output
         id: deploy
         run: |

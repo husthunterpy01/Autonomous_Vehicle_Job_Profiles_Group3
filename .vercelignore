@@ -12,7 +12,13 @@ node_modules/
 .next/
 
 
-# ML/data tooling - not part of the deployed frontend or API
+# ML/data tooling - not part of the deployed frontend or API. The Python
+# function bundles every file it can reach with no tree-shaking and no
+# working per-function exclusion config on this CLI version, so excluding
+# a path here without also stripping its symlink from .vercel/output/
+# produces a dangling symlink (readlink ENOENT) on Vercel's remote
+# finalize step - see cd-vercel.yml's "Strip unused files" step, which
+# handles that for notebooks/ and scrapers/data/snapshots/ specifically.
 notebooks/
 checkpoints/
 /data/
