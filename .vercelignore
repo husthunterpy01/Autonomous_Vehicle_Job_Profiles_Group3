@@ -12,12 +12,18 @@ node_modules/
 .next/
 
 
-# ML/data tooling - not part of the deployed frontend or API
-notebooks/
+# ML/data tooling - not part of the deployed frontend or API. The Python
+# function bundles every file it can reach with no tree-shaking, and that
+# bundling isn't scoped by this file - only notebooks/checkpoints/ (260MB
+# of saved model checkpoints) is excluded here, not the 5 small (~50-90KB)
+# notebooks/*.ipynb files themselves or scrapers/data/snapshots/ (132KB
+# total): excluding those from upload while the Python builder still tried
+# to reference them produced a dangling symlink (readlink ENOENT) on
+# Vercel's remote finalize step.
+notebooks/checkpoints/
 checkpoints/
 /data/
 scrapers/data/train_result/
-scrapers/data/snapshots/
 
 # Local caches/artifacts
 .pytest_cache/
