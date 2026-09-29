@@ -4,7 +4,13 @@
   },
   "builds": [
     { "src": "frontend/package.json", "use": "@vercel/next" },
-    { "src": "api/index.py", "use": "@vercel/python" }
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "excludeFiles": "{.venv/**,notebooks/**,checkpoints/**,data/**,document/**,scrapers/data/train_result/**,scrapers/data/snapshots/**,frontend/node_modules/**,frontend/.next/**,frontend/out/**,.git/**,.pytest_cache/**,.ruff_cache/**,.claude/**,*.log,.coverage,capstone_flow.drawio.svg,pipeline-architecture.png}"
+      }
+    }
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.py" },
