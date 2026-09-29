@@ -55,37 +55,26 @@ jobs:
 
       # Vercel's own remote builders have this pre-installed; building
       # locally on this runner (see the pull/build/deploy steps below)
-      # means it doesn't, and api/index.py's Python build needs it.
+      # means it doesn't, and api/index.py's Python build needs it. Pinned
+      # action instead of curling astral.sh's install script into `sh` -
+      # this job's env carries VERCEL_TOKEN, so a remote script fetched
+      # over the network isn't something to run unpinned in it.
       - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        uses: astral-sh/setup-uv@v10
+        with:
+          version: "0.12.17"
 
+      # workflow_dispatch lets this run against any branch (for testing
+      # this workflow itself, see the PR discussion) - only main's push
+      # trigger should ever touch production. Everything else gets a
+      # preview environment/deploy instead, so a manual test run can't
+      # overwrite the live site or spend the prod deploy's upload quota.
       - name: Pull Vercel project settings
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: vercel pull --yes --environment=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }} --token="$VERCEL_TOKEN"
 
       - name: Build
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+        run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token="$VERCEL_TOKEN"
 
-      # api/index.py's Python function has no tree-shaking, so vercel build
-      # maps nearly the whole repo into that function's filePathMap (see its
-      # .vc-config.json) - including notebooks/*.ipynb and a
-      # scrapers/data/snapshots/ image that .vercelignore correctly keeps
-      # out of the actual upload. `vercel deploy` cross-checks filePathMap
-      # against the upload set and aborts on the mismatch (readlink ENOENT
-      # during remote finalize). A prior fix here deleted symlinks from
-      # .vercel/output, which turned out to be the wrong layer entirely -
-      # confirmed via local inspection that filePathMap is a plain JSON
-      # object, not filesystem symlinks. Stripping the matching entries
-      # from filePathMap directly is the actual fix.
-      #
-      # frontend/out/ is also stripped here despite NOT being in
-      # .vercelignore: the frontend's own @vercel/next build step needs it
-      # uploaded (that's the deployed site), but the Python function's
-      # tracer picks it up too, duplicating the entire static export (~345
-      # files) inside a function that never touches it - confirmed via a
-      # local build. That duplication was burning through the free-tier
-      # upload-request quota on every deploy attempt.
       - name: Strip unused files from the function's filePathMap
         run: |
           shopt -s globstar nullglob
@@ -97,7 +86,7 @@ jobs:
       - name: Deploy prebuilt output
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN")
+          url=$(vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --yes --token "$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Summary
