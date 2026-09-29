@@ -1,0 +1,76 @@
+name: Vercel Build Check
+
+# Validates that api/index.py and the frontend still build as Vercel
+# functions/static output for every PR, without deploying anything -
+# cd-vercel.yml is the only workflow that ever calls `vercel deploy`,
+# and only on push to main. This reuses the same secrets (see
+# cd-vercel.yml's header for where to add them).
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - "backend/app/**"
+      - "backend/requirements.txt"
+      - "api/**"
+      - "vercel.json"
+      - ".vercelignore"
+      - ".github/workflows/cd-vercel.yml"
+      - ".github/workflows/ci-vercel.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: vercel-build-check-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build-check:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Check Vercel secrets are configured
+        run: |
+          missing=0
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Repository secret $name is not set (see the header of .github/workflows/cd-vercel.yml)"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@59
+
+      # Vercel's own remote builders have this pre-installed; building
+      # locally on this runner means it doesn't, and api/index.py's Python
+      # build needs it.
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      # `preview`, not `production` - this never deploys, so there's no
+      # environment to be "in", but preview config avoids requiring
+      # production-only env vars/secrets to be present for a PR to pass.
+      - name: Pull Vercel project settings
+        run: vercel pull --yes --environment=preview --token="$VERCEL_TOKEN"
+
+      # No --prod, and deliberately no `vercel deploy` step at all - this
+      # only proves the build succeeds (Next export + Python function
+      # bundling), it never uploads or publishes anything, so it doesn't
+      # touch the free-tier upload rate limit cd-vercel.yml can hit.
+      - name: Build (validation only - nothing is deployed)
+        run: vercel build --token="$VERCEL_TOKEN"
