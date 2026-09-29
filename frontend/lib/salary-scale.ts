@@ -4,13 +4,19 @@ import type { TopPaidJob } from "@/lib/services/home";
    "US$2.6M" at or above it, so an outlier salary reads as "$2.6M" instead
    of an unwieldy "$2600k" (FE-21: formatting must stay consistent
    regardless of magnitude). Shared by TopPaidJobsPanel's comparison range
-   text and its chart axis ticks, so both use identical formatting. */
+   text and its chart axis ticks, so both use identical formatting.
+
+   Rounds to the nearest thousand FIRST, then checks that rounded value
+   against the 1M threshold - checking the raw amount let a value just
+   under a million (e.g. 999,600) fail the >= 1_000_000 check, then round
+   up to "1000k" instead of "1M" once it hit Math.round(amount / 1000). */
 export function formatCompactUsd(amount: number): string {
-  if (amount >= 1_000_000) {
-    const millions = Math.round((amount / 1_000_000) * 10) / 10;
+  const roundedToThousand = Math.round(amount / 1000) * 1000;
+  if (roundedToThousand >= 1_000_000) {
+    const millions = Math.round((roundedToThousand / 1_000_000) * 10) / 10;
     return `US$${millions}M`;
   }
-  return `US$${Math.round(amount / 1000)}k`;
+  return `US$${roundedToThousand / 1000}k`;
 }
 
 /* The annualized/converted comparison range, e.g. "US$210k – US$275k" or a
