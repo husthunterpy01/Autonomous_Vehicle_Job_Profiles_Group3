@@ -190,7 +190,14 @@ function PayViewToggle({
    - see SalaryStatsService). Each card shows that comparable figure as the
    prominent line (marked "≈" whenever it's an approximation, not the exact
    posted figure) plus the literal posted salary underneath, formatted the
-   same way the rest of the app does via lib/salary's formatSalary(). */
+   same way the rest of the app does via lib/salary's formatSalary().
+
+   A levels.fyi-estimate row's title/company come from whichever one job at
+   that company happened to rank first (SalaryStatsService picks one to
+   represent the company-wide figure) - the number isn't really that job's
+   own salary, so the "Company estimate" label under it says so explicitly
+   rather than letting it read as a normal, job-specific listing (Weishan,
+   PR #147 follow-up). */
 export default function TopPaidJobsPanel() {
   const [jobs, setJobs] = useState<TopPaidJob[]>([]);
   const [status, setStatus] = useState<"loading" | "success" | "error">(
@@ -262,6 +269,11 @@ export default function TopPaidJobsPanel() {
                 <p className="mt-1 truncate text-sm text-ink-secondary">
                   {job.company_name}
                 </p>
+                {job.salary_source === "levels_fyi_average" && (
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    Company estimate
+                  </p>
+                )}
               </div>
             </div>
             {view === "chart" ? (

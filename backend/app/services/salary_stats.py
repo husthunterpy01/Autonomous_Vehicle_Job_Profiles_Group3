@@ -1,4 +1,4 @@
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session
 
 from app.enums.salary_source import SalarySource
@@ -12,10 +12,6 @@ from app.schemas.job import TopPaidJobResponse
 # number (FE-21, reported by Weishan). Real disclosed ranges are genuinely
 # per-job and stay uncapped - only estimates are capped, one per company.
 _MAX_ESTIMATE_ONLY_PER_COMPANY = 1
-# How many extra candidates to pull past `limit` so the per-company cap
-# above has real rows to fall back on instead of returning fewer than
-# `limit` results when one company dominates the top of the ranking.
-_OVERFETCH_MULTIPLIER = 10
 
 # Annualizes a period-denominated salary using a standard work year (52
 # weeks x 5 days x 8 hours = 2080 hours) - a labor-statistics convention,
@@ -73,7 +69,22 @@ class SalaryStatsService:
         estimated_annual_usd_min = min_value * period_multiplier * currency_rate
         estimated_annual_usd_max = max_value * period_multiplier * currency_rate
 
-        rows = (
+        # Ranks each company's levels.fyi estimate-only jobs against each
+        # other so the per-company cap can be applied inside SQL, before
+        # LIMIT. Doing the cap in Python after an overfetched LIMIT (the
+        # previous approach) broke down whenever a single company had more
+        # estimate-only jobs than the overfetch window could hold - Waymo
+        # with ~300 and NVIDIA with ~700 in Weishan's report - because the
+        # window filled entirely with that company's duplicates before any
+        # other company's rows were even fetched, so capping afterward left
+        # far fewer than `limit` results. A real disclosed range is already
+        # per-job, so its rank here is never used to filter anything out.
+        estimate_rank = func.row_number().over(
+            partition_by=[JobPosting.company_id, JobPosting.salary_source],
+            order_by=[estimated_annual_usd_max.desc(), JobPosting.job_id],
+        )
+
+        ranked = (
             self.db.query(
                 JobPosting.job_id,
                 JobPosting.title,
@@ -87,23 +98,43 @@ class SalaryStatsService:
                 JobPosting.salary_source,
                 estimated_annual_usd_min.label("estimated_annual_usd_min"),
                 estimated_annual_usd_max.label("estimated_annual_usd_max"),
+                estimate_rank.label("estimate_rank"),
             )
             .join(Company, Company.company_id == JobPosting.company_id)
             .filter(estimated_annual_usd_max.isnot(None))
-            .order_by(estimated_annual_usd_max.desc(), JobPosting.job_id)
-            .limit(limit * _OVERFETCH_MULTIPLIER)
+            .subquery()
+        )
+
+        rows = (
+            self.db.query(
+                ranked.c.job_id,
+                ranked.c.title,
+                ranked.c.company_id,
+                ranked.c.company_name,
+                ranked.c.salary_min,
+                ranked.c.salary_max,
+                ranked.c.salary_average,
+                ranked.c.salary_currency,
+                ranked.c.salary_period,
+                ranked.c.salary_source,
+                ranked.c.estimated_annual_usd_min,
+                ranked.c.estimated_annual_usd_max,
+            )
+            .filter(
+                or_(
+                    # IS DISTINCT FROM (not !=) so a row whose salary_source
+                    # is somehow NULL isn't silently dropped by the cap -
+                    # the cap only ever means to apply to levels_fyi_average
+                    # rows specifically.
+                    ranked.c.salary_source.is_distinct_from(
+                        SalarySource.LEVELS_FYI_AVERAGE.value
+                    ),
+                    ranked.c.estimate_rank <= _MAX_ESTIMATE_ONLY_PER_COMPANY,
+                )
+            )
+            .order_by(ranked.c.estimated_annual_usd_max.desc(), ranked.c.job_id)
+            .limit(limit)
             .all()
         )
 
-        results: list[TopPaidJobResponse] = []
-        estimate_count_by_company: dict = {}
-        for row in rows:
-            if row.salary_source == SalarySource.LEVELS_FYI_AVERAGE.value:
-                seen = estimate_count_by_company.get(row.company_id, 0)
-                if seen >= _MAX_ESTIMATE_ONLY_PER_COMPANY:
-                    continue
-                estimate_count_by_company[row.company_id] = seen + 1
-            results.append(TopPaidJobResponse(**row._mapping))
-            if len(results) >= limit:
-                break
-        return results
+        return [TopPaidJobResponse(**row._mapping) for row in rows]

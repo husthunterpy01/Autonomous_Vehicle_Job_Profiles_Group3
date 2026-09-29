@@ -48,6 +48,14 @@ describe("formatCompactUsd", () => {
   it("handles zero", () => {
     assert.equal(formatCompactUsd(0), "US$0k");
   });
+
+  it("switches to millions when rounding a near-million figure crosses the threshold", () => {
+    // Regression test (Weishan, PR #147 follow-up): 999,600 is below
+    // 1,000,000 so it used to fail the millions check, then separately
+    // round up to "1000k" once formatted - rounding to the nearest
+    // thousand before checking the threshold fixes both at once.
+    assert.equal(formatCompactUsd(999_600), "US$1M");
+  });
 });
 
 describe("comparisonRange", () => {

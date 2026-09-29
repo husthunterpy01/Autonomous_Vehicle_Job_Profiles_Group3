@@ -203,6 +203,43 @@ def test_still_respects_the_limit_after_capping_estimates(db_session):
     assert len(stats) == 1
 
 
+def test_still_returns_the_full_limit_when_one_company_dwarfs_the_others(db_session):
+    # Regression test for Weishan's PR #147 follow-up report: the previous
+    # implementation over-fetched limit*10 rows in SQL and capped
+    # per-company duplicates in Python afterward, so a single company with
+    # more estimate-only jobs than that window could hold (his real-world
+    # numbers: Waymo ~300, NVIDIA ~700) filled the entire window with its
+    # own duplicates before any other company's rows were even fetched -
+    # capping afterward then returned far fewer than `limit` results (his
+    # repro below: 60 duplicates + 5 real ranges, limit=5, returned just 1).
+    for i in range(60):
+        seed(db_session, f"stack-{i}", f"Stack Role {i}", company_name="Stack AV")
+    for i in range(5):
+        seed(db_session, f"real-{i}", f"Real Role {i}", company_name=f"RealCo{i}")
+    import_salary(db_session, [
+        {
+            "deduplication_key": f"stack-{i}",
+            "salary_average": 500000,
+            "salary_currency": "USD",
+            "salary_period": "yearly",
+            "salary_source": "levels_fyi_average",
+        }
+        for i in range(60)
+    ] + [
+        _salary_row(
+            deduplication_key=f"real-{i}",
+            salary_min=200000 + i * 1000,
+            salary_max=250000 + i * 1000,
+        )
+        for i in range(5)
+    ])
+
+    stats = SalaryStatsService(db_session).get_top_paid_jobs(limit=5)
+
+    assert len(stats) == 5
+    assert len([s for s in stats if s.company_name == "Stack AV"]) == 1
+
+
 def test_respects_the_limit(db_session):
     for i in range(3):
         seed(db_session, str(i), f"Role {i}")
