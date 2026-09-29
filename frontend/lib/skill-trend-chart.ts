@@ -21,15 +21,17 @@ export const SERIES_COLORS = [
 
 export const MAX_SERIES = SERIES_COLORS.length;
 
+/* Sizes in CSS pixels. The plot is drawn at its real size, so zooming makes
+   the plot larger inside a fixed frame while text and dots keep their size. */
 export const CHART = {
-  width: 760,
-  height: 440,
-  top: 16,
-  right: 40,
-  // Room for the month labels and the "Month" axis title.
-  bottom: 62,
-  // Room for the count labels and the rotated "Job postings" title.
-  left: 78,
+  // Height of the plot frame; at 100% the whole plot fits in it.
+  height: 340,
+  // Keeps the first and last month's dots and labels inside the plot.
+  padX: 36,
+  padTop: 14,
+  padBottom: 8,
+  // Room one month label needs; closer months only label every few.
+  labelWidth: 64,
 } as const;
 
 export type TrendPoint = {
@@ -54,9 +56,7 @@ export type SkillTrendLayout = {
   height: number;
   plotTop: number;
   plotBottom: number;
-  plotLeft: number;
-  plotRight: number;
-  months: { key: number; label: string; x: number }[];
+  months: { key: number; label: string; x: number; showLabel: boolean }[];
   yTicks: { value: number; y: number }[];
   series: TrendSeries[];
 };
@@ -68,31 +68,46 @@ export function seriesKey(skill: {
   return `${skill.normalized_name}|${skill.skill_type}`;
 }
 
-/** A round tick step for about four intervals up to value: the smallest
- *  1 / 2 / 2.5 / 5 × 10^n at or above value / 4 (2.5 only from 25 up, so
- *  every tick is a whole number of jobs). */
-export function niceStep(value: number): number {
-  const raw = Math.max(value / 4, 1);
-  const magnitude = 10 ** Math.floor(Math.log10(raw));
+/** The smallest 1 / 2 / 2.5 / 5 × 10^n at or above raw (2.5 only from 25
+ *  up, so every tick is a whole number of jobs). */
+function roundStepAtLeast(raw: number): number {
+  const value = Math.max(raw, 1);
+  const magnitude = 10 ** Math.floor(Math.log10(value));
   const multipliers = magnitude >= 10 ? [1, 2, 2.5, 5, 10] : [1, 2, 5, 10];
-  return multipliers.find((m) => m * magnitude >= raw)! * magnitude;
+  return multipliers.find((m) => m * magnitude >= value)! * magnitude;
 }
 
-export function layoutSkillTrend(data: SkillTrends): SkillTrendLayout {
-  const plotLeft = CHART.left;
-  const plotRight = CHART.width - CHART.right;
-  const plotTop = CHART.top;
-  const plotBottom = CHART.height - CHART.bottom;
+/** A round tick step for about four intervals up to value. */
+export function niceStep(value: number): number {
+  return roundStepAtLeast(value / 4);
+}
+
+/** Zoomed in, ticks get closer in value so they stay about as far apart on
+ *  screen: 250 at 100% becomes 200 at 150–200% and 100 at 300–400%. */
+export function zoomedStep(step: number, zoom: number): number {
+  return Math.min(step, roundStepAtLeast(step / zoom));
+}
+
+export function layoutSkillTrend(
+  data: SkillTrends,
+  size: { width: number; height: number; zoom: number },
+): SkillTrendLayout {
+  const plotLeft = CHART.padX;
+  const plotRight = size.width - CHART.padX;
+  const plotTop = CHART.padTop;
+  const plotBottom = size.height - CHART.padBottom;
   const count = data.months.length;
+  const spacing = count > 1 ? (plotRight - plotLeft) / (count - 1) : Infinity;
+  // Months too close to label them all get every few labels, counting back
+  // from the latest month so it is always labelled.
+  const every = Math.max(1, Math.ceil(CHART.labelWidth / spacing));
 
   const months = data.months.map((month, index) => ({
     key: month.month_key,
     label: month.label,
     // One month sits in the middle; more spread evenly across the plot.
-    x:
-      count === 1
-        ? (plotLeft + plotRight) / 2
-        : plotLeft + (index * (plotRight - plotLeft)) / (count - 1),
+    x: count === 1 ? size.width / 2 : plotLeft + index * spacing,
+    showLabel: (count - 1 - index) % every === 0,
   }));
 
   const skills = data.skills.slice(0, MAX_SERIES);
@@ -106,8 +121,10 @@ export function layoutSkillTrend(data: SkillTrends): SkillTrendLayout {
     ),
   );
   const highest = Math.max(0, ...counts.flat());
-  const step = niceStep(highest);
-  const yMax = Math.max(step, Math.ceil(highest / step) * step);
+  // The range is fixed by the data; zoom only changes the tick spacing.
+  const baseStep = niceStep(highest);
+  const yMax = Math.max(baseStep, Math.ceil(highest / baseStep) * baseStep);
+  const step = zoomedStep(baseStep, size.zoom);
   const y = (value: number) =>
     plotBottom - (value / yMax) * (plotBottom - plotTop);
 
@@ -132,18 +149,34 @@ export function layoutSkillTrend(data: SkillTrends): SkillTrendLayout {
   });
 
   return {
-    width: CHART.width,
-    height: CHART.height,
+    width: size.width,
+    height: size.height,
     plotTop,
     plotBottom,
-    plotLeft,
-    plotRight,
     months,
-    yTicks: Array.from({ length: Math.round(yMax / step) + 1 }, (_, i) => ({
+    yTicks: Array.from({ length: Math.floor(yMax / step) + 1 }, (_, i) => ({
       value: i * step,
       y: y(i * step),
     })),
     series,
+  };
+}
+
+/** Scroll position after zooming by ratio: the top edge and the right edge
+ *  of the view stay put, so zooming in from 100% lands on the latest month
+ *  and the highest counts, and further zooms keep that corner in view. The
+ *  view can be narrower afterwards (a scrollbar appears once zoomed in). */
+export function scrollAfterZoom(
+  scroll: { left: number; top: number },
+  viewWidth: { before: number; after: number },
+  ratio: number,
+): { left: number; top: number } {
+  return {
+    left: Math.max(
+      0,
+      (scroll.left + viewWidth.before) * ratio - viewWidth.after,
+    ),
+    top: Math.max(0, scroll.top * ratio),
   };
 }
 

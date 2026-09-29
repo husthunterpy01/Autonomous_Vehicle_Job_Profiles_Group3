@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { SkillTrends } from "../../lib/services/trend";
-import { SERIES_COLORS } from "../../lib/skill-trend-chart";
+import { CHART, SERIES_COLORS } from "../../lib/skill-trend-chart";
 import { SkillTrendChartView } from "./skill-trend-chart-view";
 
 const DATA: SkillTrends = {
@@ -114,11 +114,10 @@ describe("SkillTrendChartView", () => {
   });
 
   it("hovering a month lists every skill's job count, highest first", () => {
-    const { container, getByRole, queryByRole } = renderChart();
+    const { container, getByRole, getByTestId, queryByRole } = renderChart();
     const target = container.querySelector("rect[tabindex='0']")!;
-    const svg = container.querySelector("svg")!;
-    svg.getBoundingClientRect = () =>
-      ({ left: 0, width: 760, top: 0, height: 440 }) as DOMRect;
+    getByTestId("chart-plot").getBoundingClientRect = () =>
+      ({ left: 0, width: 640, top: 0, height: CHART.height }) as DOMRect;
 
     fireEvent.pointerMove(target, { clientX: 80 });
     const tooltip = getByRole("status");
@@ -138,31 +137,45 @@ describe("SkillTrendChartView", () => {
     assert.match(getByRole("status").textContent!, /Aug 2026/);
   });
 
-  it("zooms with the buttons between 100% and 300%, and resets", () => {
+  it("zooms with the buttons from 100% to 400%, and resets", () => {
     const { getByRole, getByText } = renderChart();
     const zoomOut = getByRole("button", { name: "Zoom out" });
     const zoomIn = getByRole("button", { name: "Zoom in" });
     const reset = getByRole("button", { name: "Reset zoom" });
     assert.equal((zoomOut as HTMLButtonElement).disabled, true);
     assert.equal((reset as HTMLButtonElement).disabled, true);
-    for (let i = 0; i < 8; i += 1) fireEvent.click(zoomIn);
-    getByText("300%");
+    for (const level of ["150%", "200%", "300%", "400%"]) {
+      fireEvent.click(zoomIn);
+      getByText(level);
+    }
     assert.equal((zoomIn as HTMLButtonElement).disabled, true);
+    fireEvent.click(zoomOut);
+    getByText("300%");
     fireEvent.click(reset);
     getByText("100%");
   });
 
-  it("zooms with the mouse wheel, and lets the page scroll at the limit", () => {
-    const { getByTestId, getByText } = renderChart();
+  it("zooming grows the plot inside a frame that keeps its size", () => {
+    const { container, getByRole, getByTestId } = renderChart();
+    const plot = getByTestId("chart-plot");
+    const frame = getByTestId("chart-scroll").parentElement!;
+    const frameHeight = frame.style.height;
     const scroll = getByTestId("chart-scroll");
+    assert.match(scroll.className, /overflow-hidden/);
 
-    const zoomOutAtMin = fireEvent.wheel(scroll, { deltaY: 100 });
-    assert.equal(zoomOutAtMin, true); // not prevented: the page scrolls
-    getByText("100%");
+    fireEvent.click(getByRole("button", { name: "Zoom in" }));
+    fireEvent.click(getByRole("button", { name: "Zoom in" }));
 
-    const zoomIn = fireEvent.wheel(scroll, { deltaY: -100 });
-    assert.equal(zoomIn, false); // prevented: the chart zoomed instead
-    getByText("116%");
+    assert.equal(frame.style.height, frameHeight);
+    assert.equal(plot.getAttribute("height"), String(CHART.height * 2));
+    assert.match(scroll.className, /overflow-auto/);
+    // The count axis sits outside the scrolling plot, with closer ticks.
+    const axis = container.querySelector("svg")!;
+    assert.notEqual(axis, plot);
+    assert.deepEqual(
+      [...axis.querySelectorAll("text")].map((t) => t.textContent),
+      ["0", "200", "400", "600", "800", "1,000", "Job postings"],
+    );
   });
 
   it("lists the same numbers in a table, with 0 for a missing month", () => {
@@ -171,8 +184,36 @@ describe("SkillTrendChartView", () => {
       [...row.querySelectorAll("th, td")].map((cell) => cell.textContent),
     );
     assert.deepEqual(cells, [
-      ["Python", "664 jobs", "806 jobs"],
-      ["ROS 2", "0 jobs", "81 jobs"],
+      ["Python", "664", "806"],
+      ["ROS 2", "0", "81"],
     ]);
+  });
+
+  it("a year of months scrolls under a pinned skill column, opening on the latest", () => {
+    const year: SkillTrends = {
+      months: Array.from({ length: 12 }, (_, i) => ({
+        month_key: 202601 + i,
+        label: `Month ${i + 1}`,
+        snapshot_at: "2026-09-01T00:00:00Z",
+        jobs_with_skills: 1000,
+      })),
+      skills: DATA.skills,
+    };
+    const { container, getByTestId } = render(
+      <SkillTrendChartView state={{ status: "success", data: year }} />,
+    );
+    const header = [...container.querySelectorAll("thead th")];
+    assert.equal(header.length, 13);
+    assert.match(header[0].className, /sticky left-0/);
+    for (const row of container.querySelectorAll("tbody tr")) {
+      assert.match(row.querySelector("th")!.className, /sticky left-0/);
+    }
+
+    const scroll = getByTestId("skill-table-scroll");
+    Object.defineProperty(scroll, "scrollWidth", { value: 1400 });
+    const details = container.querySelector("details")!;
+    details.open = true;
+    fireEvent(details, new Event("toggle"));
+    assert.equal(scroll.scrollLeft, 1400);
   });
 });
