@@ -53,6 +53,14 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@59
 
+      # Vercel's own remote builders have this pre-installed; building
+      # locally on this runner (see the pull/build/deploy steps below)
+      # means it doesn't, and api/index.py's Python build needs it.
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Pull Vercel project settings
         run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
 
