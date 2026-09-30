@@ -1,3 +1,4 @@
+import type { CountryCount } from "@/lib/country-filter";
 import type { JobSort } from "@/lib/job-sort";
 import type { SalaryInput } from "@/lib/salary";
 import { apiFetch, type PageResponse } from "./api";
@@ -97,7 +98,8 @@ export function getJobs(
   params: {
     q?: string;
     category_id?: string;
-    location?: string;
+    /** Exact country name from GET /api/v1/jobs/countries. */
+    country?: string;
     company_id?: string;
     /** Only jobs whose employer published a salary range (no estimates). */
     salary_disclosed?: boolean;
@@ -110,7 +112,7 @@ export function getJobs(
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
   if (params.category_id) search.set("category_id", params.category_id);
-  if (params.location) search.set("location", params.location);
+  if (params.country) search.set("country", params.country);
   if (params.company_id) search.set("company_id", params.company_id);
   if (params.salary_disclosed !== undefined)
     search.set("salary_disclosed", String(params.salary_disclosed));
@@ -124,6 +126,11 @@ export function getJobs(
     `/api/v1/jobs?${search.toString()}`,
     signal ? { signal } : undefined,
   );
+}
+
+/** Countries that currently have jobs, with their job counts. */
+export function getJobCountries(): Promise<CountryCount[]> {
+  return apiFetch<CountryCount[]>("/api/v1/jobs/countries");
 }
 
 export function getJob(jobId: string): Promise<JobDetail> {

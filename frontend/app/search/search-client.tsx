@@ -20,7 +20,7 @@ import {
 } from "@/lib/category-filter";
 import {
   ALL_COUNTRIES,
-  COUNTRY_OPTIONS,
+  countryOptions,
   resolveCountry,
 } from "@/lib/country-filter";
 import {
@@ -37,7 +37,7 @@ import {
   searchQueryString,
 } from "@/lib/search-url";
 import { getCategoryStatsRaw } from "@/lib/services/home";
-import { getJobs, type JobListItem } from "@/lib/services/job";
+import { getJobCountries, getJobs, type JobListItem } from "@/lib/services/job";
 
 /* Debounce keyword input before hitting the API — unlike the Companies list
    (fetched once, filtered client-side), jobs are paginated server-side, so
@@ -60,8 +60,11 @@ export default function SearchClient() {
   const [category, setCategory] = useState(
     searchParams.get("category") ?? ALL_CATEGORIES,
   );
-  const [country, setCountry] = useState(() =>
-    resolveCountry(searchParams.get("country")),
+  const [countryOptionList, setCountryOptionList] = useState(() =>
+    countryOptions([]),
+  );
+  const [country, setCountry] = useState(
+    searchParams.get("country") ?? ALL_COUNTRIES,
   );
   const [view, setView] = useState<ViewMode>("table");
   // ?page=50 opens page 50 directly; ?per_page= is kept too.
@@ -144,6 +147,22 @@ export default function SearchClient() {
     };
   }, []);
 
+  // Same for countries: the list follows where the jobs are.
+  useEffect(() => {
+    let cancelled = false;
+    getJobCountries()
+      .then((counts) => {
+        if (cancelled) return;
+        const options = countryOptions(counts);
+        setCountryOptionList(options);
+        setCountry((current) => resolveCountry(current, options));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     const controller = new AbortController();
     const handle = setTimeout(
@@ -152,7 +171,7 @@ export default function SearchClient() {
         const query = {
           q: keyword.trim() || undefined,
           category_id: category || undefined,
-          location: country || undefined,
+          country: country || undefined,
           sort,
           page_size: perPage,
         };
@@ -306,7 +325,7 @@ export default function SearchClient() {
           onChange={(event) => handleCountryChange(event.target.value)}
           className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
         >
-          {COUNTRY_OPTIONS.map((option) => (
+          {countryOptionList.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
