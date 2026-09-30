@@ -38,6 +38,7 @@ test("defaults stay out of the URL", () => {
     searchQueryString({
       q: "",
       category: "",
+      country: "",
       sort: DEFAULT_JOB_SORT,
       page: 1,
       perPage: DEFAULT_PER_PAGE,
@@ -50,12 +51,13 @@ test("page, per page and filters all go into the URL", () => {
   const qs = searchQueryString({
     q: " lidar ",
     category: "abc",
+    country: "United Kingdom",
     sort: { field: "company", direction: "asc" },
     page: 50,
     perPage: 20,
   });
   assert.equal(
     qs,
-    "q=lidar&category=abc&sort=company&direction=asc&page=50&per_page=20",
+    "q=lidar&category=abc&country=United+Kingdom&sort=company&direction=asc&page=50&per_page=20",
   );
 });

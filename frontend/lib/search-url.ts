@@ -1,7 +1,7 @@
-/* Find Jobs keeps its state in the URL (?q=, ?category=, ?sort=, ?direction=,
-   ?page=, ?per_page=), so a filtered list or a specific page (e.g. ?page=50)
-   can be reloaded, shared, or jumped to directly. These are pure functions so
-   they can be tested without a router. */
+/* Find Jobs keeps its state in the URL (?q=, ?category=, ?country=, ?sort=,
+   ?direction=, ?page=, ?per_page=), so a filtered list or a specific page
+   (e.g. ?page=50) can be reloaded, shared, or jumped to directly. These are
+   pure functions so they can be tested without a router. */
 
 import { isDefaultJobSort, type JobSort } from "./job-sort.ts";
 
@@ -25,6 +25,7 @@ export function parsePositiveInt(
 export type SearchState = {
   q: string;
   category: string;
+  country: string;
   sort: JobSort;
   page: number;
   perPage: number;
@@ -36,6 +37,7 @@ export function searchQueryString(state: SearchState): string {
   const params = new URLSearchParams();
   if (state.q.trim()) params.set("q", state.q.trim());
   if (state.category) params.set("category", state.category);
+  if (state.country) params.set("country", state.country);
   if (!isDefaultJobSort(state.sort)) {
     params.set("sort", state.sort.field);
     params.set("direction", state.sort.direction);

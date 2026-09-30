@@ -97,6 +97,7 @@ export function getJobs(
   params: {
     q?: string;
     category_id?: string;
+    location?: string;
     company_id?: string;
     /** Only jobs whose employer published a salary range (no estimates). */
     salary_disclosed?: boolean;
@@ -109,6 +110,7 @@ export function getJobs(
   const search = new URLSearchParams();
   if (params.q) search.set("q", params.q);
   if (params.category_id) search.set("category_id", params.category_id);
+  if (params.location) search.set("location", params.location);
   if (params.company_id) search.set("company_id", params.company_id);
   if (params.salary_disclosed !== undefined)
     search.set("salary_disclosed", String(params.salary_disclosed));

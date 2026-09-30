@@ -19,6 +19,11 @@ import {
   resolveCategory,
 } from "@/lib/category-filter";
 import {
+  ALL_COUNTRIES,
+  COUNTRY_OPTIONS,
+  resolveCountry,
+} from "@/lib/country-filter";
+import {
   DEFAULT_JOB_SORT,
   isDefaultJobSort,
   nextJobSort,
@@ -54,6 +59,9 @@ export default function SearchClient() {
   );
   const [category, setCategory] = useState(
     searchParams.get("category") ?? ALL_CATEGORIES,
+  );
+  const [country, setCountry] = useState(() =>
+    resolveCountry(searchParams.get("country")),
   );
   const [view, setView] = useState<ViewMode>("table");
   // ?page=50 opens page 50 directly; ?per_page= is kept too.
@@ -144,6 +152,7 @@ export default function SearchClient() {
         const query = {
           q: keyword.trim() || undefined,
           category_id: category || undefined,
+          location: country || undefined,
           sort,
           page_size: perPage,
         };
@@ -188,29 +197,36 @@ export default function SearchClient() {
       controller.abort();
       clearTimeout(handle);
     };
-  }, [keyword, category, sort, page, perPage, reloadToken]);
+  }, [keyword, category, country, sort, page, perPage, reloadToken]);
 
   const hasFilters =
     keyword.trim() !== "" ||
     category !== ALL_CATEGORIES ||
+    country !== ALL_COUNTRIES ||
     !isDefaultJobSort(sort);
 
   // One place keeps the URL in step with the list (keyword as submitted,
-  // category, sort, page and per page), so a page can be shared or jumped to
-  // by editing ?page= directly. Defaults stay out of the URL.
+  // category, country, sort, page and per page), so a page can be shared or
+  // jumped to by editing ?page= directly. Defaults stay out of the URL.
   useEffect(() => {
     const qs = searchQueryString({
       q: urlKeyword,
       category,
+      country,
       sort,
       page,
       perPage,
     });
     router.replace(qs ? `/search?${qs}` : "/search");
-  }, [urlKeyword, category, sort, page, perPage, router]);
+  }, [urlKeyword, category, country, sort, page, perPage, router]);
 
   const handleCategoryChange = (value: string) => {
     setCategory(value);
+    setPage(1);
+  };
+
+  const handleCountryChange = (value: string) => {
+    setCountry(value);
     setPage(1);
   };
 
@@ -251,6 +267,7 @@ export default function SearchClient() {
     setKeyword("");
     setUrlKeyword("");
     setCategory(ALL_CATEGORIES);
+    setCountry(ALL_COUNTRIES);
     setSort(DEFAULT_JOB_SORT);
     setPage(1);
   };
@@ -278,6 +295,24 @@ export default function SearchClient() {
           setUrlKeyword(keyword);
         }}
       />
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-[auto_16rem] sm:items-center">
+        <label htmlFor="country-filter" className="text-sm text-ink-secondary">
+          Country
+        </label>
+        <select
+          id="country-filter"
+          value={country}
+          onChange={(event) => handleCountryChange(event.target.value)}
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+        >
+          {COUNTRY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {status === "loading" && (
         <div
