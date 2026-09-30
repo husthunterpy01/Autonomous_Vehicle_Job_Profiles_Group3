@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  deployments: write
 
 concurrency:
   group: vercel-production
@@ -80,3 +81,18 @@ jobs:
 
       - name: Summary
         run: echo "Deployed to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+
+      # Vercel's git integration used to post these automatically; the
+      # CLI-based deploy above doesn't, so the repo's Preview/Production
+      # badges otherwise go stale.
+      - name: Record deployment status on GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          id=$(jq -n --arg ref "$GITHUB_SHA" --arg env "$ENVIRONMENT" \
+                '{ref: $ref, environment: $env, auto_merge: false, required_contexts: []}' \
+               | gh api --method POST "repos/${{ github.repository }}/deployments" --input - --jq .id)
+          gh api --method POST "repos/${{ github.repository }}/deployments/$id/statuses" \
+            -f state=success -f environment_url="$DEPLOY_URL"
