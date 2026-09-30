@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: read
+  deployments: write
 
 concurrency:
   group: vercel-production
@@ -53,17 +54,45 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel@59
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          version: "0.12.17"
+
       - name: Pull Vercel project settings
-        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: vercel pull --yes --environment=${{ github.ref == 'refs/heads/main' && 'production' || 'preview' }} --token="$VERCEL_TOKEN"
 
       - name: Build
-        run: vercel build --prod --token="$VERCEL_TOKEN"
+        run: vercel build ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --token="$VERCEL_TOKEN"
+
+      - name: Strip unused files from the function's filePathMap
+        run: |
+          shopt -s globstar nullglob
+          for f in .vercel/output/functions/**/.vc-config.json; do
+            jq '.filePathMap |= with_entries(select(.key | (startswith("notebooks/") or startswith("scrapers/data/snapshots/") or startswith("frontend/out/")) | not))' "$f" > "$f.tmp"
+            mv "$f.tmp" "$f"
+          done
 
       - name: Deploy prebuilt output
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --yes --token "$VERCEL_TOKEN")
+          url=$(vercel deploy --prebuilt ${{ github.ref == 'refs/heads/main' && '--prod' || '' }} --yes --token "$VERCEL_TOKEN")
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Summary
         run: echo "Deployed to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+
+      # Vercel's git integration used to post these automatically; the
+      # CLI-based deploy above doesn't, so the repo's Preview/Production
+      # badges otherwise go stale.
+      - name: Record deployment status on GitHub
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENVIRONMENT: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Preview' }}
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          id=$(jq -n --arg ref "$GITHUB_SHA" --arg env "$ENVIRONMENT" \
+                '{ref: $ref, environment: $env, auto_merge: false, required_contexts: []}' \
+               | gh api --method POST "repos/${{ github.repository }}/deployments" --input - --jq .id)
+          gh api --method POST "repos/${{ github.repository }}/deployments/$id/statuses" \
+            -f state=success -f environment_url="$DEPLOY_URL"
