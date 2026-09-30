@@ -8,12 +8,13 @@ from sqlalchemy.orm import Session, defer, joinedload
 
 from app.enums.job_sort_field import JobSortField
 from app.enums.sort_direction import SortDirection
-from app.models import Category, Company, JobPosting, Location, Skill
+from app.models import Category, Company, JobPosting, Location, LocationCountry, Skill
 from app.schemas.job import CategoryResponse, JobCreate, JobDetailResponse, JobResponse
 from app.services.category_sync import (
     _MAIN_TYPES_BY_NORMALIZED_NAME,
     dominant_categories,
 )
+from app.services.location_country import assign_countries
 from app.utils.normalization import normalized
 from app.utils.pagination import PageResponse
 
@@ -140,7 +141,8 @@ def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
 
 
 def list_jobs(
-    db: Session, *, q: str | None = None, location: str | None = None, skill: str | None = None,
+    db: Session, *, q: str | None = None, location: str | None = None, country: str | None = None,
+    skill: str | None = None,
     category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
     min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
     has_salary: bool | None = None, salary_disclosed: bool | None = None,
@@ -152,6 +154,9 @@ def list_jobs(
         query = query.filter(or_(JobPosting.title.icontains(q, autoescape=True), JobPosting.company.has(Company.name.icontains(q, autoescape=True))))
     if location:
         query = query.filter(JobPosting.locations.any(Location.name.icontains(location, autoescape=True)))
+    if country:
+        # Exact match on the canonical name; the router has already checked it.
+        query = query.filter(JobPosting.locations.any(Location.countries.any(LocationCountry.country == country)))
     if skill:
         query = query.filter(JobPosting.skills.any(Skill.skill_name.icontains(skill, autoescape=True)))
     if company_id:
@@ -268,6 +273,7 @@ def _merge_locations(db: Session, linked: list[Location], names: list[str]):
             location = db.query(Location).filter_by(normalized_name=key).one_or_none()
         if location is None:
             location = Location(name=name, normalized_name=key)
+            assign_countries(location)
             db.add(location)
             db.flush()
         by_key[key] = location

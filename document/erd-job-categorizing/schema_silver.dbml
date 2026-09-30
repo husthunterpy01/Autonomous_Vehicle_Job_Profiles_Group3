@@ -48,6 +48,15 @@ Table silver.Location {
   normalized_name text [not null, unique]
 }
 
+Table silver.LocationCountry {
+  location_id uuid [ref: > silver.Location.location_id, note: 'ON DELETE CASCADE']
+  country text [not null, note: 'canonical name derived from Location.name (app/utils/location_country.py); a label can name several']
+  indexes {
+    (location_id, country) [pk]
+    country
+  }
+}
+
 Table silver.JobLocation {
   job_id uuid [ref: > silver.JobPosting.job_id]
   location_id uuid [ref: > silver.Location.location_id]

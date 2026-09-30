@@ -11,6 +11,7 @@ from app.services.category_sync import (
     _preload_categories,
     sync_categories,
 )
+from app.services.location_country import assign_countries
 from app.services.skill_sync import _collect_skill_keys, _preload_skills, sync_skills
 from app.utils.normalization import normalized
 
@@ -89,6 +90,7 @@ class SilverSync:
                 location = self.db.query(Location).filter_by(normalized_name=canonical).one_or_none()
                 if location is None:
                     location = Location(name=" ".join(name.split()), normalized_name=canonical)
+                    assign_countries(location)
                     self.db.add(location)
                     self.db.flush()
                 linked[canonical] = location

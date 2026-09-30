@@ -52,6 +52,16 @@ A database created from scratch with `init_db()` does not get these constraints 
 
 `seed_companies.sql` is for local testing only and no longer sets a salary on its demo jobs.
 
+### Job location countries (BE-21, #112)
+`LocationCountry` holds the countries each `Location` label names, for the exact country filter (`GET /api/v1/jobs?country=`) and the list of countries with jobs (`GET /api/v1/jobs/countries`). The looser `location` text filter is unchanged.
+
+Decisions:
+- **A table, not a column.** One label can name several countries ("London; Sunnyvale", "Remote US & Canada"), so a job belongs to every country any of its labels names.
+- **Derived from the label, never typed in.** `backend/app/utils/location_country.py` reads country names and aliases, US state names, a small city table, and two-letter state codes only as a last resort, because "IL", "DE", "IN" and "CA" are also country codes. A label with no country in it, such as a bare "Remote", gets no row rather than a guess.
+- **The list follows where the jobs are,** not where companies have their headquarters, as agreed with the client lead. So it grows as new countries appear in the data.
+
+Migration: `be21_location_country_migration.sql` creates the table, then `python -m app.refresh_location_countries` fills it. Run the command again whenever the rules change; new locations get their countries during sync. Rollback: `be21_location_country_rollback.sql`, which drops only this derived table. Unlike the salary constraints, `init_db()` does create this table, because it is an ORM model.
+
 See `schema_silver.dbml` for the full schema definition, and `erd_diagram.pdf` for the visual diagram.
 
 ### Regenerating `erd_diagram.pdf`

@@ -88,7 +88,7 @@ def test_grant_api_read_access_runs_expected_statements():
     # hashes via Supabase's public Data API.
     assert "ALL TABLES" not in grant_select
     assert "public.user_account" not in grant_select
-    for table in ("company", "jobposting", "category", "skill", "location"):
+    for table in ("company", "jobposting", "category", "skill", "location", "location_country"):
         assert f"public.{table}" in grant_select
     # No auto-grant for future tables - a new table must be added to
     # _PUBLIC_TABLES explicitly before this script can expose it.
