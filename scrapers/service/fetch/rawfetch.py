@@ -251,12 +251,14 @@ class RawFetch:
         return "\n".join(pages)
 
     def _attach_html_details(self, list_html: Any, base_url: str, timeout: float) -> str:
-        """Fetch each job's detail page and embed its description in the list HTML.
+        """Fetch each job's detail page and embed its description/location in the list HTML.
 
-        Job rows on some career sites carry no description; it lives on the
-        per-job page. We fetch those pages here (at scrape time, so bronze stays
-        offline) and append a ``<script type="application/x-bronze-detail">`` map
-        of ``{job key: description HTML}`` that HTMLExtractor reads back.
+        Job rows on some career sites carry no description (or no location);
+        it lives on the per-job page. We fetch those pages here (at scrape
+        time, so bronze stays offline) and append a
+        ``<script type="application/x-bronze-detail">`` map of
+        ``{job key: {"description": ..., "location": ...}}`` that
+        HTMLExtractor reads back - either key may be absent.
         """
         from bs4 import BeautifulSoup
 
@@ -266,11 +268,12 @@ class RawFetch:
             return text
         link_selector = self.list_config.get("link") or "a"
         id_pattern = self.list_config.get("job_id_pattern")
-        description_selector = self.detail["description"]
+        description_selector = self.detail.get("description")
+        want_location = self.detail.get("location") == "json_ld"
         url_template = self.detail.get("url")
 
         soup = BeautifulSoup(text, "html.parser")
-        details: dict[str, str] = {}
+        details: dict[str, dict[str, str]] = {}
         for row in soup.select(item_selector):
             anchor = row.select_one(link_selector)
             href = anchor.get("href") if anchor else None
@@ -293,13 +296,21 @@ class RawFetch:
                     else str(detail_body),
                     "html.parser",
                 )
-                blocks = [
-                    node.decode_contents().strip()
-                    for node in detail_soup.select(description_selector)
-                    if node.get_text(strip=True)
-                ]
-                if blocks:
-                    details[key] = "\n".join(blocks)
+                entry: dict[str, str] = {}
+                if description_selector:
+                    blocks = [
+                        node.decode_contents().strip()
+                        for node in detail_soup.select(description_selector)
+                        if node.get_text(strip=True)
+                    ]
+                    if blocks:
+                        entry["description"] = "\n".join(blocks)
+                if want_location:
+                    location = self._json_ld_job_location(detail_soup)
+                    if location:
+                        entry["location"] = location
+                if entry:
+                    details[key] = entry
             except RuntimeError as exc:
                 logger.warning("HTML detail failed for %s: %s", detail_url, exc)
             self._pause_between_details()
@@ -319,7 +330,7 @@ class RawFetch:
         if not array_match:
             return text
 
-        details: dict[str, str] = {}
+        details: dict[str, dict[str, str]] = {}
         for job_id, path in re.findall(
             r"id:\s*'([^']+)'[^{]*?url:\s*'([^']+)'", array_match.group(1)
         ):
@@ -334,7 +345,7 @@ class RawFetch:
                 )
                 description = self._json_ld_job_description(soup)
                 if description:
-                    details[job_id] = description
+                    details[job_id] = {"description": description}
             except RuntimeError as exc:
                 logger.warning("Jobylon detail failed for %s: %s", page_url, exc)
             self._pause_between_details()
@@ -355,8 +366,34 @@ class RawFetch:
                         return description.strip()
         return None
 
+    # jobLocation.address on sites like TIER IV's is a long bilingual legal
+    # employment-contract clause (disclaimers, both a Japanese and a romanized
+    # address, "and Employee's home"), not a clean city name - pull out just
+    # the ward+city if present, falling back to the city alone.
+    _LOCATION_WARD_CITY_RE = re.compile(r"\b[A-Z][A-Za-z]+-ku,\s*Tokyo\b")
+    _LOCATION_CITY_RE = re.compile(r"\bTokyo\b")
+
+    @classmethod
+    def _json_ld_job_location(cls, soup: Any) -> str | None:
+        for tag in soup.select('script[type="application/ld+json"]'):
+            try:
+                data = json.loads(tag.string or "{}")
+            except json.JSONDecodeError:
+                continue
+            for entry in data if isinstance(data, list) else [data]:
+                if not (isinstance(entry, dict) and entry.get("@type") == "JobPosting"):
+                    continue
+                place = entry.get("jobLocation")
+                address = place.get("address") if isinstance(place, dict) else None
+                if not (isinstance(address, str) and address.strip()):
+                    continue
+                match = cls._LOCATION_WARD_CITY_RE.search(address) or cls._LOCATION_CITY_RE.search(address)
+                if match:
+                    return match.group(0)
+        return None
+
     @staticmethod
-    def _append_detail_script(soup: Any, details: dict[str, str]) -> str:
+    def _append_detail_script(soup: Any, details: dict[str, dict[str, str]]) -> str:
         if details:
             script = soup.new_tag("script", type="application/x-bronze-detail")
             script.string = json.dumps(details)
@@ -380,7 +417,7 @@ class RawFetch:
         if self.detail:
             if self.list_strategy == "jobylon":
                 body = self._attach_jobylon_details(body, timeout=timeout)
-            elif self.list_config.get("item") and self.detail.get("description"):
+            elif self.list_config.get("item") and (self.detail.get("description") or self.detail.get("location")):
                 body = self._attach_html_details(body, base_url=url, timeout=timeout)
         if self.source_system in SMARTRECRUITERS_ATS:
             body = self._expand_smartrecruiters_postings(url, body, timeout=timeout)
