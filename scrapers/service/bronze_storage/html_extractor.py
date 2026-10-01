@@ -179,7 +179,7 @@ class HTMLExtractor:
         return {
             key: ({"description": value} if isinstance(value, str) else value)
             for key, value in data.items()
-            if isinstance(value, str) or isinstance(value, dict)
+            if isinstance(value, (str, dict))
         }
 
     def _resolve_link(self, row: Any, link_selector: str) -> str | None:
