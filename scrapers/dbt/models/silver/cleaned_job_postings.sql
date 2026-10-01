@@ -30,7 +30,7 @@ with source_rows as (
                         select
                             nullif(btrim(regexp_replace(value, '\s+', ' ', 'g')), '') as location,
                             ordinal
-                        from regexp_split_to_table(coalesce(location, ''), '\s*\|\s*')
+                        from regexp_split_to_table(coalesce(location, ''), '\s*[|;]\s*')
                             with ordinality as split(value, ordinal)
                     ) normalized_locations
                     where location is not null
@@ -81,11 +81,7 @@ keyed as (
             when job_url is not null then concat_ws('|', 'url', lower(ats_name), rtrim(lower(job_url), '/'))
             else concat_ws(
                 '|', 'fallback', lower(company_name), lower(job_name),
-                coalesce(job_uploaded_at::text, ''),
-                array_to_string(
-                    (select array_agg(lower(value) order by lower(value)) from unnest(locations) as value),
-                    '|'
-                )
+                coalesce(job_uploaded_at::text, '')
             )
         end as natural_key,
         num_nonnulls(
