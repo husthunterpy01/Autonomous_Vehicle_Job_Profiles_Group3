@@ -16,7 +16,7 @@ from app.schemas.job import (
     SalaryPeriod,
 )
 from app.services import job as job_service
-from app.services.location_country import country_job_counts
+from app.services.location_country import LocationCountryService
 from app.utils.location_country import KNOWN_COUNTRIES, canonical_country
 from app.utils.pagination import PageResponse
 
@@ -117,7 +117,7 @@ def list_jobs(
 @router.get("/countries", response_model=list[CountryJobCountResponse])
 def list_countries(db: DbSession):
     """Countries that currently have jobs, with their job counts, for the country filter."""
-    return country_job_counts(db)
+    return LocationCountryService(db).country_job_counts()
 
 
 @router.get("/{job_id}", response_model=JobDetailResponse)

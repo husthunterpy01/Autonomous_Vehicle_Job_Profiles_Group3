@@ -9,11 +9,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base
 from app.models import Location, LocationCountry
 from app.services.job import _merge_locations
-from app.services.location_country import (
-    assign_countries,
-    country_job_counts,
-    refresh_location_countries,
-)
+from app.services.location_country import LocationCountryService
 from app.services.silver_sync import SilverSync
 from app.utils.location_country import KNOWN_COUNTRIES, canonical_country, countries_for
 
@@ -67,14 +63,14 @@ def test_canonical_country_is_case_insensitive_and_rejects_unknown_names():
 
 def test_assign_countries_only_changes_what_differs(db_session):
     location = Location(name="London; Sunnyvale", normalized_name="london; sunnyvale")
-    assert assign_countries(location) is True
+    assert LocationCountryService.assign_countries(location) is True
     db_session.add(location)
     db_session.flush()
     assert sorted(row.country for row in location.countries) == ["United Kingdom", "United States"]
-    assert assign_countries(location) is False
+    assert LocationCountryService.assign_countries(location) is False
 
     location.name = "London"
-    assert assign_countries(location) is True
+    assert LocationCountryService.assign_countries(location) is True
     db_session.flush()
     assert db_session.query(LocationCountry).count() == 1
     assert location.countries[0].country == "United Kingdom"
@@ -113,9 +109,9 @@ def test_refresh_fills_missing_and_fixes_stale_countries(db_session):
     ])
     db_session.flush()
 
-    assert refresh_location_countries(db_session) == {"locations": 3, "with_country": 2, "changed": 2}
+    assert LocationCountryService(db_session).refresh() == {"locations": 3, "with_country": 2, "changed": 2}
     assert sorted(row.country for row in db_session.query(LocationCountry)) == ["United Kingdom", "United States"]
-    assert refresh_location_countries(db_session)["changed"] == 0
+    assert LocationCountryService(db_session).refresh()["changed"] == 0
 
 
 def test_country_job_counts_counts_each_job_once_per_country(db_session):
@@ -127,7 +123,7 @@ def test_country_job_counts_counts_each_job_once_per_country(db_session):
         {"deduplication_key": "c", "company_name": "Example AV", "job_name": "C", "job_description": "x",
          "locations": ["Remote"]},
     ])
-    assert country_job_counts(db_session) == [
+    assert LocationCountryService(db_session).country_job_counts() == [
         {"country": "United States", "job_count": 2},
         {"country": "United Kingdom", "job_count": 1},
     ]

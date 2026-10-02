@@ -10,7 +10,7 @@ import argparse
 from sqlalchemy.orm import Session
 
 from app.core.database import engine
-from app.services.location_country import refresh_location_countries
+from app.services.location_country import LocationCountryService
 from app.utils.cli import run_command
 from scripts.sync_to_supabase import sync_if_configured
 
@@ -20,7 +20,7 @@ def main():
 
     def execute(_args):
         with Session(engine) as db, db.begin():
-            return refresh_location_countries(db)
+            return LocationCountryService(db).refresh()
 
     run_command(parser, execute)
     sync_if_configured()

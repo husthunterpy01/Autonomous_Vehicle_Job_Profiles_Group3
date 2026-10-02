@@ -4,7 +4,8 @@ from app.models.company_location import CompanyLocation
 from app.models.favorite_company import FavoriteCompany
 from app.models.favorite_job import FavoriteJob
 from app.models.jobposting import JobPosting, job_category, job_location, job_skill
-from app.models.location import Location, LocationCountry
+from app.models.location import Location
+from app.models.location_country import LocationCountry
 from app.models.skill import Skill
 from app.models.user import User
 

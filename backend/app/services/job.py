@@ -14,7 +14,7 @@ from app.services.category_sync import (
     _MAIN_TYPES_BY_NORMALIZED_NAME,
     dominant_categories,
 )
-from app.services.location_country import assign_countries
+from app.services.location_country import LocationCountryService
 from app.utils.normalization import normalized
 from app.utils.pagination import PageResponse
 
@@ -273,7 +273,7 @@ def _merge_locations(db: Session, linked: list[Location], names: list[str]):
             location = db.query(Location).filter_by(normalized_name=key).one_or_none()
         if location is None:
             location = Location(name=name, normalized_name=key)
-            assign_countries(location)
+            LocationCountryService.assign_countries(location)
             db.add(location)
             db.flush()
         by_key[key] = location
