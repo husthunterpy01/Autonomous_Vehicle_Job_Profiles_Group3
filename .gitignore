@@ -42,6 +42,10 @@ scrapers/data/train_result/train_test_accuracy_by_iteration.json
 # backfill's own committed log)
 backend/scripts/llm_confidence_log_all_valid_jobs.jsonl
 
+# backfill_job_locations.py is run repeatedly, not once - its log changes
+# on every run rather than recording one finished backfill.
+backend/evidence/backfill_job_locations_changed.json
+
 # SetFit/HF Trainer checkpoints (scratch state, not the final saved model) -
 # unanchored since these can land at repo root or under notebooks/ depending
 # on the training tool's cwd

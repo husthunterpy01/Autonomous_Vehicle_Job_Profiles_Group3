@@ -33,6 +33,12 @@ GREENHOUSE_ATS = "greenhouse"
 # Randomised gap between per-job detail calls so bursts of hundreds of requests
 # do not trip Workday's rate/burst detection.
 DETAIL_PAUSE_RANGE = (0.5, 1.5)
+# TIER IV's jobLocation.address is a long bilingual legal employment-contract
+# clause (disclaimers, both a Japanese and a romanized address, "and
+# Employee's home"), not a clean city name - pull out just the ward+city if
+# present, falling back to the city alone.
+_LOCATION_WARD_CITY_RE = re.compile(r"\b[A-Z][A-Za-z]+-ku,\s*Tokyo\b")
+_LOCATION_CITY_RE = re.compile(r"\bTokyo\b")
 # Greenhouse pay_transparency detail calls: stop attempting further jobs in
 # the same board after this many consecutive failures. A run of failures in
 # a row is much more likely to be a dead connection/hard block than several
@@ -366,13 +372,6 @@ class RawFetch:
                         return description.strip()
         return None
 
-    # jobLocation.address on sites like TIER IV's is a long bilingual legal
-    # employment-contract clause (disclaimers, both a Japanese and a romanized
-    # address, "and Employee's home"), not a clean city name - pull out just
-    # the ward+city if present, falling back to the city alone.
-    _LOCATION_WARD_CITY_RE = re.compile(r"\b[A-Z][A-Za-z]+-ku,\s*Tokyo\b")
-    _LOCATION_CITY_RE = re.compile(r"\bTokyo\b")
-
     @classmethod
     def _json_ld_job_location(cls, soup: Any) -> str | None:
         for tag in soup.select('script[type="application/ld+json"]'):
@@ -383,13 +382,31 @@ class RawFetch:
             for entry in data if isinstance(data, list) else [data]:
                 if not (isinstance(entry, dict) and entry.get("@type") == "JobPosting"):
                     continue
-                place = entry.get("jobLocation")
-                address = place.get("address") if isinstance(place, dict) else None
-                if not (isinstance(address, str) and address.strip()):
-                    continue
-                match = cls._LOCATION_WARD_CITY_RE.search(address) or cls._LOCATION_CITY_RE.search(address)
-                if match:
-                    return match.group(0)
+                places = entry.get("jobLocation")
+                places = places if isinstance(places, list) else [places]
+                locations = []
+                for place in places:
+                    location = cls._place_to_location(place)
+                    if location and location not in locations:
+                        locations.append(location)
+                if locations:
+                    return " | ".join(locations)
+        return None
+
+    @classmethod
+    def _place_to_location(cls, place: Any) -> str | None:
+        """A JobPosting's jobLocation entry: a Place whose address is either
+        a schema.org PostalAddress object or (TIER IV) a free-text string."""
+        if not isinstance(place, dict):
+            return None
+        address = place.get("address")
+        if isinstance(address, dict):
+            parts = [address.get("addressLocality"), address.get("addressRegion"), address.get("addressCountry")]
+            parts = [part.strip() for part in parts if isinstance(part, str) and part.strip()]
+            return ", ".join(parts) if parts else None
+        if isinstance(address, str) and address.strip():
+            match = _LOCATION_WARD_CITY_RE.search(address) or _LOCATION_CITY_RE.search(address)
+            return match.group(0) if match else None
         return None
 
     @staticmethod
