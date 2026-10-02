@@ -110,7 +110,60 @@ describe("country filter", () => {
     });
   });
 
-  it("updates the URL, preserves other filters, and fetches the selected country", async () => {
+  it("keeps the search bar for the keyword only, with the filters in their own row", () => {
+    render(<SearchClient />);
+
+    const filters = screen.getByRole("group", { name: "Filters" });
+    expect(filters.contains(screen.getByLabelText("Category"))).toBe(true);
+    expect(filters.contains(screen.getByLabelText("Country"))).toBe(true);
+    const searchBar = screen
+      .getByPlaceholderText("Job title, skill or keyword")
+      .closest("form")!;
+    expect(searchBar.contains(screen.getByLabelText("Category"))).toBe(false);
+  });
+
+  it("a picked country only takes effect on Apply", async () => {
+    render(<SearchClient />);
+    await screen.findByRole("option", { name: "Japan (5)" });
+    const apply = screen.getByRole("button", { name: "Apply" });
+    expect(apply).toHaveProperty("disabled", true);
+
+    fireEvent.change(screen.getByLabelText("Country"), {
+      target: { value: "Japan" },
+    });
+    expect(apply).toHaveProperty("disabled", false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mocks.getJobs).not.toHaveBeenCalledWith(
+      expect.objectContaining({ country: "Japan" }),
+      expect.any(AbortSignal),
+    );
+
+    fireEvent.click(apply);
+    await waitFor(() => {
+      expect(mocks.getJobs).toHaveBeenCalledWith(
+        expect.objectContaining({ country: "Japan" }),
+        expect.any(AbortSignal),
+      );
+    });
+    expect(apply).toHaveProperty("disabled", true);
+  });
+
+  it("Clear in the filter row resets category and country but keeps the keyword", async () => {
+    mocks.search = "q=lidar&category=category-id&country=Germany";
+
+    render(<SearchClient />);
+    await screen.findByRole("option", { name: "Germany (7)" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(screen.getByLabelText("Country")).toHaveProperty("value", "");
+    expect(mocks.replace).toHaveBeenLastCalledWith("/search?q=lidar");
+    expect(screen.getByRole("button", { name: "Clear" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
+  it("Apply updates the URL, preserves other filters, and fetches the selected country", async () => {
     mocks.search =
       "q=autonomy&category=category-id&country=Germany&sort=company&direction=desc";
 
@@ -119,6 +172,7 @@ describe("country filter", () => {
     fireEvent.change(screen.getByLabelText("Country"), {
       target: { value: "Japan" },
     });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
     expect(mocks.replace).toHaveBeenCalledWith(
       "/search?q=autonomy&category=category-id&country=Japan&sort=company&direction=desc",

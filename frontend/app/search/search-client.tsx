@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Dropdown from "@/components/ui/Dropdown";
 import PageHeader from "@/components/ui/PageHeader";
 import Pagination from "@/components/ui/Pagination";
 import SearchBar from "@/components/ui/SearchBar";
@@ -66,6 +67,9 @@ export default function SearchClient() {
   const [country, setCountry] = useState(
     searchParams.get("country") ?? ALL_COUNTRIES,
   );
+  // What the filter row shows; the list only uses it once Apply is pressed.
+  const [draftCategory, setDraftCategory] = useState(category);
+  const [draftCountry, setDraftCountry] = useState(country);
   const [view, setView] = useState<ViewMode>("table");
   // ?page=50 opens page 50 directly; ?per_page= is kept too.
   const [page, setPage] = useState(() =>
@@ -138,6 +142,7 @@ export default function SearchClient() {
         // Drop a category from the URL that the backend no longer returns,
         // which would otherwise filter the list down to nothing.
         setCategory((current) => resolveCategory(current, options));
+        setDraftCategory((current) => resolveCategory(current, options));
       })
       // The dropdown just stays on "All categories" if this fails; the job
       // list itself does not depend on it.
@@ -156,6 +161,7 @@ export default function SearchClient() {
         const options = countryOptions(counts);
         setCountryOptionList(options);
         setCountry((current) => resolveCountry(current, options));
+        setDraftCountry((current) => resolveCountry(current, options));
       })
       .catch(() => {});
     return () => {
@@ -239,13 +245,21 @@ export default function SearchClient() {
     router.replace(qs ? `/search?${qs}` : "/search");
   }, [urlKeyword, category, country, sort, page, perPage, router]);
 
-  const handleCategoryChange = (value: string) => {
-    setCategory(value);
+  const draftChanged = draftCategory !== category || draftCountry !== country;
+  const filterRowSet =
+    draftChanged || category !== ALL_CATEGORIES || country !== ALL_COUNTRIES;
+
+  const applyFilters = () => {
+    setCategory(draftCategory);
+    setCountry(draftCountry);
     setPage(1);
   };
 
-  const handleCountryChange = (value: string) => {
-    setCountry(value);
+  const clearFilterRow = () => {
+    setDraftCategory(ALL_CATEGORIES);
+    setDraftCountry(ALL_COUNTRIES);
+    setCategory(ALL_CATEGORIES);
+    setCountry(ALL_COUNTRIES);
     setPage(1);
   };
 
@@ -287,6 +301,8 @@ export default function SearchClient() {
     setUrlKeyword("");
     setCategory(ALL_CATEGORIES);
     setCountry(ALL_COUNTRIES);
+    setDraftCategory(ALL_CATEGORIES);
+    setDraftCountry(ALL_COUNTRIES);
     setSort(DEFAULT_JOB_SORT);
     setPage(1);
   };
@@ -303,27 +319,33 @@ export default function SearchClient() {
         keyword={keyword}
         onKeywordChange={handleKeyword}
         placeholder="Job title, skill or keyword"
-        dropdownId="category-filter"
-        dropdownAriaLabel="Category"
-        dropdownValue={category}
-        onDropdownChange={handleCategoryChange}
-        dropdownOptions={categoryOptionList}
-        dropdownClassName="sm:w-64"
         onSubmit={(e) => {
           e.preventDefault();
           setUrlKeyword(keyword);
         }}
       />
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-[auto_16rem] sm:items-center">
-        <label htmlFor="country-filter" className="text-sm text-ink-secondary">
-          Country
-        </label>
+      {/* The search bar is only for the keyword; the filters sit in one row
+          and take effect together on Apply. */}
+      <div
+        role="group"
+        aria-label="Filters"
+        className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center"
+      >
+        <Dropdown
+          id="category-filter"
+          aria-label="Category"
+          value={draftCategory}
+          onChange={setDraftCategory}
+          options={categoryOptionList}
+          className="sm:w-64"
+        />
         <select
           id="country-filter"
-          value={country}
-          onChange={(event) => handleCountryChange(event.target.value)}
-          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20"
+          aria-label="Country"
+          value={draftCountry}
+          onChange={(event) => setDraftCountry(event.target.value)}
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:w-56"
         >
           {countryOptionList.map((option) => (
             <option key={option.value} value={option.value}>
@@ -331,6 +353,24 @@ export default function SearchClient() {
             </option>
           ))}
         </select>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={applyFilters}
+            disabled={!draftChanged}
+            className="flex-1 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+          >
+            Apply
+          </button>
+          <button
+            type="button"
+            onClick={clearFilterRow}
+            disabled={!filterRowSet}
+            className="flex-1 rounded-lg border border-line bg-surface px-5 py-2.5 text-sm font-medium text-ink transition-colors hover:border-primary disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
+          >
+            Clear
+          </button>
+        </div>
       </div>
 
       {status === "loading" && (
