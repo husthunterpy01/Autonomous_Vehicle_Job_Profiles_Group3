@@ -353,7 +353,7 @@ export default function SearchClient() {
             </option>
           ))}
         </select>
-        <div className="flex gap-3">
+        <div className="flex gap-3 sm:ml-auto">
           <button
             type="button"
             onClick={applyFilters}
