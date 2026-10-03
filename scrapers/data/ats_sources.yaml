@@ -62,6 +62,8 @@ html_sources:
     job_description: "div.requisition-list-card__text"
     link: "a.requisition-list-card__header-anchor"
     job_id_pattern: "/v1/tier4/([\\w-]+)$"
+    detail:
+      location: json_ld
 
   woven:
     strategy: css_list

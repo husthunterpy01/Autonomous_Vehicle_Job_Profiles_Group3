@@ -79,8 +79,11 @@ class HTMLExtractor:
             }
             for field in ROW_FIELDS:
                 job[field] = self._text(row, self.config.get(field))
-            if not job["job_description"] and details:
-                job["job_description"] = details.get(job["source_job_id"]) or details.get(job_url)
+            detail_entry = details.get(job["source_job_id"]) or details.get(job_url) or {}
+            if not job["job_description"]:
+                job["job_description"] = detail_entry.get("description")
+            if not job["location"]:
+                job["location"] = detail_entry.get("location")
             if not (job["job_name"] or job["job_url"]):
                 continue
             # Paginated fetches concatenate page snapshots; drop repeats.
@@ -111,7 +114,7 @@ class HTMLExtractor:
                 {
                     "source_job_id": job_id,
                     "job_name": self._js_field(blob, "title"),
-                    "job_description": details.get(job_id),
+                    "job_description": details.get(job_id, {}).get("description"),
                     "location": self._js_field(blob, "locations_text"),
                     "employment_type": self._js_list_first(blob, "layers_1"),
                     "job_uploaded_at": None,
@@ -155,8 +158,15 @@ class HTMLExtractor:
         return value.strip() or None
 
     @staticmethod
-    def _detail_map(soup: Any) -> dict[str, str]:
-        """Descriptions RawFetch fetched from per-job pages, keyed by id or URL."""
+    def _detail_map(soup: Any) -> dict[str, dict[str, str]]:
+        """Per-job detail data RawFetch fetched from per-job pages, keyed by id or URL.
+
+        Values are ``{"description": ..., "location": ...}`` dicts. Raw
+        responses archived before this map could hold more than description
+        have a bare description string instead - archived HTML is replayed
+        verbatim from MinIO on later ingests, so that older shape can still
+        show up here indefinitely, not just during a migration window.
+        """
         tag = soup.select_one('script[type="application/x-bronze-detail"]')
         if tag is None or not tag.string:
             return {}
@@ -164,7 +174,13 @@ class HTMLExtractor:
             data = json.loads(tag.string)
         except json.JSONDecodeError:
             return {}
-        return data if isinstance(data, dict) else {}
+        if not isinstance(data, dict):
+            return {}
+        return {
+            key: ({"description": value} if isinstance(value, str) else value)
+            for key, value in data.items()
+            if isinstance(value, (str, dict))
+        }
 
     def _resolve_link(self, row: Any, link_selector: str) -> str | None:
         anchor = row.select_one(link_selector)

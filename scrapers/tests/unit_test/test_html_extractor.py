@@ -128,7 +128,7 @@ def test_css_list_fills_description_from_detail_script():
         '<ul><li class="c"><a href="/careers/jd1">Role A</a></li>'
         '<li class="c"><a href="/careers/jd2">Role B</a></li></ul>'
         '<script type="application/x-bronze-detail">'
-        '{"jd1": "<p>full A</p>", "https://x.test/careers/jd2": "<p>full B</p>"}'
+        '{"jd1": {"description": "<p>full A</p>"}, "https://x.test/careers/jd2": {"description": "<p>full B</p>"}}'
         "</script>"
     )
     cfg = {
@@ -140,6 +140,44 @@ def test_css_list_fills_description_from_detail_script():
     }
     jobs = HTMLExtractor(page, cfg, page_url="https://x.test/careers").extract_jobs()
     assert [j["job_description"] for j in jobs] == ["<p>full A</p>", "<p>full B</p>"]
+
+
+def test_css_list_handles_pre_dict_shaped_detail_script():
+    page = (
+        '<ul><li class="c"><a href="/careers/jd1">Role A</a></li></ul>'
+        '<script type="application/x-bronze-detail">'
+        '{"jd1": "<p>full A</p>"}'
+        "</script>"
+    )
+    cfg = {
+        "strategy": "css_list",
+        "item": "li.c",
+        "job_name": "a",
+        "link": "a",
+        "job_id_pattern": r"/careers/(jd\d+)",
+    }
+    jobs = HTMLExtractor(page, cfg, page_url="https://x.test/careers").extract_jobs()
+    assert jobs[0]["job_description"] == "<p>full A</p>"
+
+
+def test_css_list_fills_location_from_detail_script_only_when_list_page_has_none():
+    page = (
+        '<ul><li class="c"><a href="/careers/jd1">Role A</a></li>'
+        '<li class="c"><span class="loc">Berlin</span><a href="/careers/jd2">Role B</a></li></ul>'
+        '<script type="application/x-bronze-detail">'
+        '{"jd1": {"location": "Shinagawa-ku, Tokyo"}, "jd2": {"location": "Should not be used"}}'
+        "</script>"
+    )
+    cfg = {
+        "strategy": "css_list",
+        "item": "li.c",
+        "job_name": "a",
+        "link": "a",
+        "location": "span.loc",
+        "job_id_pattern": r"/careers/(jd\d+)",
+    }
+    jobs = HTMLExtractor(page, cfg, page_url="https://x.test/careers").extract_jobs()
+    assert [j["location"] for j in jobs] == ["Shinagawa-ku, Tokyo", "Berlin"]
 
 
 def test_unknown_strategy_returns_empty():
