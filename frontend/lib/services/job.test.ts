@@ -6,6 +6,7 @@ import {
   descriptionParagraphs,
   descriptionSections,
   getJob,
+  getJobCountries,
   getJobs,
   isJobUuid,
   jobCategoryLabels,
@@ -38,7 +39,7 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-it("serializes location alongside the existing job query parameters", async () => {
+it("serializes country alongside the existing job query parameters", async () => {
   let requestedUrl: URL | undefined;
   mockSuccessfulFetch((url) => {
     requestedUrl = url;
@@ -47,7 +48,7 @@ it("serializes location alongside the existing job query parameters", async () =
   await getJobs({
     q: "autonomy engineer",
     category_id: "category-id",
-    location: "United Kingdom",
+    country: "United Kingdom",
     sort: { field: "company", direction: "asc" },
     page: 2,
     page_size: 25,
@@ -57,22 +58,37 @@ it("serializes location alongside the existing job query parameters", async () =
   assert.equal(requestedUrl?.pathname, "/api/v1/jobs");
   assert.equal(requestedUrl?.searchParams.get("q"), "autonomy engineer");
   assert.equal(requestedUrl?.searchParams.get("category_id"), "category-id");
-  assert.equal(requestedUrl?.searchParams.get("location"), "United Kingdom");
+  assert.equal(requestedUrl?.searchParams.get("country"), "United Kingdom");
   assert.equal(requestedUrl?.searchParams.get("sort"), "company");
   assert.equal(requestedUrl?.searchParams.get("direction"), "asc");
   assert.equal(requestedUrl?.searchParams.get("page"), "2");
   assert.equal(requestedUrl?.searchParams.get("page_size"), "25");
 });
 
-it.each([undefined, ""])("omits location when it is %s", async (location) => {
+it.each([undefined, ""])("omits country when it is %s", async (country) => {
   let requestedUrl: URL | undefined;
   mockSuccessfulFetch((url) => {
     requestedUrl = url;
   });
 
-  await getJobs({ location });
+  await getJobs({ country });
 
-  assert.equal(requestedUrl?.searchParams.has("location"), false);
+  assert.equal(requestedUrl?.searchParams.has("country"), false);
+});
+
+it("fetches the countries that have jobs from /api/v1/jobs/countries", async () => {
+  let requestedUrl: URL | undefined;
+  const counts = [{ country: "Israel", job_count: 47 }];
+  globalThis.fetch = async (input) => {
+    requestedUrl = new URL(String(input));
+    return new Response(JSON.stringify(counts), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  assert.deepEqual(await getJobCountries(), counts);
+  assert.equal(requestedUrl?.pathname, "/api/v1/jobs/countries");
 });
 
 it("treats backend UUIDs as job ids and mock slugs as not", () => {

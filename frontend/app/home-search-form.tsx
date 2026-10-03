@@ -1,10 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { ALL_COUNTRIES, COUNTRY_OPTIONS } from "@/lib/country-filter";
+import { useEffect, useState } from "react";
+import { ALL_COUNTRIES, countryOptions } from "@/lib/country-filter";
+import { getJobCountries } from "@/lib/services/job";
 
 export default function HomeSearchForm() {
   const [country, setCountry] = useState(ALL_COUNTRIES);
+  const [options, setOptions] = useState(() => countryOptions([]));
+
+  // The same list as Find Jobs, so a country picked here always exists there.
+  // If it fails, the dropdown stays on "All Countries" and the keyword search
+  // still works.
+  useEffect(() => {
+    let cancelled = false;
+    getJobCountries()
+      .then((counts) => {
+        if (!cancelled) setOptions(countryOptions(counts));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <form
@@ -34,7 +51,7 @@ export default function HomeSearchForm() {
           onChange={(event) => setCountry(event.target.value)}
           className="w-full rounded-md bg-transparent px-2 py-1 text-sm text-ink outline-none transition-shadow focus-visible:ring-2 focus-visible:ring-primary/20"
         >
-          {COUNTRY_OPTIONS.map((option) => (
+          {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
