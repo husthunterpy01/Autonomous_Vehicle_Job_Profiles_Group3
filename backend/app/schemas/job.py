@@ -55,6 +55,11 @@ class TopPaidJobResponse(BaseModel):
     estimated_annual_usd_max: float
 
 
+class CountryJobCountResponse(BaseModel):
+    country: str
+    job_count: int
+
+
 class SubCategoryResponse(BaseModel):
     category_id: UUID
     sub_type: str

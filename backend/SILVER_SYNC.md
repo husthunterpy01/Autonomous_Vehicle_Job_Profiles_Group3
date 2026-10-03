@@ -38,7 +38,14 @@ so apply that migration to a fresh database too.
 Job locations are stored only in `location` + `job_location`; the legacy
 `jobposting.job_location` text column was removed in BE-15 (apply
 `app/sql/be15_drop_job_location_migration.sql` after `be9_migration.sql` on an
-existing database). No country/city is guessed from a free-text location label.
+existing database). BE-21 (#112) derives countries from the location label
+(`app/utils/location_country.py`) into `location_country`, since one label can
+name several ("London; Sunnyvale"): explicit names and aliases, US state names,
+a small city table, and two-letter state codes only when nothing else matched
+(so "Tel Aviv, IL" stays Israel). A label that names no country, such as a bare
+"Remote", gets none. New locations get countries during sync; after
+`app/sql/be21_location_country_migration.sql`, or when the rules change, run
+`python -m app.refresh_location_countries`. No city is stored.
 Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
@@ -153,8 +160,12 @@ separate work. A later curated taxonomy needs explicit mapping/version migration
 
 ## Job endpoints
 
-- `GET /api/v1/jobs`: `q`, `company_id`, `location`, `skill`, `employment_type`,
-  `category_id`, `page`, `page_size` (max 100).
+- `GET /api/v1/jobs`: `q`, `company_id`, `location`, `country`, `skill`,
+  `employment_type`, `category_id`, `page`, `page_size` (max 100). `location` is
+  a loose substring match on the label; `country` is an exact, case-insensitive
+  country name (400 when unknown, ignored when empty).
+- `GET /api/v1/jobs/countries`: countries that currently have jobs, with job
+  counts, most first; a job in two countries counts for both.
 - `GET /api/v1/jobs/{job_id}`: returns 404 for an unknown UUID.
 - Existing company job counts now include synced rows.
 

@@ -8,8 +8,16 @@ from app.core.database import get_db
 from app.dependencies.job_write import require_job_write_key
 from app.enums.job_sort_field import JobSortField
 from app.enums.sort_direction import SortDirection
-from app.schemas.job import JobCreate, JobDetailResponse, JobResponse, SalaryPeriod
+from app.schemas.job import (
+    CountryJobCountResponse,
+    JobCreate,
+    JobDetailResponse,
+    JobResponse,
+    SalaryPeriod,
+)
 from app.services import job as job_service
+from app.services.location_country import LocationCountryService
+from app.utils.location_country import KNOWN_COUNTRIES, canonical_country
 from app.utils.pagination import PageResponse
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
@@ -47,11 +55,23 @@ def create_job(
         raise HTTPException(status_code=500, detail=exc.detail) from exc
 
 
-@router.get("", response_model=PageResponse[JobResponse])
+@router.get(
+    "",
+    response_model=PageResponse[JobResponse],
+    responses={400: {"description": "Unknown country"}},
+)
 def list_jobs(
     db: DbSession,
     q: str | None = None,
     location: str | None = None,
+    country: str | None = Query(
+        None,
+        description=(
+            "Only jobs with a location in this country (case-insensitive). "
+            "GET /jobs/countries lists the countries that have jobs. Accepted values: "
+            + ", ".join(KNOWN_COUNTRIES)
+        ),
+    ),
     skill: str | None = None,
     category_id: UUID | None = None,
     company_id: UUID | None = None,
@@ -77,12 +97,27 @@ def list_jobs(
             status_code=422,
             detail="salary_period is required when min_salary or max_salary is set.",
         )
+    country_name = None
+    if country and country.strip():
+        country_name = canonical_country(country)
+        if country_name is None:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Unknown country '{country.strip()}'. Use a full country name such as 'United States'.",
+            )
     return job_service.list_jobs(
-        db, q=q, location=location, skill=skill, category_id=category_id, company_id=company_id,
+        db, q=q, location=location, country=country_name, skill=skill, category_id=category_id, company_id=company_id,
         employment_type=employment_type, min_salary=min_salary, max_salary=max_salary,
         salary_period=salary_period.value if salary_period else None,
         has_salary=has_salary, salary_disclosed=salary_disclosed, sort=sort, direction=direction, page=page, page_size=page_size,
     )
+
+
+# Declared before /{job_id}, which would otherwise try to read "countries" as a job id.
+@router.get("/countries", response_model=list[CountryJobCountResponse])
+def list_countries(db: DbSession):
+    """Countries that currently have jobs, with their job counts, for the country filter."""
+    return LocationCountryService(db).country_job_counts()
 
 
 @router.get("/{job_id}", response_model=JobDetailResponse)
