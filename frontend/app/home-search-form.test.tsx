@@ -1,9 +1,24 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { COUNTRY_OPTIONS } from "@/lib/country-filter";
 import HomeSearchForm from "./home-search-form";
 
-afterEach(cleanup);
+const mocks = vi.hoisted(() => ({ getJobCountries: vi.fn() }));
+
+vi.mock("@/lib/services/job", () => ({
+  getJobCountries: mocks.getJobCountries,
+}));
+
+beforeEach(() => {
+  mocks.getJobCountries.mockResolvedValue([
+    { country: "Germany", job_count: 7 },
+    { country: "United States", job_count: 770 },
+  ]);
+});
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 function submittedSearch(form: HTMLFormElement) {
   const params = new URLSearchParams();
@@ -14,26 +29,46 @@ function submittedSearch(form: HTMLFormElement) {
   return query ? `${form.getAttribute("action")}?${query}` : "/search";
 }
 
+async function chooseGermany() {
+  await screen.findByRole("option", { name: "Germany (7)" });
+  fireEvent.change(screen.getByLabelText("Country"), {
+    target: { value: "Germany" },
+  });
+}
+
 describe("home-page job search", () => {
-  it("renders the centralized country options in an accessible select", () => {
+  it("lists the countries that have jobs in an accessible select", async () => {
     render(<HomeSearchForm />);
 
     const country = screen.getByLabelText("Country");
-    const options = screen.getAllByRole<HTMLOptionElement>("option");
-
     expect(country.tagName).toBe("SELECT");
     expect(country.id).toBe("home-country-filter");
     expect(country).toHaveProperty("value", "");
     expect(screen.queryByPlaceholderText("Country")).toBeNull();
+
+    await screen.findByRole("option", { name: "Germany (7)" });
     expect(
-      options.map(({ value, textContent }) => ({
-        value,
-        label: textContent,
-      })),
-    ).toEqual(COUNTRY_OPTIONS.map((option) => ({ ...option })));
+      screen
+        .getAllByRole<HTMLOptionElement>("option")
+        .map(({ value, textContent }) => [value, textContent]),
+    ).toEqual([
+      ["", "All Countries"],
+      ["United States", "United States (770)"],
+      ["Germany", "Germany (7)"],
+    ]);
   });
 
-  it("submits keyword and selected country to the search page", () => {
+  it("keeps working with only All Countries when the list fails to load", async () => {
+    mocks.getJobCountries.mockRejectedValue(new Error("offline"));
+    render(<HomeSearchForm />);
+
+    await Promise.resolve();
+    expect(
+      screen.getAllByRole("option").map((option) => option.textContent),
+    ).toEqual(["All Countries"]);
+  });
+
+  it("submits keyword and selected country to the search page", async () => {
     render(<HomeSearchForm />);
 
     fireEvent.change(
@@ -42,9 +77,7 @@ describe("home-page job search", () => {
         target: { value: "engineer" },
       },
     );
-    fireEvent.change(screen.getByLabelText("Country"), {
-      target: { value: "Germany" },
-    });
+    await chooseGermany();
 
     const form = screen.getByRole<HTMLFormElement>("form", {
       name: "Search jobs",
@@ -53,7 +86,7 @@ describe("home-page job search", () => {
     expect(submittedSearch(form)).toBe("/search?q=engineer&country=Germany");
   });
 
-  it("omits the country parameter when All Countries is selected", () => {
+  it("omits the country parameter when All Countries is selected", async () => {
     render(<HomeSearchForm />);
 
     fireEvent.change(
@@ -62,9 +95,7 @@ describe("home-page job search", () => {
         target: { value: "engineer" },
       },
     );
-    fireEvent.change(screen.getByLabelText("Country"), {
-      target: { value: "Germany" },
-    });
+    await chooseGermany();
     fireEvent.change(screen.getByLabelText("Country"), {
       target: { value: "" },
     });
