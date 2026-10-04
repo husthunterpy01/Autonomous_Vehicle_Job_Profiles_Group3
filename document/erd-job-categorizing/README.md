@@ -33,7 +33,7 @@ Decisions:
 - **A job has either a published range or an estimate, never both.** `salary_average` is not an average of `salary_min` and `salary_max`, and it is not computed from them.
 - **No currency conversion.** Values are stored and shown in their original currency, so they always match the source.
 - **The levels.fyi estimate is company-wide.** Every job at the same company gets the same figure, regardless of title or location. The frontend prefixes estimates with `~` so they are not read as published salaries.
-- **Salaries are only comparable within one pay period.** The job list's `min_salary`/`max_salary` filters therefore require `salary_period`, and salary sorting is not offered.
+- **The job list's `salary_min`/`salary_max` filters compare an annualized, USD-converted figure (BE-22)**, not the raw `salary_min`/`salary_max` columns - the same conversion `SalaryStatsService` uses for Top Paid Jobs (`app/services/salary_conversion.py`), so the filter works correctly regardless of a job's actual pay period or currency and no longer requires `salary_period` to be set alongside it. Salary sorting is still not offered - the conversion isn't exposed as a displayable value.
 - **Two salary filters with different meanings.** On `GET /api/v1/jobs`, `has_salary=true` matches any salary information, including a levels.fyi estimate. `salary_disclosed=true` matches only a range the employer published, in any pay period. The homepage's Featured jobs use `salary_disclosed`, because the client wants employers that publish pay to stand out.
 - **Missing salary is null.** Nothing is guessed when a job publishes no salary and no estimate is available.
 

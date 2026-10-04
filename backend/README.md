@@ -336,10 +336,11 @@ return `404`, inconsistent category groups return `400`, invalid input returns
 
 The normal-load regression test exercises a 100-row page with a two-second
 local/CI budget and a fixed maximum of six `SELECT` statements. Most filter
-indexes live in `app/sql/be19_job_details_migration.sql`; the `salary_min`/
-`salary_max` filter's indexes live in `app/sql/be22_salary_filter_index_
-migration.sql` instead (see "Job search salary filter" below) - both match
-the project's migration-owned schema policy.
+indexes live in `app/sql/be19_job_details_migration.sql`; the
+`salary_min`/`salary_max` filter's indexes live in
+`app/sql/be22_salary_filter_index_migration.sql` instead (see "Job search
+salary filter" below) - both match the project's migration-owned schema
+policy.
 
 ## Job search salary filter (BE-22)
 
