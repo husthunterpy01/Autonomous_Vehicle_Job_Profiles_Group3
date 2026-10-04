@@ -39,8 +39,10 @@ class JobPosting(Base):
     seniority_level = Column(Integer, nullable=True)
     salary_average = Column(Float, nullable=True)
     salary_currency = Column(String(255), nullable=True)
-    salary_min = Column(Float, nullable=True)
-    salary_max = Column(Float, nullable=True)
+    # Indexed (BE-22): the job search endpoint filters on these whenever
+    # salary_min/salary_max query params are set.
+    salary_min = Column(Float, nullable=True, index=True)
+    salary_max = Column(Float, nullable=True, index=True)
     salary_period = Column(String(255), nullable=True)
     salary_source = Column(String(255), nullable=True)
     raw_description = Column(Text, nullable=False)

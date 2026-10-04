@@ -335,9 +335,35 @@ return `404`, inconsistent category groups return `400`, invalid input returns
 `503`.
 
 The normal-load regression test exercises a 100-row page with a two-second
-local/CI budget and a fixed maximum of six `SELECT` statements. Filter indexes
-live only in `app/sql/be19_job_details_migration.sql`, matching the project's
-migration-owned schema policy.
+local/CI budget and a fixed maximum of six `SELECT` statements. Most filter
+indexes live in `app/sql/be19_job_details_migration.sql`; the `salary_min`/
+`salary_max` filter's indexes live in `app/sql/be22_salary_filter_index_
+migration.sql` instead (see "Job search salary filter" below) - both match
+the project's migration-owned schema policy.
+
+## Job search salary filter (BE-22)
+
+`GET /api/v1/jobs` accepts optional `salary_min`/`salary_max` query
+parameters, e.g. `GET /jobs?salary_min=60000&salary_max=100000`. Either can
+be given alone or both together; a job matches when its own salary range
+overlaps the requested one. Both are **annual USD figures** - every job's
+disclosed range (or its levels.fyi estimate, if it has no disclosed range)
+is annualized and currency-converted before comparing, using the same
+static rate table `SalaryStatsService` uses for Top Paid Jobs
+(`app/services/salary_conversion.py`), not the raw `salary_min`/`salary_max`
+columns directly. That means the filter works correctly regardless of
+whether a given job was posted hourly, in another currency, or as an
+estimate-only levels.fyi figure - a caller never needs to know or specify a
+job's original pay period or currency. A job with no salary at all is
+excluded by either bound. `salary_min` greater than `salary_max` returns
+`400`.
+
+Apply the repeatable migration to an existing backend database so the
+filter is indexed:
+
+```bash
+psql "$DATABASE_URL" -f app/sql/be22_salary_filter_index_migration.sql
+```
 
 The Silver sync currently maps the complete scraped advertisement into
 `raw_description`; it does not extract a separate requirements section. The
