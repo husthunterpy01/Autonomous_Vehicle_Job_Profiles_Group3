@@ -1,7 +1,8 @@
-/* Find Jobs keeps its state in the URL (?q=, ?category=, ?country=, ?sort=,
-   ?direction=, ?page=, ?per_page=), so a filtered list or a specific page
-   (e.g. ?page=50) can be reloaded, shared, or jumped to directly. These are
-   pure functions so they can be tested without a router. */
+/* Find Jobs keeps its state in the URL (?q=, ?category=, ?country=,
+   ?salary_min=, ?salary_max=, ?sort=, ?direction=, ?page=, ?per_page=), so a
+   filtered list or a specific page (e.g. ?page=50) can be reloaded, shared,
+   or jumped to directly. These are pure functions so they can be tested
+   without a router. */
 
 import { isDefaultJobSort, type JobSort } from "./job-sort.ts";
 
@@ -22,10 +23,23 @@ export function parsePositiveInt(
   return max !== undefined ? Math.min(value, max) : value;
 }
 
+/** A non-negative whole-dollar salary bound from the URL (?salary_min=,
+ *  ?salary_max=), or null for anything that isn't one (missing, "abc", a
+ *  negative number, a decimal) - null means "no bound", not "zero". Matches
+ *  the backend's own salary_min/salary_max validation (BE-22): non-negative,
+ *  annual USD. */
+export function parseSalaryBound(raw: string | null): number | null {
+  if (raw === null || !/^\d+$/.test(raw.trim())) return null;
+  const value = Number(raw.trim());
+  return Number.isSafeInteger(value) ? value : null;
+}
+
 export type SearchState = {
   q: string;
   category: string;
   country: string;
+  salaryMin: number | null;
+  salaryMax: number | null;
   sort: JobSort;
   page: number;
   perPage: number;
@@ -38,6 +52,12 @@ export function searchQueryString(state: SearchState): string {
   if (state.q.trim()) params.set("q", state.q.trim());
   if (state.category) params.set("category", state.category);
   if (state.country) params.set("country", state.country);
+  if (state.salaryMin !== null) {
+    params.set("salary_min", String(state.salaryMin));
+  }
+  if (state.salaryMax !== null) {
+    params.set("salary_max", String(state.salaryMax));
+  }
   if (!isDefaultJobSort(state.sort)) {
     params.set("sort", state.sort.field);
     params.set("direction", state.sort.direction);
