@@ -153,6 +153,13 @@ def countries_for(label: str) -> set[str]:
     return set().union(*(_segment_countries(part) for part in re.split(r"[;|]", label)))
 
 
+def country_for(label: str) -> str | None:
+    """The country the label names, or None when it names none or several: a
+    wrong country is worse than no country for an exact filter."""
+    found = countries_for(label)
+    return next(iter(found)) if len(found) == 1 else None
+
+
 def canonical_country(value: str) -> str | None:
     """The canonical spelling of a country name, case-insensitive; None when unknown."""
     return _BY_LOWER.get(" ".join(value.split()).lower())

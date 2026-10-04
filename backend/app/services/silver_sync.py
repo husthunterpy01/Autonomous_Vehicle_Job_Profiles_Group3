@@ -90,7 +90,7 @@ class SilverSync:
                 location = self.db.query(Location).filter_by(normalized_name=canonical).one_or_none()
                 if location is None:
                     location = Location(name=" ".join(name.split()), normalized_name=canonical)
-                    LocationCountryService.assign_countries(location)
+                    LocationCountryService.assign_country(location)
                     self.db.add(location)
                     self.db.flush()
                 linked[canonical] = location

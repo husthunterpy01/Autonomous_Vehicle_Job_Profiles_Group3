@@ -9,7 +9,7 @@ from app.services.silver_sync import SilverSync
 def _client(db_session):
     rows = [
         ("us", "US job", ["Sunnyvale"]),
-        ("both", "UK and US job", ["London; Sunnyvale"]),
+        ("both", "UK and US job", ["London", "Sunnyvale"]),
         ("il", "Israel job", ["Tel Aviv, IL"]),
         ("remote", "Remote job", ["Remote"]),
         ("none", "No location job", []),
