@@ -7,11 +7,16 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base
-from app.models import Location, LocationCountry
+from app.models import Location
 from app.services.job import _merge_locations
 from app.services.location_country import LocationCountryService
 from app.services.silver_sync import SilverSync
-from app.utils.location_country import KNOWN_COUNTRIES, canonical_country, countries_for
+from app.utils.location_country import (
+    KNOWN_COUNTRIES,
+    canonical_country,
+    countries_for,
+    country_for,
+)
 
 
 @pytest.mark.parametrize(
@@ -53,6 +58,22 @@ def test_countries_for_labels(label, expected):
     assert countries_for(label) == expected
 
 
+@pytest.mark.parametrize(
+    ("label", "expected"),
+    [
+        ("Sunnyvale, California, United States of America", "United States"),
+        ("Tel Aviv, IL", "Israel"),
+        # Several countries or none: no guess.
+        ("Remote US & Canada", None),
+        ("London; Sunnyvale", None),
+        ("Remote", None),
+        ("", None),
+    ],
+)
+def test_country_for_names_a_country_only_when_exactly_one(label, expected):
+    assert country_for(label) == expected
+
+
 def test_canonical_country_is_case_insensitive_and_rejects_unknown_names():
     assert canonical_country(" united  STATES ") == "United States"
     assert canonical_country("south korea") == "South Korea"
@@ -61,56 +82,51 @@ def test_canonical_country_is_case_insensitive_and_rejects_unknown_names():
     assert list(KNOWN_COUNTRIES) == sorted(KNOWN_COUNTRIES)
 
 
-def test_assign_countries_only_changes_what_differs(db_session):
-    location = Location(name="London; Sunnyvale", normalized_name="london; sunnyvale")
-    assert LocationCountryService.assign_countries(location) is True
+def test_assign_country_only_changes_what_differs(db_session):
+    location = Location(name="London", normalized_name="london")
+    assert LocationCountryService.assign_country(location) is True
     db_session.add(location)
     db_session.flush()
-    assert sorted(row.country for row in location.countries) == ["United Kingdom", "United States"]
-    assert LocationCountryService.assign_countries(location) is False
+    assert location.country == "United Kingdom"
+    assert LocationCountryService.assign_country(location) is False
 
-    location.name = "London"
-    assert LocationCountryService.assign_countries(location) is True
-    db_session.flush()
-    assert db_session.query(LocationCountry).count() == 1
-    assert location.countries[0].country == "United Kingdom"
+    location.name = "London; Sunnyvale"  # now two countries, so none
+    assert LocationCountryService.assign_country(location) is True
+    assert location.country is None
 
 
-def test_silver_sync_gives_new_locations_their_countries(db_session):
+def test_silver_sync_gives_new_locations_their_country(db_session):
     SilverSync(db_session).run([{
         "deduplication_key": "one", "company_name": "Example AV", "job_name": "Engineer",
         "job_description": "Perception", "locations": ["Remote US & Canada", "Tel Aviv, IL", "Remote"],
     }])
-    by_name = {
-        location.name: sorted(row.country for row in location.countries)
-        for location in db_session.query(Location).all()
-    }
+    by_name = {location.name: location.country for location in db_session.query(Location).all()}
     assert by_name == {
-        "Remote US & Canada": ["Canada", "United States"],
-        "Tel Aviv, IL": ["Israel"],
-        "Remote": [],
+        "Remote US & Canada": None,
+        "Tel Aviv, IL": "Israel",
+        "Remote": None,
     }
 
 
-def test_job_create_gives_new_locations_their_countries(db_session):
+def test_job_create_gives_new_locations_their_country(db_session):
     locations = _merge_locations(db_session, [], ["Toronto, ON", "Sunnyvale"])
-    assert {location.name: [row.country for row in location.countries] for location in locations} == {
-        "Toronto, ON": ["Canada"],
-        "Sunnyvale": ["United States"],
+    assert {location.name: location.country for location in locations} == {
+        "Toronto, ON": "Canada",
+        "Sunnyvale": "United States",
     }
 
 
 def test_refresh_fills_missing_and_fixes_stale_countries(db_session):
-    # Rows as they were before BE-21: no countries yet, or out of date.
+    # Rows as they were before BE-21: no country yet, or out of date.
     db_session.add_all([
         Location(name="Sunnyvale", normalized_name="sunnyvale"),
         Location(name="Remote", normalized_name="remote"),
-        Location(name="London", normalized_name="london", countries=[LocationCountry(country="Canada")]),
+        Location(name="London", normalized_name="london", country="Canada"),
     ])
     db_session.flush()
 
     assert LocationCountryService(db_session).refresh() == {"locations": 3, "with_country": 2, "changed": 2}
-    assert sorted(row.country for row in db_session.query(LocationCountry)) == ["United Kingdom", "United States"]
+    assert sorted(row.country for row in db_session.query(Location) if row.country) == ["United Kingdom", "United States"]
     assert LocationCountryService(db_session).refresh()["changed"] == 0
 
 
@@ -119,7 +135,7 @@ def test_country_job_counts_counts_each_job_once_per_country(db_session):
         {"deduplication_key": "a", "company_name": "Example AV", "job_name": "A", "job_description": "x",
          "locations": ["Sunnyvale", "Mountain View, CA"]},
         {"deduplication_key": "b", "company_name": "Example AV", "job_name": "B", "job_description": "x",
-         "locations": ["London; Sunnyvale"]},
+         "locations": ["London", "Sunnyvale"]},
         {"deduplication_key": "c", "company_name": "Example AV", "job_name": "C", "job_description": "x",
          "locations": ["Remote"]},
     ])
@@ -144,4 +160,4 @@ def test_refresh_command_prints_the_summary(monkeypatch, capsys):
     assert json.loads(capsys.readouterr().out) == {"locations": 1, "with_country": 1, "changed": 1}
     mock_sync.assert_called_once()
     with Session(engine) as db:
-        assert [row.country for row in db.query(LocationCountry)] == ["Israel"]
+        assert [row.country for row in db.query(Location)] == ["Israel"]

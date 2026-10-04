@@ -22,7 +22,6 @@ _PUBLIC_TABLES = (
     "skill",
     "category",
     "location",
-    "location_country",
 )
 
 

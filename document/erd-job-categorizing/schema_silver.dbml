@@ -46,13 +46,8 @@ Table silver.Location {
   location_id uuid [pk]
   name text [not null]
   normalized_name text [not null, unique]
-}
-
-Table silver.LocationCountry {
-  location_id uuid [ref: > silver.Location.location_id, note: 'ON DELETE CASCADE']
-  country text [not null, note: 'canonical name derived from Location.name (app/utils/location_country.py); a label can name several']
+  country text [note: 'nullable - canonical country name derived from name (app/utils/location_country.py); null when the name names no country or several']
   indexes {
-    (location_id, country) [pk]
     country
   }
 }
