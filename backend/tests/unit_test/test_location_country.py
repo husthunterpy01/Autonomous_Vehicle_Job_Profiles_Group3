@@ -12,6 +12,7 @@ from app.services.job import _merge_locations
 from app.services.location_country import LocationCountryService
 from app.services.silver_sync import SilverSync
 from app.utils.location_country import KNOWN_COUNTRIES, canonical_country, countries_for
+from app.utils.normalization import clean_location_name
 
 
 @pytest.mark.parametrize(
@@ -145,3 +146,34 @@ def test_refresh_command_prints_the_summary(monkeypatch, capsys):
     mock_sync.assert_called_once()
     with Session(engine) as db:
         assert [row.country for row in db.query(LocationCountry)] == ["Israel"]
+
+
+@pytest.mark.parametrize(
+    ("label", "expected"),
+    [
+        ("Location: Budapest, Hungary", "Budapest, Hungary"),
+        ("  location :  Hungary ", "Hungary"),
+        ("Gothenburg +1 more", "Gothenburg"),
+        ("Netherlands  +4 More", "Netherlands"),
+        ("Location: London +2 more", "London"),
+        ("Sunnyvale", "Sunnyvale"),
+        ("Remote", "Remote"),
+        # Nothing left once the furniture is removed.
+        ("Location:", ""),
+        ("+3 more", ""),
+    ],
+)
+def test_clean_location_name_drops_page_furniture(label, expected):
+    assert clean_location_name(label) == expected
+
+
+def test_new_locations_are_stored_without_page_furniture(db_session):
+    SilverSync(db_session).run([{
+        "deduplication_key": "clean", "company_name": "Example AV", "job_name": "Engineer",
+        "job_description": "Perception",
+        "locations": ["Location: Budapest, Hungary", "Gothenburg +1 more", "Location:"],
+    }])
+    assert sorted(location.name for location in db_session.query(Location)) == ["Budapest, Hungary", "Gothenburg"]
+    created = _merge_locations(db_session, [], ["Location: Budapest, Hungary", "Austin +3 more", "+2 more"])
+    assert sorted(location.name for location in created) == ["Austin", "Budapest, Hungary"]
+    assert db_session.query(Location).filter_by(normalized_name="budapest, hungary").count() == 1

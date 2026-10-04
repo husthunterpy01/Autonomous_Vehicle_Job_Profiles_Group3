@@ -138,6 +138,17 @@ def test_migration_is_repeatable_and_preserves_legacy_rows():
             cursor.execute(description_migration)
             cursor.execute("SELECT count(*) FROM information_schema.columns WHERE table_schema = %s AND table_name = 'company' AND column_name = 'description'", (schema,))
             assert cursor.fetchone()[0] == 1
+            cursor.execute(
+                "INSERT INTO location (location_id, name, normalized_name) VALUES "
+                "(gen_random_uuid(), 'Location: Budapest, Hungary', 'location: budapest, hungary'), "
+                "(gen_random_uuid(), 'Gothenburg +1 more', 'gothenburg +1 more'), "
+                "(gen_random_uuid(), 'Gothenburg', 'gothenburg')"
+            )
+            clean_migration = (root / "backend/app/sql/clean_location_labels_migration.sql").read_text(encoding="utf-8")
+            cursor.execute(clean_migration)
+            cursor.execute(clean_migration)
+            cursor.execute("SELECT name FROM location ORDER BY name")
+            assert [row[0] for row in cursor.fetchall()] == ["Budapest, Hungary", "Gothenburg"]
         test_engine = create_engine(database_url, connect_args={"options": f"-csearch_path={schema}"})
         locations = [f"Office {i:02d} - Long location name" for i in range(12)]
         with Session(test_engine) as db, db.begin():
