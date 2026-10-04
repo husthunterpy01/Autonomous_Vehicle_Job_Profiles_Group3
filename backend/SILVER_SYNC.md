@@ -38,14 +38,15 @@ so apply that migration to a fresh database too.
 Job locations are stored only in `location` + `job_location`; the legacy
 `jobposting.job_location` text column was removed in BE-15 (apply
 `app/sql/be15_drop_job_location_migration.sql` after `be9_migration.sql` on an
-existing database). BE-21 (#112) derives countries from the location label
-(`app/utils/location_country.py`) into `location_country`, since one label can
-name several ("London; Sunnyvale"): explicit names and aliases, US state names,
-a small city table, and two-letter state codes only when nothing else matched
-(so "Tel Aviv, IL" stays Israel). A label that names no country, such as a bare
-"Remote", gets none. New locations get countries during sync; after
-`app/sql/be21_location_country_migration.sql`, or when the rules change, run
-`python -m app.refresh_location_countries`. No city is stored.
+existing database). BE-21 (#112) derives a country from the location label
+(`app/utils/location_country.py`) into `location.country` (BE-31 moved it there
+from a separate table): explicit names and aliases, US state names, a small city
+table, and two-letter state codes only when nothing else matched (so
+"Tel Aviv, IL" stays Israel). A label that names no country, such as a bare
+"Remote", or several ("Remote US & Canada"), gets none. New locations get a
+country during sync; after `app/sql/be31_location_country_column_migration.sql`,
+or when the rules change, run `python -m app.refresh_location_countries`. No
+city is stored.
 Location names are cleaned before they are stored:
 a leading "Location:" label and a trailing "+2 more" count (page furniture some
 career sites put in the field) are dropped, and a name with nothing left is

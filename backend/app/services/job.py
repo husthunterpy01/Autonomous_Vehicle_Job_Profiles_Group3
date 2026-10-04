@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session, defer, joinedload
 
 from app.enums.job_sort_field import JobSortField
 from app.enums.sort_direction import SortDirection
-from app.models import Category, Company, JobPosting, Location, LocationCountry, Skill
+from app.models import Category, Company, JobPosting, Location, Skill
 from app.schemas.job import CategoryResponse, JobCreate, JobDetailResponse, JobResponse
 from app.services.category_sync import (
     _MAIN_TYPES_BY_NORMALIZED_NAME,
@@ -156,7 +156,7 @@ def list_jobs(
         query = query.filter(JobPosting.locations.any(Location.name.icontains(location, autoescape=True)))
     if country:
         # Exact match on the canonical name; the router has already checked it.
-        query = query.filter(JobPosting.locations.any(Location.countries.any(LocationCountry.country == country)))
+        query = query.filter(JobPosting.locations.any(Location.country == country))
     if skill:
         query = query.filter(JobPosting.skills.any(Skill.skill_name.icontains(skill, autoescape=True)))
     if company_id:
@@ -276,7 +276,7 @@ def _merge_locations(db: Session, linked: list[Location], names: list[str]):
             location = db.query(Location).filter_by(normalized_name=key).one_or_none()
         if location is None:
             location = Location(name=name, normalized_name=key)
-            LocationCountryService.assign_countries(location)
+            LocationCountryService.assign_country(location)
             db.add(location)
             db.flush()
         by_key[key] = location
