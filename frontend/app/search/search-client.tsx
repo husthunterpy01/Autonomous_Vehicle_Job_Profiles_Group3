@@ -256,7 +256,17 @@ export default function SearchClient() {
       controller.abort();
       clearTimeout(handle);
     };
-  }, [keyword, category, country, salaryMin, salaryMax, sort, page, perPage, reloadToken]);
+  }, [
+    keyword,
+    category,
+    country,
+    salaryMin,
+    salaryMax,
+    sort,
+    page,
+    perPage,
+    reloadToken,
+  ]);
 
   const hasFilters =
     keyword.trim() !== "" ||

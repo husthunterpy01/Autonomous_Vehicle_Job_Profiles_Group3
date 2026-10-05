@@ -94,6 +94,6 @@ test("anything that isn't a non-negative whole number falls back to no bound", (
   }
 });
 
-test("a salary bound of exactly 0 is a real bound, not \"no bound\"", () => {
+test('a salary bound of exactly 0 is a real bound, not "no bound"', () => {
   assert.equal(parseSalaryBound("0"), 0);
 });
