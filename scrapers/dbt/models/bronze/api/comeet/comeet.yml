@@ -29,3 +29,21 @@ unit_tests:
           job_url: https://www.comeet.com/jobs/autobrains/57.004/robocar-test-driver/9E.17B
           job_uploaded_at: "2026-09-06T14:27:52Z"
           employment_type: Full time
+
+  - name: comeet_prefers_hosted_page_over_api_url
+    model: comeet
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'comeet'::text as source_system,
+            'AutoBrains'::text as company_name,
+            'IL'::text as headquarter,
+            $json$[{"uid":"0C.F6C","name":"Planner Stack Engineer","position_url":"https://www.comeet.co/careers-api/2.0/company/57.004/positions/0C.F6C?token=t","url_comeet_hosted_page":"https://www.comeet.com/jobs/autobrains/57.004/planner-stack-engineer/0C.F6C","location":{"name":"Tel Aviv"},"details":[{"name":"Description","value":"<p>Plan</p>","order":1}]}]$json$::jsonb as body
+    expect:
+      rows:
+        - ats_name: comeet
+          source_job_id: 0C.F6C
+          job_url: https://www.comeet.com/jobs/autobrains/57.004/planner-stack-engineer/0C.F6C

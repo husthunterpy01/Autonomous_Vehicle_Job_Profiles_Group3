@@ -11,7 +11,21 @@ select
         nullif(btrim(lever_jd.lists_text), '')
     ) as job_description,
     src.headquarter,
-    job->'categories'->>'location' as location,
+    -- Multi-office postings list every office in allLocations; categories.location
+    -- is only the first, so it is the fallback when allLocations is absent.
+    coalesce(
+        (
+            select string_agg(nullif(btrim(loc), ''), ' | ' order by ord)
+            from jsonb_array_elements_text(
+                case
+                    when jsonb_typeof(job->'categories'->'allLocations') = 'array'
+                    then job->'categories'->'allLocations'
+                    else '[]'::jsonb
+                end
+            ) with ordinality as t(loc, ord)
+        ),
+        job->'categories'->>'location'
+    ) as location,
     job->>'hostedUrl' as job_url,
     job->>'createdAt' as job_uploaded_at,
     job->'categories'->>'commitment' as employment_type,
@@ -65,7 +79,6 @@ cross join lateral (
             )
             from jsonb_array_elements(coalesce(job->'lists', '[]'::jsonb))
                 with ordinality as t(elem, ord)
-            where lower(coalesce(elem->>'text', '')) not like '%salary%'
         ) as lists_text
 ) as lever_jd
 where src.source = 'api'
