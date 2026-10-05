@@ -15,6 +15,7 @@ from app.services.category_sync import (
     dominant_categories,
 )
 from app.services.location_country import LocationCountryService
+from app.services.salary_conversion import annual_usd_range
 from app.utils.normalization import clean_location_name, normalized
 from app.utils.pagination import PageResponse
 
@@ -144,7 +145,7 @@ def list_jobs(
     db: Session, *, q: str | None = None, location: str | None = None, country: str | None = None,
     skill: str | None = None,
     category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
-    min_salary: float | None = None, max_salary: float | None = None, salary_period: str | None = None,
+    salary_min: float | None = None, salary_max: float | None = None, salary_period: str | None = None,
     has_salary: bool | None = None, salary_disclosed: bool | None = None,
     sort: JobSortField = JobSortField.POSTED_DATE,
     direction: SortDirection | None = None, page: int = 1, page_size: int = 10,
@@ -165,17 +166,29 @@ def list_jobs(
         query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
         query = query.filter(JobPosting.employment_type == employment_type)
-    if min_salary is not None:
-        query = query.filter(JobPosting.salary_max >= min_salary)
-    if max_salary is not None:
-        query = query.filter(JobPosting.salary_min <= max_salary)
+    if salary_min is not None or salary_max is not None:
+        # Filters on each job's annualized, USD-converted salary (BE-22) -
+        # not the raw salary_min/salary_max columns directly - so "60000 to
+        # 100000" means a normal annual-USD figure regardless of whether a
+        # given job is actually posted hourly, in another currency, or as a
+        # levels.fyi estimate with no disclosed range. Reuses the same
+        # conversion SalaryStatsService already uses to rank Top Paid Jobs,
+        # so both features treat "what does this job pay" identically. A
+        # job whose period/currency isn't recognized (annual_usd_range()
+        # returns NULL for it) can never satisfy either bound and is
+        # excluded, same as having no salary at all.
+        annual_usd_min, annual_usd_max = annual_usd_range()
+        if salary_min is not None:
+            query = query.filter(annual_usd_max >= salary_min)
+        if salary_max is not None:
+            query = query.filter(annual_usd_min <= salary_max)
     if salary_period:
         query = query.filter(JobPosting.salary_period == salary_period)
     if has_salary is not None:
         # A job may only have salary_average set (a levels.fyi estimate, no
         # real disclosed range) - that still counts as "has some salary
-        # info" for this flag, even though min_salary/max_salary above
-        # deliberately only compare real ranges.
+        # info" for this flag, the same way annual_usd_range() above treats
+        # it as a (degenerate) range rather than excluding it.
         condition = JobPosting.salary_min.isnot(None) | JobPosting.salary_average.isnot(None)
         query = query.filter(condition if has_salary else ~condition)
     if salary_disclosed is not None:

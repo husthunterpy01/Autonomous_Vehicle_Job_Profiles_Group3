@@ -39,6 +39,12 @@ class JobPosting(Base):
     seniority_level = Column(Integer, nullable=True)
     salary_average = Column(Float, nullable=True)
     salary_currency = Column(String(255), nullable=True)
+    # Not indexed: the job search endpoint's salary_min/salary_max filter
+    # (BE-22) runs on a computed expression (annualized, currency-converted
+    # - see app/services/salary_conversion.py), not these raw columns
+    # directly, so a plain index here wouldn't be used by that query.
+    # Revisit with a Postgres expression index matching that formula if this
+    # ever needs to scale past a full scan.
     salary_min = Column(Float, nullable=True)
     salary_max = Column(Float, nullable=True)
     salary_period = Column(String(255), nullable=True)

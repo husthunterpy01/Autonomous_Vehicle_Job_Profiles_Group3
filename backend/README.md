@@ -129,6 +129,8 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/api/v1/auth/signup | Account registration |
 | http://127.0.0.1:8000/api/v1/auth/login | JWT sign in |
 | http://127.0.0.1:8000/api/v1/auth/me | Current authenticated user |
+| http://127.0.0.1:8000/api/v1/auth/forgot-password | Request a password-reset email |
+| http://127.0.0.1:8000/api/v1/auth/reset-password | Complete a forgotten-password reset |
 | http://127.0.0.1:8000/api/v1/favorites/jobs | Current user's favorite jobs |
 | http://127.0.0.1:8000/api/v1/favorites/companies | Current user's favorite companies |
 
@@ -136,8 +138,9 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
 Passwords must contain at least 12 characters, including uppercase, lowercase,
 a number, and a special character. Passwords are stored as Argon2 hashes. The
-signed JWT contains only the user ID, token type, issued-at time, and expiry and
-is returned in an HTTP-only `SameSite=Lax` cookie rather than response JSON.
+signed JWT contains only the user ID, token type, session version, issued-at
+time, and expiry and is returned in an HTTP-only `SameSite=Lax` cookie rather
+than response JSON.
 
 The login identifier accepts either the normalized email address or username.
 Five failed attempts for the same client and identifier within five minutes are
@@ -174,6 +177,86 @@ curl -i -c cookies.txt -X POST http://127.0.0.1:8000/api/v1/auth/login \
   }'
 
 curl -b cookies.txt http://127.0.0.1:8000/api/v1/auth/me
+```
+
+### Forgotten-password reset (BE-20)
+
+The forgotten-password flow uses opaque, single-use tokens. Only a SHA-256 hash
+of each token is stored, and tokens expire after 20 minutes by default. The
+request endpoint always returns the same `202` response for known and unknown
+identifiers to prevent account enumeration.
+
+| Method | URL | Result |
+|---|---|---|
+| `POST` | `/api/v1/auth/forgot-password` | Request a reset email using an email or username |
+| `GET` | `/api/v1/auth/reset-password/verify?token=...` | Check whether a token is valid and unused |
+| `POST` | `/api/v1/auth/reset-password` | Consume a token and set a policy-compliant password (`204`) |
+
+Request a reset:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/v1/auth/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "driver@example.com"}'
+```
+
+The email link points to `PASSWORD_RESET_FRONTEND_URL` and includes the opaque
+token as its `token` query parameter. The frontend can verify that token before
+showing the form, then submit it with the new password:
+
+```bash
+curl "http://127.0.0.1:8000/api/v1/auth/reset-password/verify?token=<token>"
+
+curl -i -X POST http://127.0.0.1:8000/api/v1/auth/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "<token>",
+    "new_password": "UpdatedPassword!456"
+  }'
+```
+
+A successful reset immediately marks every outstanding reset token for that
+user as used and increments the user's token version. This invalidates all
+previously issued login cookies and bearer tokens; the user must sign in again.
+A password-changed confirmation email is also sent. Expired, used, and unknown
+reset tokens return explicit `400` errors, while malformed input and weak
+passwords return validation errors.
+
+Configure email delivery and reset controls in `.env`:
+
+```dotenv
+PASSWORD_RESET_TOKEN_MINUTES=20
+PASSWORD_RESET_MAX_REQUESTS=5
+PASSWORD_RESET_WINDOW_SECONDS=900
+PASSWORD_RESET_FRONTEND_URL=http://localhost:3000/reset-password
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USERNAME=example-user
+SMTP_PASSWORD=example-password
+SMTP_FROM_EMAIL=no-reply@example.com
+SMTP_STARTTLS=true
+```
+
+`PASSWORD_RESET_TOKEN_MINUTES` must stay between 15 and 30. Reset requests are
+limited independently by hashed identifier and client IP. Like the existing
+login limiter, the bundled limiter is process-local; use a shared store such as
+Redis when running multiple API instances. Logs contain user IDs or hashed
+request keys, never raw reset tokens or passwords.
+
+The reset URL targets the Next.js frontend on port `3000`. The frontend must
+provide `/reset-password` and submit its token to the backend reset endpoint.
+Until that frontend route is implemented, the backend endpoints can still be
+verified through Swagger UI or the `curl` examples above. The backend emits a
+startup warning when `SMTP_HOST` is missing because reset emails cannot be
+delivered without an SMTP provider.
+
+Fresh databases receive the table and token-version column through ORM startup.
+For an existing PostgreSQL database, apply the repeatable migration from
+`backend/`:
+
+```bash
+psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
+  -f app/sql/be20_password_reset_migration.sql
 ```
 
 ## Favorites API (BE-11)
@@ -335,9 +418,35 @@ return `404`, inconsistent category groups return `400`, invalid input returns
 `503`.
 
 The normal-load regression test exercises a 100-row page with a two-second
-local/CI budget and a fixed maximum of six `SELECT` statements. Filter indexes
-live only in `app/sql/be19_job_details_migration.sql`, matching the project's
-migration-owned schema policy.
+local/CI budget and a fixed maximum of six `SELECT` statements. Most filter
+indexes live in `app/sql/be19_job_details_migration.sql`; the
+`salary_min`/`salary_max` filter (see "Job search salary filter" below) has
+none, since it runs on a computed expression rather than a column a plain
+index could serve.
+
+## Job search salary filter (BE-22)
+
+`GET /api/v1/jobs` accepts optional `salary_min`/`salary_max` query
+parameters, e.g. `GET /jobs?salary_min=60000&salary_max=100000`. Either can
+be given alone or both together; a job matches when its own salary range
+overlaps the requested one. Both are **annual USD figures** - every job's
+disclosed range (or its levels.fyi estimate, if it has no disclosed range)
+is annualized and currency-converted before comparing, using the same
+static rate table `SalaryStatsService` uses for Top Paid Jobs
+(`app/services/salary_conversion.py`), not the raw `salary_min`/`salary_max`
+columns directly. That means the filter works correctly regardless of
+whether a given job was posted hourly, in another currency, or as an
+estimate-only levels.fyi figure - a caller never needs to know or specify a
+job's original pay period or currency. A job with no salary at all is
+excluded by either bound. `salary_min` greater than `salary_max` returns
+`400`.
+
+No migration to apply - the filter needs no schema change. `salary_min`/
+`salary_max` are not indexed: the filter compares a computed expression
+(annualized, currency-converted), not these raw columns directly, so a
+plain index on them wouldn't be used by this query. Revisit with a
+Postgres expression index matching that exact formula if this ever needs
+to scale past a full table scan.
 
 The Silver sync currently maps the complete scraped advertisement into
 `raw_description`; it does not extract a separate requirements section. The
