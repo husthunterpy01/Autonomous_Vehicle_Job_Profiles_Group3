@@ -358,6 +358,10 @@ def test_profile_update_requires_authentication_and_valid_fields(client):
 
     client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
     assert client.patch("/api/v1/auth/me", json={}).status_code == 422
+    assert client.patch(
+        "/api/v1/auth/me",
+        json={"current_password": SIGNUP_PAYLOAD["password"]},
+    ).status_code == 422
     assert client.patch("/api/v1/auth/me", json={"email": None}).status_code == 422
     assert client.patch("/api/v1/auth/me", json={"phone": "letters"}).status_code == 422
 

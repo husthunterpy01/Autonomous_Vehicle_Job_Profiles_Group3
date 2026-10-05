@@ -178,7 +178,7 @@ class UserProfileUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_patch(self):
-        if not self.model_fields_set:
+        if not self.model_fields_set - {"current_password"}:
             raise ValueError("at least one profile field must be provided")
         for required_field in ("email", "username", "full_name"):
             if (
