@@ -317,3 +317,157 @@ def test_password_reset_enforces_password_policy_and_rate_limit(client):
     )
     assert limited.status_code == 429
     assert int(limited.headers["retry-after"]) >= 1
+
+
+def test_authenticated_user_can_read_and_update_own_profile(client, db_session):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+
+    before = client.get("/api/v1/auth/me")
+    assert before.status_code == 200
+    assert before.json()["phone"] is None
+    assert before.json()["address"] is None
+
+    response = client.patch(
+        "/api/v1/auth/me",
+        json={
+            "email": "Updated.Driver@example.com",
+            "current_password": SIGNUP_PAYLOAD["password"],
+            "username": "Updated.Driver",
+            "full_name": "  Updated   Driver  ",
+            "phone": "+61 412 345 678",
+            "address": "  Perth,   Western Australia  ",
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert "current_password" not in body
+    assert body["email"] == "updated.driver@example.com"
+    assert body["username"] == "updated.driver"
+    assert body["full_name"] == "Updated Driver"
+    assert body["phone"] == "+61 412 345 678"
+    assert body["address"] == "Perth, Western Australia"
+    user = db_session.query(User).one()
+    assert user.email == "updated.driver@example.com"
+    assert user.phone == "+61 412 345 678"
+
+
+def test_profile_update_requires_authentication_and_valid_fields(client):
+    unauthorized = client.patch("/api/v1/auth/me", json={"full_name": "Other"})
+    assert unauthorized.status_code == 401
+
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    assert client.patch("/api/v1/auth/me", json={}).status_code == 422
+    assert client.patch(
+        "/api/v1/auth/me",
+        json={"current_password": SIGNUP_PAYLOAD["password"]},
+    ).status_code == 422
+    assert client.patch("/api/v1/auth/me", json={"email": None}).status_code == 422
+    assert client.patch("/api/v1/auth/me", json={"phone": "letters"}).status_code == 422
+
+
+def test_profile_update_rejects_another_users_email_or_username(client):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    client.post("/api/v1/auth/logout")
+    second_user = {
+        "email": "second@example.com",
+        "username": "second-user",
+        "full_name": "Second User",
+        "password": "AnotherSecure!123",
+    }
+    client.post("/api/v1/auth/signup", json=second_user)
+
+    duplicate_email = client.patch(
+        "/api/v1/auth/me",
+        json={
+            "email": SIGNUP_PAYLOAD["email"],
+            "current_password": second_user["password"],
+        },
+    )
+    duplicate_username = client.patch(
+        "/api/v1/auth/me", json={"username": SIGNUP_PAYLOAD["username"]}
+    )
+
+    assert duplicate_email.status_code == 409
+    assert duplicate_username.status_code == 409
+
+
+def test_password_change_requires_current_password_and_rejects_reuse(client, db_session):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+
+    incorrect = client.patch(
+        "/api/v1/auth/me/password",
+        json={"current_password": "Incorrect!123", "new_password": "NewPassword!123"},
+    )
+    reused = client.patch(
+        "/api/v1/auth/me/password",
+        json={
+            "current_password": SIGNUP_PAYLOAD["password"],
+            "new_password": SIGNUP_PAYLOAD["password"],
+        },
+    )
+
+    assert incorrect.status_code == 400
+    assert incorrect.json()["detail"] == "Current password is incorrect"
+    assert reused.status_code == 400
+    assert "different" in reused.json()["detail"]
+    user = db_session.query(User).one()
+    assert SecurityService.verify_password(
+        SIGNUP_PAYLOAD["password"], user.password_hash
+    )
+
+
+def test_password_change_rehashes_password_and_never_returns_it(client, db_session):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    old_access_token = client.cookies.get(settings.auth_cookie_name)
+    new_password = "UpdatedSecure!456"
+
+    response = client.patch(
+        "/api/v1/auth/me/password",
+        json={
+            "current_password": SIGNUP_PAYLOAD["password"],
+            "new_password": new_password,
+        },
+    )
+
+    assert response.status_code == 204
+    assert response.content == b""
+    user = db_session.query(User).one()
+    assert user.token_version == 1
+    assert new_password not in user.password_hash
+    assert SecurityService.verify_password(new_password, user.password_hash)
+    new_access_token = client.cookies.get(settings.auth_cookie_name)
+    assert new_access_token and new_access_token != old_access_token
+    assert client.get("/api/v1/auth/me").status_code == 200
+
+    client.cookies.clear()
+    assert client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {old_access_token}"},
+    ).status_code == 401
+
+    client.post("/api/v1/auth/logout")
+    assert client.post(
+        "/api/v1/auth/login",
+        json={"identifier": SIGNUP_PAYLOAD["email"], "password": new_password},
+    ).status_code == 200
+
+
+def test_email_change_requires_current_password(client, db_session):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    new_email = "updated@example.com"
+
+    missing = client.patch("/api/v1/auth/me", json={"email": new_email})
+    incorrect = client.patch(
+        "/api/v1/auth/me",
+        json={"email": new_email, "current_password": "Incorrect!123"},
+    )
+
+    assert missing.status_code == 400
+    assert incorrect.status_code == 400
+    assert db_session.query(User).one().email == "driver.engineer@example.com"
+    assert client.patch(
+        "/api/v1/auth/me",
+        json={"email": new_email, "current_password": SIGNUP_PAYLOAD["password"]},
+    ).status_code == 200
+    assert db_session.query(User).one().email == new_email

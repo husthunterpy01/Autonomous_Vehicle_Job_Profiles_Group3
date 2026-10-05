@@ -23,12 +23,19 @@ from app.schemas.auth import (
     ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
+    PasswordChangeRequest,
     PasswordResetRequest,
     PasswordResetTokenResponse,
     SignUpRequest,
-    UserResponse,
+    UserProfileResponse,
+    UserProfileUpdate,
 )
-from app.services.auth import AuthService, DuplicateUserError
+from app.services.auth import (
+    AuthService,
+    DuplicateUserError,
+    IncorrectCurrentPasswordError,
+    ReusedPasswordError,
+)
 from app.services.email import (
     AuthenticationEmailRecipient,
     EmailDeliveryError,
@@ -40,8 +47,10 @@ from app.services.password_reset import (
     InvalidatedResetTokenError,
     InvalidResetTokenError,
     PasswordResetService,
-    ReusedPasswordError,
     UsedResetTokenError,
+)
+from app.services.password_reset import (
+    ReusedPasswordError as ReusedResetPasswordError,
 )
 from app.services.rate_limit import LoginRateLimiter
 from app.utils.security import SecurityService
@@ -293,7 +302,7 @@ def reset_password(
         UsedResetTokenError,
     ) as error:
         _raise_reset_token_error(error)
-    except ReusedPasswordError as error:
+    except ReusedResetPasswordError as error:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="New password must be different from the current password",
@@ -317,6 +326,53 @@ def reset_password(
     )
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me", response_model=UserProfileResponse)
 def get_me(current_user: CurrentUser):
     return current_user
+
+
+@router.patch("/me", response_model=UserProfileResponse)
+def update_me(
+    data: UserProfileUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    try:
+        return AuthService.update_profile(db, current_user, data)
+    except IncorrectCurrentPasswordError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect or required to change email",
+        ) from error
+    except DuplicateUserError as error:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An account with that email or username already exists",
+        ) from error
+
+
+@router.patch("/me/password", status_code=status.HTTP_204_NO_CONTENT)
+def change_password(
+    data: PasswordChangeRequest,
+    response: Response,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    try:
+        AuthService.change_password(
+            db,
+            current_user,
+            data.current_password,
+            data.new_password,
+        )
+        _set_access_cookie(response, current_user, remember_me=False)
+    except IncorrectCurrentPasswordError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect",
+        ) from error
+    except ReusedPasswordError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be different from the current password",
+        ) from error
