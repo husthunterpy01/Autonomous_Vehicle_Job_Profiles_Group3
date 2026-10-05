@@ -453,63 +453,66 @@ export default function SearchClient() {
           ))}
         </select>
 
-        <div className="flex items-center gap-2">
-          <div>
-            <label
-              htmlFor="salary-min-filter"
-              className="block text-sm text-ink-secondary"
-            >
-              Min salary (USD/yr)
-            </label>
-            <div className="mt-1 flex items-center rounded-lg border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-              <span aria-hidden="true" className="text-sm text-ink-muted">
-                $
-              </span>
-              <input
-                id="salary-min-filter"
-                type="text"
-                inputMode="numeric"
-                maxLength={9}
-                value={draftSalaryMin !== null ? String(draftSalaryMin) : ""}
-                onChange={(e) => handleDraftSalaryMinChange(e.target.value)}
-                placeholder="No minimum"
-                aria-invalid={draftSalaryError ? true : undefined}
-                aria-describedby={
-                  draftSalaryError ? "salary-filter-error" : undefined
-                }
-                className="w-24 border-0 bg-transparent py-2.5 pl-1 text-sm font-medium text-ink outline-none"
-              />
-            </div>
+        {/* Grid, not flex+items-end: the dash needs to center against the
+            input row's own height specifically, not the label+input
+            column's combined height - a grid row auto-sizes to its
+            tallest cell (the input boxes), so self-center on the dash
+            centers it against that, with no guessed padding/height. */}
+        <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-1">
+          <label
+            htmlFor="salary-min-filter"
+            className="text-sm text-ink-secondary"
+          >
+            Min salary (USD/yr)
+          </label>
+          <div aria-hidden="true" />
+          <label
+            htmlFor="salary-max-filter"
+            className="text-sm text-ink-secondary"
+          >
+            Max salary (USD/yr)
+          </label>
+
+          <div className="flex items-center rounded-lg border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <span aria-hidden="true" className="text-sm text-ink-muted">
+              $
+            </span>
+            <input
+              id="salary-min-filter"
+              type="text"
+              inputMode="numeric"
+              maxLength={9}
+              value={draftSalaryMin !== null ? String(draftSalaryMin) : ""}
+              onChange={(e) => handleDraftSalaryMinChange(e.target.value)}
+              placeholder="No minimum"
+              aria-invalid={draftSalaryError ? true : undefined}
+              aria-describedby={
+                draftSalaryError ? "salary-filter-error" : undefined
+              }
+              className="w-24 border-0 bg-transparent py-2.5 pl-1 text-sm font-medium text-ink outline-none"
+            />
           </div>
-          <span aria-hidden="true" className="pb-2.5 text-ink-muted">
+          <span aria-hidden="true" className="self-center text-ink-muted">
             –
           </span>
-          <div>
-            <label
-              htmlFor="salary-max-filter"
-              className="block text-sm text-ink-secondary"
-            >
-              Max salary (USD/yr)
-            </label>
-            <div className="mt-1 flex items-center rounded-lg border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
-              <span aria-hidden="true" className="text-sm text-ink-muted">
-                $
-              </span>
-              <input
-                id="salary-max-filter"
-                type="text"
-                inputMode="numeric"
-                maxLength={9}
-                value={draftSalaryMax !== null ? String(draftSalaryMax) : ""}
-                onChange={(e) => handleDraftSalaryMaxChange(e.target.value)}
-                placeholder="No maximum"
-                aria-invalid={draftSalaryError ? true : undefined}
-                aria-describedby={
-                  draftSalaryError ? "salary-filter-error" : undefined
-                }
-                className="w-24 border-0 bg-transparent py-2.5 pl-1 text-sm font-medium text-ink outline-none"
-              />
-            </div>
+          <div className="flex items-center rounded-lg border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <span aria-hidden="true" className="text-sm text-ink-muted">
+              $
+            </span>
+            <input
+              id="salary-max-filter"
+              type="text"
+              inputMode="numeric"
+              maxLength={9}
+              value={draftSalaryMax !== null ? String(draftSalaryMax) : ""}
+              onChange={(e) => handleDraftSalaryMaxChange(e.target.value)}
+              placeholder="No maximum"
+              aria-invalid={draftSalaryError ? true : undefined}
+              aria-describedby={
+                draftSalaryError ? "salary-filter-error" : undefined
+              }
+              className="w-24 border-0 bg-transparent py-2.5 pl-1 text-sm font-medium text-ink outline-none"
+            />
           </div>
         </div>
 
