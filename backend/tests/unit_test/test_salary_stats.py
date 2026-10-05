@@ -102,6 +102,28 @@ def test_converts_currency_before_ranking(db_session):
     assert [s.title for s in SalaryStatsService(db_session).get_top_paid_jobs()] == ["USD Role", "EUR Role"]
 
 
+def test_recognizes_currencies_added_after_a_real_job_was_found_excluded(db_session):
+    # Regression test: a real SEK-denominated job was found silently
+    # excluded from ranking because SEK had no entry in the rate table -
+    # an API-sourced job isn't restricted to the regex extractor's
+    # recognized currency codes, so a currency can reach this table from
+    # real data without ever having been "recognized" by the extractor.
+    # TWD was a separate, narrower gap: the extractor's own _CURRENCY_CODES
+    # already included it, but the rate table didn't, so even a job the
+    # extractor itself produced would have been excluded.
+    seed(db_session, "one", "SEK Role")
+    seed(db_session, "two", "TWD Role")
+    import_salary(db_session, [
+        _salary_row(deduplication_key="one", salary_min=500000, salary_max=600000, salary_currency="SEK", salary_source="api"),
+        _salary_row(deduplication_key="two", salary_min=1500000, salary_max=1800000, salary_currency="TWD"),
+    ])
+
+    stats = {s.title: s for s in SalaryStatsService(db_session).get_top_paid_jobs()}
+
+    assert stats["SEK Role"].estimated_annual_usd_max == 600000 * 0.095
+    assert stats["TWD Role"].estimated_annual_usd_max == 1800000 * 0.031
+
+
 def test_uses_the_levels_fyi_average_when_there_is_no_disclosed_range(db_session):
     seed(db_session)
     row = {

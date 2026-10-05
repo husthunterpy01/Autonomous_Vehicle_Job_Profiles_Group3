@@ -127,24 +127,43 @@ def test_salary_filters_and_response_fields(db_session):
         assert estimated["salary_max"] is None
         assert estimated["salary_source"] == "levels_fyi_average"
 
-        # min_salary/max_salary require salary_period: comparing raw
-        # magnitudes across periods/currencies is meaningless (a $30/hour
-        # rate vs a $150,000/year salary), so the API rejects the ambiguous
-        # combination instead of silently mixing them.
-        assert client.get("/jobs", params={"min_salary": 120000}).status_code == 422
-        assert client.get("/jobs", params={"max_salary": 120000}).status_code == 422
+        # salary_min/salary_max (BE-22) filter on each job's annualized,
+        # USD-converted salary, not the raw salary_min/salary_max columns -
+        # no salary_period required, and the comparison is still correct
+        # across the Hourly ($20-40/hr -> $41,600-$83,200/yr) and Estimated
+        # Only (a levels.fyi average, no real range) rows. Overlap
+        # semantics: a job's annualized range must reach the floor and/or
+        # stay under the ceiling. "No Salary" never qualifies for either,
+        # since it has nothing to convert.
+        above_120k = client.get("/jobs", params={"salary_min": 120000}).json()
+        assert {item["title"] for item in above_120k["items"]} == {"Yearly High", "Estimated Only"}
 
-        # With salary_period given, the magnitude comparison stays within
-        # that one bucket - overlap semantics: job's range must reach the
-        # floor and/or stay under the ceiling, among yearly rows only. The
-        # "Estimated Only" job (salary_average, no real range) never
-        # qualifies for either, even though its estimate is >120k - it has
-        # no salary_min/salary_max to compare at all.
-        above_120k = client.get("/jobs", params={"min_salary": 120000, "salary_period": "yearly"}).json()
-        assert {item["title"] for item in above_120k["items"]} == {"Yearly High"}
+        under_120k = client.get("/jobs", params={"salary_max": 120000}).json()
+        assert {item["title"] for item in under_120k["items"]} == {"Yearly Low", "Hourly"}
 
-        under_120k = client.get("/jobs", params={"max_salary": 120000, "salary_period": "yearly"}).json()
-        assert {item["title"] for item in under_120k["items"]} == {"Yearly Low"}
+        # Both bounds together (AND): only Yearly Low's annualized range
+        # ($80k-$100k) overlaps $90k-$110k - Hourly's annualized top end
+        # ($83,200) falls short of the $90k floor.
+        both_bounds = client.get("/jobs", params={"salary_min": 90000, "salary_max": 110000}).json()
+        assert {item["title"] for item in both_bounds["items"]} == {"Yearly Low"}
+
+        # salary_min greater than salary_max is rejected outright.
+        assert (
+            client.get("/jobs", params={"salary_min": 200000, "salary_max": 100000}).status_code
+            == 400
+        )
+
+        # Inclusive at the boundary: Yearly High's own max (200000) still
+        # satisfies a salary_min filter set to exactly that value (Estimated
+        # Only's 251,250 estimate also clears it).
+        at_boundary = client.get("/jobs", params={"salary_min": 200000}).json()
+        assert {item["title"] for item in at_boundary["items"]} == {"Yearly High", "Estimated Only"}
+
+        # Combines with another filter via AND, same as every other filter
+        # on this endpoint - "Estimated Only" also clears the salary bar but
+        # doesn't match the keyword.
+        combined = client.get("/jobs", params={"salary_min": 120000, "q": "Yearly"}).json()
+        assert {item["title"] for item in combined["items"]} == {"Yearly High"}
 
         # salary_period alone doesn't distinguish a real range from an
         # estimate - "Estimated Only" is genuinely period="yearly" too, it
@@ -176,7 +195,41 @@ def test_salary_filters_and_response_fields(db_session):
         estimate_only = client.get("/jobs", params={"has_salary": True, "salary_disclosed": False}).json()
         assert {item["title"] for item in estimate_only["items"]} == {"Estimated Only"}
 
-        assert client.get("/jobs?min_salary=-1").status_code == 422
+        assert client.get("/jobs?salary_min=-1").status_code == 422
+
+
+def test_salary_filter_converts_currency_before_comparing(db_session):
+    # A EUR job's raw numbers look smaller than a USD job's, but at the
+    # service's fixed 1.08 EUR->USD rate its real value is higher -
+    # proves salary_min/salary_max compare annualized USD, not the raw
+    # stored number, regardless of what currency a job was posted in.
+    rows = [
+        {"deduplication_key": "usd-job", "company_name": "Example AV", "job_name": "USD Role", "job_description": "d"},
+        {"deduplication_key": "eur-job", "company_name": "Example AV", "job_name": "EUR Role", "job_description": "d"},
+    ]
+    SilverSync(db_session).run(rows)
+    db_session.commit()
+    import_salary(
+        db_session,
+        [
+            {"deduplication_key": "usd-job", "salary_min": 140000, "salary_max": 150000, "salary_currency": "usd", "salary_period": "yearly", "salary_source": "api"},
+            {"deduplication_key": "eur-job", "salary_min": 95000, "salary_max": 100000, "salary_currency": "eur", "salary_period": "yearly", "salary_source": "api"},
+        ],
+    )
+    db_session.commit()
+
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db_session
+    with TestClient(app) as client:
+        # 100,000 EUR * 1.08 = 108,000 USD - above a 105,000 floor, even
+        # though the raw EUR number (100,000) looks like it's below it.
+        above_105k = client.get("/jobs", params={"salary_min": 105000}).json()
+        assert {item["title"] for item in above_105k["items"]} == {"USD Role", "EUR Role"}
+
+        # Only the USD role's annualized-USD range actually reaches 140k.
+        above_140k = client.get("/jobs", params={"salary_min": 140000}).json()
+        assert {item["title"] for item in above_140k["items"]} == {"USD Role"}
 
 
 def test_sorting_by_posted_date_title_and_company(db_session):

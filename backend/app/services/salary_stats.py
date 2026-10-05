@@ -1,9 +1,10 @@
-from sqlalchemy import case, func, or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.enums.salary_source import SalarySource
 from app.models import Company, JobPosting
 from app.schemas.job import TopPaidJobResponse
+from app.services.salary_conversion import annual_usd_range
 
 # A levels.fyi estimate is company-wide, not job-specific (see
 # salary_sync.py) - every job at a company with no disclosed range gets the
@@ -13,61 +14,16 @@ from app.schemas.job import TopPaidJobResponse
 # per-job and stay uncapped - only estimates are capped, one per company.
 _MAX_ESTIMATE_ONLY_PER_COMPANY = 1
 
-# Annualizes a period-denominated salary using a standard work year (52
-# weeks x 5 days x 8 hours = 2080 hours) - a labor-statistics convention,
-# not a per-company work schedule. Keys match SalaryPeriod's stored values
-# exactly (app/schemas/job.py), so an unrecognized salary_period (there
-# shouldn't be one - salary_sync validates against that same enum) falls
-# through case()'s implicit else_=None rather than raising.
-_PERIOD_TO_ANNUAL_MULTIPLIER = {
-    "yearly": 1,
-    "monthly": 12,
-    "weekly": 52,
-    "daily": 260,
-    "hourly": 2080,
-}
-
-# Static, hand-set approximate USD rates - NOT pulled from a live feed, and
-# not precise to the day. Set 2026-09-25 as rough spot-rate order-of-magnitude
-# figures (a currency's real rate moves; these exist only to rank/compare
-# salaries, not to state an exact conversion). Re-check and update by hand
-# periodically - there is no automatic refresh. Only the 9 currency codes the
-# salary extractor ever recognizes (scrapers/service/silver_cleaning/
-# salary_extractor.py's _CURRENCY_CODES) need an entry here - a job whose
-# salary_currency isn't one of these (e.g. an ATS API returning a currency
-# the extractor never sees) simply falls through case()'s else_=None and is
-# excluded from the ranking, rather than guessed at or left unconverted.
-_CURRENCY_TO_USD_RATE = {
-    "USD": 1.0,
-    "EUR": 1.08,
-    "GBP": 1.27,
-    "JPY": 0.0067,
-    "CAD": 0.73,
-    "AUD": 0.66,
-    "CHF": 1.12,
-    "CNY": 0.14,
-    "INR": 0.012,
-}
-
 
 class SalaryStatsService:
     def __init__(self, db: Session):
         self.db = db
 
     def get_top_paid_jobs(self, limit: int = 10) -> list[TopPaidJobResponse]:
-        # The disclosed range's two ends, or the levels.fyi estimate on both
-        # ends when there's no disclosed range (salary_sync enforces that a
-        # job has a range or an estimate, never both) - so a job with only an
-        # estimate reports the same min and max rather than a fabricated span.
-        min_value = func.coalesce(JobPosting.salary_min, JobPosting.salary_average)
-        max_value = func.coalesce(JobPosting.salary_max, JobPosting.salary_average)
-        period_multiplier = case(_PERIOD_TO_ANNUAL_MULTIPLIER, value=JobPosting.salary_period)
-        currency_rate = case(_CURRENCY_TO_USD_RATE, value=JobPosting.salary_currency)
-        # NULL whenever the period or currency isn't one of the known keys
-        # above, which also drops a job with no salary at all (min/max_value
-        # NULL) - one condition covers every "can't rank this" case.
-        estimated_annual_usd_min = min_value * period_multiplier * currency_rate
-        estimated_annual_usd_max = max_value * period_multiplier * currency_rate
+        # NULL whenever the job has no salary at all, or its period/currency
+        # isn't one of annual_usd_range()'s recognized keys - one condition
+        # covers every "can't rank this" case.
+        estimated_annual_usd_min, estimated_annual_usd_max = annual_usd_range()
 
         # Ranks each company's levels.fyi estimate-only jobs against each
         # other so the per-company cap can be applied inside SQL, before

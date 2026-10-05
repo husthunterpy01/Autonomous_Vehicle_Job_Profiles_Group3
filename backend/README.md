@@ -418,9 +418,35 @@ return `404`, inconsistent category groups return `400`, invalid input returns
 `503`.
 
 The normal-load regression test exercises a 100-row page with a two-second
-local/CI budget and a fixed maximum of six `SELECT` statements. Filter indexes
-live only in `app/sql/be19_job_details_migration.sql`, matching the project's
-migration-owned schema policy.
+local/CI budget and a fixed maximum of six `SELECT` statements. Most filter
+indexes live in `app/sql/be19_job_details_migration.sql`; the
+`salary_min`/`salary_max` filter (see "Job search salary filter" below) has
+none, since it runs on a computed expression rather than a column a plain
+index could serve.
+
+## Job search salary filter (BE-22)
+
+`GET /api/v1/jobs` accepts optional `salary_min`/`salary_max` query
+parameters, e.g. `GET /jobs?salary_min=60000&salary_max=100000`. Either can
+be given alone or both together; a job matches when its own salary range
+overlaps the requested one. Both are **annual USD figures** - every job's
+disclosed range (or its levels.fyi estimate, if it has no disclosed range)
+is annualized and currency-converted before comparing, using the same
+static rate table `SalaryStatsService` uses for Top Paid Jobs
+(`app/services/salary_conversion.py`), not the raw `salary_min`/`salary_max`
+columns directly. That means the filter works correctly regardless of
+whether a given job was posted hourly, in another currency, or as an
+estimate-only levels.fyi figure - a caller never needs to know or specify a
+job's original pay period or currency. A job with no salary at all is
+excluded by either bound. `salary_min` greater than `salary_max` returns
+`400`.
+
+No migration to apply - the filter needs no schema change. `salary_min`/
+`salary_max` are not indexed: the filter compares a computed expression
+(annualized, currency-converted), not these raw columns directly, so a
+plain index on them wouldn't be used by this query. Revisit with a
+Postgres expression index matching that exact formula if this ever needs
+to scale past a full table scan.
 
 The Silver sync currently maps the complete scraped advertisement into
 `raw_description`; it does not extract a separate requirements section. The
