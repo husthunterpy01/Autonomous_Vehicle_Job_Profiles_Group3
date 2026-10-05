@@ -18,15 +18,21 @@ _PERIOD_TO_ANNUAL_MULTIPLIER = {
 }
 
 # Static, hand-set approximate USD rates - NOT pulled from a live feed, and
-# not precise to the day. Set 2026-09-25 as rough spot-rate order-of-magnitude
-# figures (a currency's real rate moves; these exist only to rank/compare/
-# filter salaries, not to state an exact conversion). Re-check and update by
-# hand periodically - there is no automatic refresh. Only the 9 currency
-# codes the salary extractor ever recognizes (scrapers/service/
-# silver_cleaning/salary_extractor.py's _CURRENCY_CODES) need an entry here -
-# a job whose salary_currency isn't one of these (e.g. an ATS API returning a
-# currency the extractor never sees) simply falls through case()'s
-# else_=None and is excluded, rather than guessed at or left unconverted.
+# not precise to the day; rough spot-rate order-of-magnitude figures (a
+# currency's real rate moves; these exist only to rank/compare/filter
+# salaries, not to state an exact conversion). Re-check and update by hand
+# periodically - there is no automatic refresh.
+#
+# There's no fixed closed set of currencies this needs to cover: the regex
+# extractor (scrapers/service/silver_cleaning/salary_extractor.py's
+# _CURRENCY_CODES) only ever produces one of its own recognized codes, but
+# an API-sourced job (salary_source="api") carries whatever currency the
+# source reports - salary_sync.py accepts any non-empty string, it isn't
+# validated against the extractor's set at all. A real SEK job showed up
+# this way despite SEK being in neither list below. A currency missing from
+# this table is silently excluded from ranking/filtering rather than
+# guessed at (case()'s else_=None) - expand it by hand whenever a new one
+# turns up in real data, same as SEK just did here.
 _CURRENCY_TO_USD_RATE = {
     "USD": 1.0,
     "EUR": 1.08,
@@ -37,6 +43,15 @@ _CURRENCY_TO_USD_RATE = {
     "CHF": 1.12,
     "CNY": 0.14,
     "INR": 0.012,
+    # Below: recognized by the regex extractor's _CURRENCY_CODES but were
+    # missing an entry here (so a real extracted job in one of these would
+    # have been silently excluded the same way SEK was).
+    "TWD": 0.031,
+    "KRW": 0.00072,
+    "SGD": 0.75,
+    "HKD": 0.13,
+    # Seen in real API-sourced data, not in the extractor's own set.
+    "SEK": 0.095,
 }
 
 
