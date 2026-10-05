@@ -337,10 +337,9 @@ return `404`, inconsistent category groups return `400`, invalid input returns
 The normal-load regression test exercises a 100-row page with a two-second
 local/CI budget and a fixed maximum of six `SELECT` statements. Most filter
 indexes live in `app/sql/be19_job_details_migration.sql`; the
-`salary_min`/`salary_max` filter's indexes live in
-`app/sql/be22_salary_filter_index_migration.sql` instead (see "Job search
-salary filter" below) - both match the project's migration-owned schema
-policy.
+`salary_min`/`salary_max` filter (see "Job search salary filter" below) has
+none, since it runs on a computed expression rather than a column a plain
+index could serve.
 
 ## Job search salary filter (BE-22)
 
@@ -359,12 +358,12 @@ job's original pay period or currency. A job with no salary at all is
 excluded by either bound. `salary_min` greater than `salary_max` returns
 `400`.
 
-Apply the repeatable migration to an existing backend database so the
-filter is indexed:
-
-```bash
-psql "$DATABASE_URL" -f app/sql/be22_salary_filter_index_migration.sql
-```
+No migration to apply - the filter needs no schema change. `salary_min`/
+`salary_max` are not indexed: the filter compares a computed expression
+(annualized, currency-converted), not these raw columns directly, so a
+plain index on them wouldn't be used by this query. Revisit with a
+Postgres expression index matching that exact formula if this ever needs
+to scale past a full table scan.
 
 The Silver sync currently maps the complete scraped advertisement into
 `raw_description`; it does not extract a separate requirements section. The
