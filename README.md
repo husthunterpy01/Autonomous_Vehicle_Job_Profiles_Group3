@@ -1,9 +1,50 @@
 # Autonomous Vehicle Job Profiles
 
+> **What is the autonomous vehicle industry hiring for, and which skills should students learn next?**
+
 CITS5206 Capstone Project (UWA), Group 3.
+
+We collect public job ads from AV employers, clean and classify them with an LLM, and turn them into a searchable job board and skill-trend dashboard.
+
+## Highlights
+
+- 🔎 **Search every AV job in one place**, with filters such as salary range and country
+- 📈 **See skill demand over time**, including tools, languages and qualifications
+- 🧠 **LLM-assisted classification** finds AV roles, including adjacent ones that never say "autonomous"
+- 🔗 **Every job links back to its original posting** so results are easy to verify
+- 🗄️ **Bronze → silver → gold pipeline** keeps raw payloads, cleaned data and analytics separate
+
+## How It Works
+
+```
+Public ATS APIs ──► Scrapers ──► MinIO (bronze) ──► Cleaning + LLM (silver) ──► dbt (gold)
+                                                                                    │
+                                          Next.js frontend ◄── FastAPI ◄── PostgreSQL
+```
+
+| Layer | Tools |
+| --- | --- |
+| Ingest | Python, Greenhouse / Lever / Ashby / SmartRecruiters APIs |
+| Storage | MinIO (Parquet), PostgreSQL, Supabase mirror |
+| Processing | dbt, Groq LLM |
+| API | FastAPI |
+| Web | Next.js, React, TypeScript, Tailwind CSS |
+| Ops | Docker Compose, GitHub Actions, Vercel |
+
+## Quick Start
+
+```bash
+cp .env.sample .env        # fill in the required values
+docker compose up --build  # frontend on :3000, API on :8000
+```
+
+For local development without Docker, see the [Frontend](#frontend), [Backend](#backend) and [Scrapers](#scrapers) sections.
 
 ## Table of Contents
 
+- [Highlights](#highlights)
+- [How It Works](#how-it-works)
+- [Quick Start](#quick-start)
 - [Problem](#problem)
 - [Architecture](#architecture)
   - [Project Structure](#project-structure)
