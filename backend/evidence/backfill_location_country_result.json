@@ -1,0 +1,10 @@
+{
+  "locations_scanned": 554,
+  "resolved": 553,
+  "unresolved": [
+    {
+      "location_id": "fe07503f-deec-4167-9594-e50aea44f82c",
+      "name": "Remote"
+    }
+  ]
+}

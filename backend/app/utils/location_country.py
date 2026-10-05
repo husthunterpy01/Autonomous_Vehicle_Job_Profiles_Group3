@@ -60,6 +60,8 @@ _COUNTRY_NAMES = {
     "Indonesia": ["indonesia"],
     "Saudi Arabia": ["saudi arabia"],
     "Qatar": ["qatar"],
+    "Armenia": ["armenia"],
+    "Peru": ["peru"],
 }
 
 # Upper-case only, so "us" or "uk" inside ordinary words never counts.
@@ -72,13 +74,25 @@ _CITIES = {
         "foster city", "fremont", "detroit", "ann arbor", "austin", "pittsburgh", "boston", "dallas",
         "san antonio", "fort worth", "houston", "blacksburg", "novi", "pontiac", "milford", "warren",
         "phoenix", "san diego", "poway", "kirkland", "seattle", "los angeles", "las vegas", "new york",
-        "allen park", "greenville", "bay area", "chicago",
+        "allen park", "greenville", "bay area", "chicago", "odessa",
+        # Entity names, not places, but the only location signal these ATS
+        # labels carry - both are real, verifiable US companies/facilities.
+        "general motors", "gm global technical center",
     ],
-    "United Kingdom": ["london", "oxford"],
+    # "oxford" deliberately excluded: Oxford, Mississippi is a real US town,
+    # and an unconditional city match made "Oxford, Mississippi" resolve to
+    # {United Kingdom, United States} (ambiguous -> None) instead of just
+    # United States from the state name. Every actual UK-Oxford label in
+    # this dataset also carries an explicit "UK"/"United Kingdom" token, so
+    # dropping the city-only signal loses nothing for those.
+    "United Kingdom": ["london"],
     "Canada": ["toronto", "markham", "vancouver", "waterloo", "montreal"],
     "Japan": ["tokyo", "osaka", "nagoya"],
     "Israel": ["tel aviv", "jerusalem", "haifa", "ramat gan", "petah tikva", "yokneam", "herzliya"],
-    "Germany": ["munich", "münchen", "stuttgart", "berlin", "ingolstadt", "böblingen", "boeblingen"],
+    "Germany": [
+        "munich", "münchen", "stuttgart", "berlin", "ingolstadt", "böblingen", "boeblingen",
+        "neunburg vorm wald",
+    ],
     "Sweden": ["gothenburg", "stockholm"],
     "Poland": ["warsaw", "krakow"],
     "Hungary": ["budapest"],

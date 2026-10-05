@@ -6,6 +6,12 @@ CITS5206 Capstone Project (UWA), Group 3.
 
 We collect public job ads from AV employers, clean and classify them with an LLM, and turn them into a searchable job board and skill-trend dashboard.
 
+![AV Job Finder homepage](media/homepage.png)
+
+![Top skills in demand over time](media/skill_trends.png)
+
+*Market Trends page: monthly count of job postings that list each skill.*
+
 ## Highlights
 
 - 🔎 **Search every AV job in one place**, with filters such as salary range and country
@@ -51,6 +57,7 @@ For local development without Docker, see the [Frontend](#frontend), [Backend](#
 - [Frontend](#frontend)
 - [Backend](#backend)
 - [Scrapers](#scrapers)
+- [Support](#support)
 
 ## Problem
 
@@ -367,6 +374,33 @@ collect applicant information.
 Run all scraper commands from the **repository root**. YAML paths and
 `load_dotenv()` are relative to the current working directory.
 
+### Job posting handling flow
+
+![Job posting handling flow](./media/jobposting_handling.drawio.svg)
+
+Each scraped posting fans out into three independent branches instead of
+passing through one long chain:
+
+| Branch | Steps | Output |
+|---|---|---|
+| Salary | Salary API + HTML extraction | Silver layer (backend ERD) |
+| Classification | Regex pre-filter → few-shot classifier → hand-off of AV jobs → LLM + regex category definition | Silver layer (backend ERD) |
+| Skills | Regex skill extraction | Extracted skills → star schema (gold layer) |
+
+Why this design:
+
+- **Cheap, deterministic steps first.** The regex pre-filter and few-shot
+  classifier drop clearly non-AV roles before the LLM sees them, so only the
+  hand-off set pays for LLM calls (see
+  [Pre-filter jobs before LLM classification](#pre-filter-jobs-before-llm-classification)).
+- **LLM and regex together for categories.** The LLM handles ambiguous titles;
+  regex rules keep the category taxonomy consistent and auditable.
+- **Independent branches.** Salary, classification and skills do not depend on
+  each other, so one failing (for example an LLM provider outage) does not block
+  the others, and each can be re-run or tuned on its own.
+- **Skills use regex, not the LLM.** Skill matching is a fixed vocabulary
+  lookup, which is repeatable and free to re-run over the whole bronze history.
+
 ### Requirements
 
 - Python 3.10+
@@ -458,6 +492,8 @@ skipped. Raw payloads are stored as:
 Browse them in the MinIO console at
 [http://localhost:9001](http://localhost:9001) under the `scraped-jobs` bucket.
 
+![MinIO console showing bronze Parquet objects](./media/minio_bronze_sample.png)
+
 ### Pre-filter jobs before LLM classification
 
 Run the deterministic pre-filter on a CSV, JSON array, or JSON Lines export of
@@ -502,6 +538,59 @@ The existing notebook Groq model and API-key configuration remain unchanged.
 Only `llm_jobs_df` should be passed to the model. The LLM adapter can be changed
 later without changing or losing the pre-filter audit trail.
 
+### How the scraped data shapes the design
+
+<details>
+<summary>From messy source payloads to the bronze / silver / gold layers</summary>
+
+| What the scraped data looks like | Design decision |
+|---|---|
+| 38 enabled companies on different sources: 30 ATS APIs, 7 HTML pages and 1 XML feed, each with its own JSON or markup | Store every raw payload untouched in MinIO and `bronze.raw_responses` (JSONB), then parse it with one dbt model per source |
+| Fields are inconsistent or missing across sources (salary, location, description) | Keep optional fields nullable and normalise only in the silver layer, so raw evidence is never lost |
+| Some list pages have no description | `RawFetch` also fetches each job's detail page and embeds it in the bronze payload |
+| The row id is a volatile `row_number()` between runs | Use `job_id`, the ATS-native posting id (falling back to the URL, then a content hash), for joins and cross-run comparison |
+| Descriptions are free text with no structured skills or category | Run regex skill extraction on the cleaned text, and use the pre-filter, classifier and LLM for AV relevance and category |
+| Salary appears in structured API fields for some sources and only in text for others | Run salary as its own branch, so it can be re-run or tuned independently |
+
+Because the bronze layer keeps the raw responses, any parser, classifier or skill list can be changed and re-run over the whole history without scraping again.
+
+</details>
+
+### Why this classifier
+
+<details>
+<summary>Model comparison: frozen embedding vs SetFit</summary>
+
+Both were tested on the same Groq-labelled seed set (202 AV / 197 non-AV, stratified 80/20 split).
+
+![Train vs test accuracy: frozen MiniLM embedding + logistic regression vs SetFit](media/model_comparison.png)
+
+- **Frozen MiniLM + logistic regression** trains and tests close together (about 80% train, 77% test), so it generalises steadily.
+- **SetFit** reaches 100% train accuracy almost immediately, while test accuracy peaks near 84% and then falls to 78-80%. It overfits on a seed set this small.
+
+</details>
+
+### Why not a full deep learning model
+
+<details>
+<summary>Project scale and why we went few-shot</summary>
+
+Training a deep model end to end needs thousands of labelled examples. Our scale is much smaller:
+
+| Factor | Our project |
+|---|---|
+| Labelled data | 399 Groq-labelled postings (319 train / 80 test) |
+| Sources | 38 enabled companies |
+| Postings in the database | about 5,400 |
+| Labelling cost | LLM labels cost money per call, so labelling thousands of postings was not practical |
+
+- **Too few labels for end-to-end training.** A large network fitted on about 400 examples memorises them. SetFit already shows this: 100% train accuracy but a test curve that peaks and then drops.
+- **Few-shot reuses a pretrained encoder.** MiniLM already understands language, so a small classifier head (or a short contrastive fine-tune) is enough to separate AV from non-AV roles.
+- **The classifier is a cheap first gate.** It drops clearly non-AV roles so the LLM only sees the hand-off set, which keeps LLM cost down as more companies are added.
+- **Easy to re-run.** A frozen embedding plus logistic regression fits in seconds, so the model can be retrained whenever the seed set grows.
+
+</details>
+
 ### Run tests
 
 From the repository root:
@@ -509,3 +598,7 @@ From the repository root:
 ```bash
 python3 -m pytest scrapers/tests/unit_test scrapers/tests/integration_test -v
 ```
+
+## Support
+
+If you find this project useful, please consider giving it a ⭐ on [GitHub](https://github.com/husthunterpy01/Autonomous_Vehicle_Job_Profiles_Group3). Every star is a free donation that helps the project get noticed and keeps us motivated.
