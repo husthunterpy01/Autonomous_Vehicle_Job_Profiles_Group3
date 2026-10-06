@@ -79,9 +79,10 @@ def list_jobs(
     category_id: UUID | None = None,
     company_id: UUID | None = None,
     employment_type: int | None = Query(None, ge=1, le=6),
-    seniority_level: SeniorityLevel | None = Query(
-        None, description="1 junior, 2 mid, 3 senior, 4 principal, 5 lead, 6 manager, 7 director, 8 ceo, 9 other."
-    ),
+    seniority_level: Annotated[
+        SeniorityLevel | None,
+        Query(description="1 junior, 2 mid, 3 senior, 4 principal, 5 lead, 6 manager, 7 director, 8 ceo, 9 other."),
+    ] = None,
     salary_min: float | None = Query(
         None, ge=0, description="Annual USD equivalent - converted/annualized server-side (BE-22)."
     ),
