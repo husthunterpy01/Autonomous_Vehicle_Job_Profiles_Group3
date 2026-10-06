@@ -38,5 +38,6 @@ select
     null::numeric as salary_min,
     null::numeric as salary_max,
     null::text as salary_currency,
-    null::text as salary_period
+    null::text as salary_period,
+    null::text as department
 from postings

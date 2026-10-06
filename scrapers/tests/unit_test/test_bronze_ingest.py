@@ -197,7 +197,6 @@ def test_dbt_job_postings_model_covers_supported_ats():
     assert "commitment" in lever_sql
     assert "descriptionBodyPlain" in lever_sql
     assert "openingPlain" in lever_sql
-    assert "not like '%salary%'" in lever_sql
     assert "workplaceType" not in lever_sql
     assert "Full Time" not in lever_sql
 

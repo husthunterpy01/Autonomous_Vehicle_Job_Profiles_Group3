@@ -23,6 +23,7 @@ unit_tests:
             null::numeric as salary_max,
             null::text as salary_currency,
             null::text as salary_period,
+            'Engineering'::text as department,
             '2026-09-01T01:00:00Z'::timestamptz as ingested_at
           union all
           select
@@ -41,6 +42,7 @@ unit_tests:
             155000::numeric,
             'USD'::text,
             'yearly'::text,
+            '  Autonomy   Software '::text,
             '2026-09-02T01:00:00Z'::timestamptz
           union all
           select
@@ -57,6 +59,7 @@ unit_tests:
             null::text,
             null::numeric,
             null::numeric,
+            null::text,
             null::text,
             null::text,
             '2026-09-02T01:00:00Z'::timestamptz
@@ -77,6 +80,7 @@ unit_tests:
             null::numeric,
             null::text,
             null::text,
+            null::text,
             '2026-09-02T01:00:00Z'::timestamptz
           union all
           select
@@ -93,6 +97,7 @@ unit_tests:
             'Contractor'::text,
             null::numeric,
             null::numeric,
+            null::text,
             null::text,
             null::text,
             '2026-09-01T01:00:00Z'::timestamptz
@@ -113,6 +118,7 @@ unit_tests:
             null::numeric,
             null::text,
             null::text,
+            null::text,
             '2026-09-03T01:00:00Z'::timestamptz
     expect:
       rows:
@@ -126,6 +132,7 @@ unit_tests:
           salary_max: 155000
           salary_currency: USD
           salary_period: yearly
+          department: Autonomy Software
         # No employment type in the source: defaulted to full-time.
         - bronze_id: "4"
           source_job_id: job-789
@@ -137,6 +144,7 @@ unit_tests:
           salary_max: null
           salary_currency: null
           salary_period: null
+          department: null
         # The older duplicate states "Contractor"; the default must not make
         # the newer, unstated duplicate look equally complete and win.
         - bronze_id: "5"
@@ -149,3 +157,4 @@ unit_tests:
           salary_max: null
           salary_currency: null
           salary_period: null
+          department: null

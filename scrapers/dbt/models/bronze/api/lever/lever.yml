@@ -123,3 +123,20 @@ unit_tests:
       rows:
         - job_name: Research Engineer, World Models
           location: "Toronto | San Francisco | Pittsburgh"
+
+  - name: lever_maps_department
+    model: lever
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'lever'::text as source_system,
+            'Zoox'::text as company_name,
+            'US'::text as headquarter,
+            $json$[{"text":"Engineer","descriptionPlain":"Build.","categories":{"location":"Foster City","department":" Engineering "},"createdAt":1690000000000,"hostedUrl":"https://jobs.lever.co/zoox/abc"}]$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Engineer
+          department: Engineering

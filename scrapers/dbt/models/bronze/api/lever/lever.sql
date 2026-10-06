@@ -42,7 +42,8 @@ select
         when job->'salaryRange'->>'interval' ilike '%day%' then 'daily'
         when job->'salaryRange'->>'interval' ilike '%hour%' then 'hourly'
         else null
-    end as salary_period
+    end as salary_period,
+    nullif(btrim(job->'categories'->>'department'), '') as department
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(
     case

@@ -25,7 +25,8 @@ select
     null::numeric as salary_min,
     null::numeric as salary_max,
     null::text as salary_currency,
-    null::text as salary_period
+    null::text as salary_period,
+    nullif(btrim(job->>'department'), '') as department
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
 where src.source = 'api'
