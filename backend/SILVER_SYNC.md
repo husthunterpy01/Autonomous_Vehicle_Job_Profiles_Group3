@@ -51,7 +51,7 @@ Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
-Seniority is not inferred. Salary (`salary_min`/`salary_max`/`salary_average`/
+Seniority is inferred from the title (`app/utils/seniority.py`) during sync. Salary (`salary_min`/`salary_max`/`salary_average`/
 `salary_currency`/`salary_period`/`salary_source`; model, decisions and migrations
 in `document/erd-job-categorizing/README.md`) is populated separately via `python -m
 app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of

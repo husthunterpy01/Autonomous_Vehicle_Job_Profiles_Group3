@@ -282,3 +282,24 @@ def test_sorting_by_posted_date_title_and_company(db_session):
         assert first + second == titles(sort="title")
         assert client.get("/jobs", params={"sort": "salary"}).status_code == 422
         assert client.get("/jobs", params={"sort": "title", "direction": "sideways"}).status_code == 422
+
+
+def test_seniority_level_filter_and_response_fields(db_session):
+    rows = [
+        {"deduplication_key": str(i), "company_name": "Example AV", "job_name": title, "job_description": "Autonomy", "locations": ["Remote"]}
+        for i, title in enumerate(["Senior Engineer", "Staff Engineer", "Perception Engineer"])
+    ]
+    SilverSync(db_session).run(rows)
+    db_session.commit()
+    app = FastAPI()
+    app.include_router(router)
+    app.dependency_overrides[get_db] = lambda: db_session
+    with TestClient(app) as client:
+        senior = client.get("/jobs", params={"seniority_level": 3}).json()
+        assert [item["title"] for item in senior["items"]] == ["Senior Engineer"]
+        assert senior["items"][0]["seniority_level"] == 3
+        assert client.get("/jobs", params={"seniority_level": 4}).json()["items"][0]["title"] == "Staff Engineer"
+        assert client.get("/jobs").json()["total"] == 3
+        assert client.get("/jobs", params={"seniority_level": 10}).status_code == 422
+        detail = client.get("/jobs/" + senior["items"][0]["job_id"]).json()
+        assert detail["seniority_level"] == 3

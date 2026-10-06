@@ -85,6 +85,7 @@ class JobResponse(BaseModel):
     locations: list[str]
     skills: list[str]
     employment_type: int | None
+    seniority_level: int | None
     # None on a list response (to_response(include_body=False) never fetched
     # the body) vs "" for a job whose description really is empty - the two
     # are not the same thing, and collapsing them lost that distinction.
@@ -103,7 +104,6 @@ class JobDetailResponse(JobResponse):
     """Full public representation returned for one job."""
 
     department: str | None
-    seniority_level: int | None
     requirements: str | None
     source_platform: str | None
     source_job_id: str | None
