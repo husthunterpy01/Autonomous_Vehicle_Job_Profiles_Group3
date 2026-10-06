@@ -51,7 +51,7 @@ Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
-Seniority is inferred from the title (`app/utils/seniority.py`) during sync. Salary (`salary_min`/`salary_max`/`salary_average`/
+Seniority is inferred from the title (`app/utils/seniority.py`) during sync, so every job gets a `seniority_level`. Salary (`salary_min`/`salary_max`/`salary_average`/
 `salary_currency`/`salary_period`/`salary_source`; model, decisions and migrations
 in `document/erd-job-categorizing/README.md`) is populated separately via `python -m
 app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of
@@ -334,3 +334,42 @@ never reads scrapers/.env. CI supplies the dedicated URL and enables the test.
 The test creates and removes only a uniquely named schema. It verifies repeated
 migration, preservation of legacy company/job rows, Text column type, and a real
 Silver sync with more than 255 characters of locations. Public tables are untouched.
+
+## Seniority level
+
+`jobposting.seniority_level` is derived from the job title during `sync_silver`; none of the sources
+we scrape gives a level we can map reliably (see "Limits" below). The rules live in
+`app/utils/seniority.py` and are checked in this order, so the highest rank in a title wins:
+
+| Level | Value | Title contains |
+|---|---|---|
+| CEO | 8 | chief, CEO, CTO, COO, CFO, founder |
+| Director | 7 | director, VP, vice president, head of |
+| Manager | 6 | manager |
+| Principal | 4 | principal, staff, distinguished, fellow |
+| Lead | 5 | lead, leader |
+| Senior | 3 | senior, sr, III, IV |
+| Junior | 1 | junior, jr, intern, graduate, entry level, new grad, apprentice, trainee, co-op |
+| Mid | 2 | none of the above (default) |
+
+"Senior Engineering Manager" is therefore Manager, and "Senior / Staff Software Engineer" is Principal.
+
+**Default level.** A title with no level word is stored as **Mid (2)**, not NULL. This is an assumption,
+not something the posting states: an unmarked engineering title ("Perception Engineer") is treated as
+the middle of the ladder so that every job has a value and the `seniority_level` filter can be used on
+all of them. At the last measurement about 37% of the jobs on Supabase (453 of 1,229) were Mid for
+this reason only. Consequences:
+
+- `seniority_level=2` returns jobs whose title says nothing about level as well as genuine mid-level
+  roles. It cannot tell the two apart.
+- The Junior, Senior, Principal, Lead, Manager, Director and CEO values are only set when the title
+  states them, so those are reliable. Mid is the only value that can be a guess.
+- Deliverable 1 (section 2.7) says seniority is not inferred. Storing Mid by default goes beyond that;
+  the team chose to keep it, and this section is the record of that decision.
+
+To store NULL for unmarked titles instead, return `None` from `infer_seniority` when no rule matches,
+make `SilverSync` write that value, and re-run the sync. Existing rows keep their old value until then.
+
+**Limits.** Only a few sources state a level themselves (Personio `<seniority>`, SmartRecruiters
+`experienceLevel`, Comeet `experience_level`). They cover very few jobs and use different vocabularies,
+so they are not read; the title rules apply to every source.

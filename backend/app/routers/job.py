@@ -81,7 +81,13 @@ def list_jobs(
     employment_type: int | None = Query(None, ge=1, le=6),
     seniority_level: Annotated[
         SeniorityLevel | None,
-        Query(description="1 junior, 2 mid, 3 senior, 4 principal, 5 lead, 6 manager, 7 director, 8 ceo, 9 other."),
+        Query(
+            description=(
+                "Inferred from the job title: 1 junior, 2 mid, 3 senior, 4 principal, 5 lead, 6 manager, "
+                "7 director, 8 ceo, 9 other. A title with no level word is stored as 2 (mid), so 2 also "
+                "matches jobs whose level is not stated."
+            )
+        ),
     ] = None,
     salary_min: float | None = Query(
         None, ge=0, description="Annual USD equivalent - converted/annualized server-side (BE-22)."
