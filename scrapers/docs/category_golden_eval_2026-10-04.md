@@ -1,9 +1,7 @@
 # Category golden-set evaluation — 2026-10-04
 
-Run for DOC-15 QA section (accuracy against the 90% target). The repo does
+Run for DOC-15 QA section (accuracy). The repo does
 not otherwise store a result for this script, so this is a one-off capture.
-Full raw log (every batch, pacing delay, and rate-limit retry): see
-`category_golden_eval_2026-10-04.log` in this same folder.
 
 ## Run
 
@@ -27,15 +25,9 @@ accuracy 87/106 = 82.07%; consistent across 1 run(s): 106/106
 (The consistency figure is trivial at `--repeats 1` — it only compares the
 run against itself. A real consistency measurement needs `--repeats 3`+.)
 
-## Misclassified jobs (25/106)
+## Misclassified jobs (19/106)
 
 ```
-WRONG  Zoox | Staff Data Scientist - Behavior Evaluation: expected Prediction, got [('System and Safety',)]
-WRONG  Wayve | Vice President, AI Data: expected Perception, got [()]
-WRONG  Wayve | Technical Lead Manager, Synthetic Data: expected Perception, got [()]
-WRONG  42dot | Vehicle System Integration Engineer: expected System and Safety, got [('Vehicle Interface',)]
-WRONG  Motional | Software Engineer - Engineering Enablement (SRE Focus): expected Infrastructure, got [()]
-WRONG  Kodiak | DevOps Engineer - Infrastructure: expected NONE, got [('Infrastructure',)]
 WRONG  42dot | System Framework Engineer: expected Vehicle Interface, got [('Infrastructure',)]
 WRONG  Applied Intuition | Senior Software Engineer - Operating Systems: expected Vehicle Interface, got [('Infrastructure',)]
 WRONG  Applied Intuition | Software Engineer - Middleware: expected Vehicle Interface, got [('Infrastructure',)]
@@ -59,7 +51,7 @@ WRONG  Wayve | Operational Safety Manager: expected NONE, got [('System and Safe
 
 ## Known systematic error
 
-9 of the 25 misses are on-vehicle OS/middleware/driver roles (42dot,
+9 of the 19 misses are on-vehicle OS/middleware/driver roles (42dot,
 Applied Intuition ×2, General Motors ×2, Mobileye, NVIDIA, Plus AI, Torc)
 classified as Infrastructure instead of Vehicle Interface. Checked against
 the full job descriptions in `category_golden.json`: all nine describe

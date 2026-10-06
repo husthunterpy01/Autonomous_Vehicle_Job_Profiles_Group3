@@ -581,7 +581,7 @@ Training a deep model end to end needs thousands of labelled examples. Our scale
 |---|---|
 | Labelled data | 399 Groq-labelled postings (319 train / 80 test) |
 | Sources | 38 enabled companies |
-| Postings in the database | about 5,400 |
+| Postings | ~5,400 scraped; 1,229 AV postings shown on the platform |
 | Labelling cost | LLM labels cost money per call, so labelling thousands of postings was not practical |
 
 - **Too few labels for end-to-end training.** A large network fitted on about 400 examples memorises them. SetFit already shows this: 100% train accuracy but a test curve that peaks and then drops.
