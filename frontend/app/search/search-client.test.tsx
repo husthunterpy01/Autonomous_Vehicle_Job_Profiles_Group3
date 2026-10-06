@@ -212,3 +212,117 @@ describe("country filter", () => {
     });
   });
 });
+
+describe("salary filter", () => {
+  it("strips non-digit characters as the user types, before Apply", () => {
+    render(<SearchClient />);
+
+    fireEvent.change(screen.getByLabelText("Min salary (USD/yr)"), {
+      target: { value: "$60,000.50" },
+    });
+
+    expect(screen.getByLabelText("Min salary (USD/yr)")).toHaveProperty(
+      "value",
+      "6000050",
+    );
+  });
+
+  it("only takes effect on Apply, same as category and country", async () => {
+    render(<SearchClient />);
+    const apply = screen.getByRole("button", { name: "Apply" });
+    expect(apply).toHaveProperty("disabled", true);
+
+    fireEvent.change(screen.getByLabelText("Min salary (USD/yr)"), {
+      target: { value: "60000" },
+    });
+    fireEvent.change(screen.getByLabelText("Max salary (USD/yr)"), {
+      target: { value: "100000" },
+    });
+    expect(apply).toHaveProperty("disabled", false);
+    expect(mocks.getJobs).not.toHaveBeenCalledWith(
+      expect.objectContaining({ salary_min: 60000 }),
+      expect.any(AbortSignal),
+    );
+
+    fireEvent.click(apply);
+
+    await waitFor(() => {
+      expect(mocks.getJobs).toHaveBeenCalledWith(
+        expect.objectContaining({ salary_min: 60000, salary_max: 100000 }),
+        expect.any(AbortSignal),
+      );
+    });
+    expect(mocks.replace).toHaveBeenCalledWith(
+      "/search?salary_min=60000&salary_max=100000",
+    );
+  });
+
+  it("shows an inline error and disables Apply when min > max, before it's ever submitted", () => {
+    render(<SearchClient />);
+    mocks.getJobs.mockClear();
+
+    fireEvent.change(screen.getByLabelText("Min salary (USD/yr)"), {
+      target: { value: "100000" },
+    });
+    fireEvent.change(screen.getByLabelText("Max salary (USD/yr)"), {
+      target: { value: "60000" },
+    });
+
+    screen.getByText("Minimum salary must not be greater than the maximum.");
+    expect(screen.getByRole("button", { name: "Apply" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+    expect(mocks.getJobs).not.toHaveBeenCalled();
+  });
+
+  it("Clear in the filter row resets the salary draft too", async () => {
+    mocks.search = "salary_min=60000&salary_max=100000";
+
+    render(<SearchClient />);
+    await screen.findByRole("option", { name: "Japan (5)" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(screen.getByLabelText("Min salary (USD/yr)")).toHaveProperty(
+      "value",
+      "",
+    );
+    expect(screen.getByLabelText("Max salary (USD/yr)")).toHaveProperty(
+      "value",
+      "",
+    );
+    expect(mocks.replace).toHaveBeenLastCalledWith("/search");
+  });
+
+  it("shows a removable chip for an active salary filter, which clears it", () => {
+    mocks.search = "salary_min=60000&salary_max=100000";
+
+    render(<SearchClient />);
+
+    // Throws if the chip text isn't rendered.
+    screen.getByText("Salary: US$60,000 - US$100,000");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove salary filter" }),
+    );
+
+    expect(screen.getByLabelText("Min salary (USD/yr)")).toHaveProperty(
+      "value",
+      "",
+    );
+    expect(screen.getByLabelText("Max salary (USD/yr)")).toHaveProperty(
+      "value",
+      "",
+    );
+    expect(mocks.replace).toHaveBeenCalledWith("/search");
+  });
+
+  it("shows a salary-specific empty state when the filter excludes every job", async () => {
+    mocks.search = "salary_min=500000";
+
+    render(<SearchClient />);
+
+    // Throws if the empty-state text isn't rendered.
+    await screen.findByText("No jobs match your salary range");
+  });
+});

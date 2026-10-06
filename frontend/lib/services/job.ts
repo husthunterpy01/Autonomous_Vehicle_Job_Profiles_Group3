@@ -103,6 +103,11 @@ export function getJobs(
     company_id?: string;
     /** Only jobs whose employer published a salary range (no estimates). */
     salary_disclosed?: boolean;
+    /** Annual USD bounds (FE-22) - the backend converts/annualizes each
+     *  job's salary before comparing (BE-22), so these mean "around this
+     *  much a year" regardless of a job's actual currency or pay period. */
+    salary_min?: number;
+    salary_max?: number;
     sort?: JobSort;
     page?: number;
     page_size?: number;
@@ -116,6 +121,10 @@ export function getJobs(
   if (params.company_id) search.set("company_id", params.company_id);
   if (params.salary_disclosed !== undefined)
     search.set("salary_disclosed", String(params.salary_disclosed));
+  if (params.salary_min !== undefined)
+    search.set("salary_min", String(params.salary_min));
+  if (params.salary_max !== undefined)
+    search.set("salary_max", String(params.salary_max));
   if (params.sort) {
     search.set("sort", params.sort.field);
     search.set("direction", params.sort.direction);

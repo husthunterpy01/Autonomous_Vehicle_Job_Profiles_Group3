@@ -35,8 +35,15 @@ import {
   DEFAULT_PER_PAGE,
   MAX_PER_PAGE,
   parsePositiveInt,
+  parseSalaryBound,
   searchQueryString,
 } from "@/lib/search-url";
+import {
+  parseSalaryField,
+  salaryFilterLabel,
+  salaryRangeError,
+  sanitizeSalaryDigits,
+} from "@/lib/salary-filter";
 import { getCategoryStatsRaw } from "@/lib/services/home";
 import { getJobCountries, getJobs, type JobListItem } from "@/lib/services/job";
 
@@ -67,9 +74,26 @@ export default function SearchClient() {
   const [country, setCountry] = useState(
     searchParams.get("country") ?? ALL_COUNTRIES,
   );
+  // null means "no bound". Committed (affects the request/URL) separately
+  // from the draft the filter row edits - same reasoning as
+  // draftCategory/draftCountry below, so Apply/Clear treats salary exactly
+  // like every other filter instead of being the one live-as-you-type
+  // exception.
+  const [salaryMin, setSalaryMin] = useState(() =>
+    parseSalaryBound(searchParams.get("salary_min")),
+  );
+  const [salaryMax, setSalaryMax] = useState(() =>
+    parseSalaryBound(searchParams.get("salary_max")),
+  );
   // What the filter row shows; the list only uses it once Apply is pressed.
   const [draftCategory, setDraftCategory] = useState(category);
   const [draftCountry, setDraftCountry] = useState(country);
+  const [draftSalaryMin, setDraftSalaryMin] = useState(salaryMin);
+  const [draftSalaryMax, setDraftSalaryMax] = useState(salaryMax);
+  // Validated on the draft so Apply itself is blocked while min > max,
+  // rather than letting an invalid pair reach committed state and then
+  // skipping the request after the fact.
+  const draftSalaryError = salaryRangeError(draftSalaryMin, draftSalaryMax);
   const [view, setView] = useState<ViewMode>("table");
   // ?page=50 opens page 50 directly; ?per_page= is kept too.
   const [page, setPage] = useState(() =>
@@ -170,6 +194,11 @@ export default function SearchClient() {
   }, []);
 
   useEffect(() => {
+    // Committed salary can only be invalid from a hand-edited or shared URL
+    // (Apply itself is disabled while the draft is invalid - see
+    // draftSalaryError) - skip the request rather than send a pair the
+    // backend would 400 on anyway.
+    if (salaryRangeError(salaryMin, salaryMax)) return;
     const controller = new AbortController();
     const handle = setTimeout(
       () => {
@@ -178,6 +207,8 @@ export default function SearchClient() {
           q: keyword.trim() || undefined,
           category_id: category || undefined,
           country: country || undefined,
+          salary_min: salaryMin ?? undefined,
+          salary_max: salaryMax ?? undefined,
           sort,
           page_size: perPage,
         };
@@ -215,6 +246,9 @@ export default function SearchClient() {
             if (!controller.signal.aborted) setListBusy(false);
           });
       },
+      // Debounced only for keyword, the one field still live-as-you-type;
+      // category/country/salary now all change via Apply - a deliberate
+      // click, not a keystroke - so they fire immediately like before.
       keyword ? SEARCH_DEBOUNCE_MS : 0,
     );
 
@@ -222,44 +256,103 @@ export default function SearchClient() {
       controller.abort();
       clearTimeout(handle);
     };
-  }, [keyword, category, country, sort, page, perPage, reloadToken]);
+  }, [
+    keyword,
+    category,
+    country,
+    salaryMin,
+    salaryMax,
+    sort,
+    page,
+    perPage,
+    reloadToken,
+  ]);
 
   const hasFilters =
     keyword.trim() !== "" ||
     category !== ALL_CATEGORIES ||
     country !== ALL_COUNTRIES ||
+    salaryMin !== null ||
+    salaryMax !== null ||
     !isDefaultJobSort(sort);
 
   // One place keeps the URL in step with the list (keyword as submitted,
-  // category, country, sort, page and per page), so a page can be shared or
-  // jumped to by editing ?page= directly. Defaults stay out of the URL.
+  // category, country, salary bounds, sort, page and per page), so a page
+  // can be shared or jumped to by editing ?page= directly. Defaults stay
+  // out of the URL.
   useEffect(() => {
     const qs = searchQueryString({
       q: urlKeyword,
       category,
       country,
+      salaryMin,
+      salaryMax,
       sort,
       page,
       perPage,
     });
     router.replace(qs ? `/search?${qs}` : "/search");
-  }, [urlKeyword, category, country, sort, page, perPage, router]);
+  }, [
+    urlKeyword,
+    category,
+    country,
+    salaryMin,
+    salaryMax,
+    sort,
+    page,
+    perPage,
+    router,
+  ]);
 
-  const draftChanged = draftCategory !== category || draftCountry !== country;
+  const draftChanged =
+    draftCategory !== category ||
+    draftCountry !== country ||
+    draftSalaryMin !== salaryMin ||
+    draftSalaryMax !== salaryMax;
   const filterRowSet =
-    draftChanged || category !== ALL_CATEGORIES || country !== ALL_COUNTRIES;
+    draftChanged ||
+    category !== ALL_CATEGORIES ||
+    country !== ALL_COUNTRIES ||
+    salaryMin !== null ||
+    salaryMax !== null;
 
   const applyFilters = () => {
+    if (draftSalaryError) return;
     setCategory(draftCategory);
     setCountry(draftCountry);
+    setSalaryMin(draftSalaryMin);
+    setSalaryMax(draftSalaryMax);
     setPage(1);
   };
 
   const clearFilterRow = () => {
     setDraftCategory(ALL_CATEGORIES);
     setDraftCountry(ALL_COUNTRIES);
+    setDraftSalaryMin(null);
+    setDraftSalaryMax(null);
     setCategory(ALL_CATEGORIES);
     setCountry(ALL_COUNTRIES);
+    setSalaryMin(null);
+    setSalaryMax(null);
+    setPage(1);
+  };
+
+  const handleDraftSalaryMinChange = (raw: string) => {
+    setDraftSalaryMin(parseSalaryField(sanitizeSalaryDigits(raw)));
+  };
+
+  const handleDraftSalaryMaxChange = (raw: string) => {
+    setDraftSalaryMax(parseSalaryField(sanitizeSalaryDigits(raw)));
+  };
+
+  // The chip removes only the applied salary filter (category/country are
+  // untouched), so it clears both committed and draft state together -
+  // otherwise a stale draft would silently reappear next time Apply is hit.
+  const clearSalaryFilter = () => {
+    setDraftSalaryMin(null);
+    setDraftSalaryMax(null);
+    setSalaryMin(null);
+    setSalaryMax(null);
     setPage(1);
   };
 
@@ -303,9 +396,15 @@ export default function SearchClient() {
     setCountry(ALL_COUNTRIES);
     setDraftCategory(ALL_CATEGORIES);
     setDraftCountry(ALL_COUNTRIES);
+    setSalaryMin(null);
+    setSalaryMax(null);
+    setDraftSalaryMin(null);
+    setDraftSalaryMax(null);
     setSort(DEFAULT_JOB_SORT);
     setPage(1);
   };
+
+  const salaryChipLabel = salaryFilterLabel(salaryMin, salaryMax);
 
   return (
     <div className="mx-auto max-w-[1200px] px-6 py-10">
@@ -330,7 +429,7 @@ export default function SearchClient() {
       <div
         role="group"
         aria-label="Filters"
-        className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center"
+        className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
         <Dropdown
           id="category-filter"
@@ -353,11 +452,75 @@ export default function SearchClient() {
             </option>
           ))}
         </select>
+
+        {/* Grid, not flex+items-end: the dash needs to center against the
+            input row's own height specifically, not the label+input
+            column's combined height - a grid row auto-sizes to its
+            tallest cell (the input boxes), so self-center on the dash
+            centers it against that, with no guessed padding/height. */}
+        <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-1">
+          <label
+            htmlFor="salary-min-filter"
+            className="text-sm text-ink-secondary"
+          >
+            Min salary (USD/yr)
+          </label>
+          <div aria-hidden="true" />
+          <label
+            htmlFor="salary-max-filter"
+            className="text-sm text-ink-secondary"
+          >
+            Max salary (USD/yr)
+          </label>
+
+          <div className="flex items-center rounded-lg border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <span aria-hidden="true" className="text-sm text-ink-muted">
+              $
+            </span>
+            <input
+              id="salary-min-filter"
+              type="text"
+              inputMode="numeric"
+              maxLength={9}
+              value={draftSalaryMin !== null ? String(draftSalaryMin) : ""}
+              onChange={(e) => handleDraftSalaryMinChange(e.target.value)}
+              placeholder="No minimum"
+              aria-invalid={draftSalaryError ? true : undefined}
+              aria-describedby={
+                draftSalaryError ? "salary-filter-error" : undefined
+              }
+              className="w-24 border-0 bg-transparent py-2.5 pl-1 text-sm font-medium text-ink outline-none"
+            />
+          </div>
+          <span aria-hidden="true" className="self-center text-ink-muted">
+            –
+          </span>
+          <div className="flex items-center rounded-lg border border-line bg-surface px-3 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+            <span aria-hidden="true" className="text-sm text-ink-muted">
+              $
+            </span>
+            <input
+              id="salary-max-filter"
+              type="text"
+              inputMode="numeric"
+              maxLength={9}
+              value={draftSalaryMax !== null ? String(draftSalaryMax) : ""}
+              onChange={(e) => handleDraftSalaryMaxChange(e.target.value)}
+              placeholder="No maximum"
+              aria-invalid={draftSalaryError ? true : undefined}
+              aria-describedby={
+                draftSalaryError ? "salary-filter-error" : undefined
+              }
+              className="w-24 border-0 bg-transparent py-2.5 pl-1 text-sm font-medium text-ink outline-none"
+            />
+          </div>
+        </div>
+
         <div className="flex gap-3 sm:ml-auto">
           <button
             type="button"
             onClick={applyFilters}
-            disabled={!draftChanged}
+            disabled={!draftChanged || Boolean(draftSalaryError)}
             className="flex-1 rounded-lg bg-primary px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
           >
             Apply
@@ -372,6 +535,32 @@ export default function SearchClient() {
           </button>
         </div>
       </div>
+
+      {salaryChipLabel && (
+        <div className="mt-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-light px-3 py-1.5 text-sm font-medium text-primary">
+            {salaryChipLabel}
+            <button
+              type="button"
+              onClick={clearSalaryFilter}
+              aria-label="Remove salary filter"
+              className="leading-none text-primary/70 hover:text-primary"
+            >
+              ×
+            </button>
+          </span>
+        </div>
+      )}
+
+      {draftSalaryError && (
+        <p
+          id="salary-filter-error"
+          role="alert"
+          className="mt-2 text-sm text-warning"
+        >
+          {draftSalaryError}
+        </p>
+      )}
 
       {status === "loading" && (
         <div
@@ -484,9 +673,15 @@ export default function SearchClient() {
 
           {jobs.length === 0 && (
             <div className="mt-10 rounded-xl border border-dashed border-line bg-surface p-12 text-center">
-              <p className="font-semibold text-ink">No jobs found</p>
+              <p className="font-semibold text-ink">
+                {salaryChipLabel
+                  ? "No jobs match your salary range"
+                  : "No jobs found"}
+              </p>
               <p className="mt-2 text-sm text-ink-secondary">
-                Try a different keyword.
+                {salaryChipLabel
+                  ? "Try widening the range, or clear it to see every job."
+                  : "Try a different keyword."}
               </p>
             </div>
           )}
