@@ -1,17 +1,135 @@
-# CITS5206 Capstone Project
+# Autonomous Vehicle Job Profiles
 
-Capstone project for UWA IT course.
+> **What is the autonomous vehicle industry hiring for, and which skills should students learn next?**
 
-The proposed architecture of the system:
+CITS5206 Capstone Project (UWA), Group 3.
 
-![Capstone Architecture Diagram](./capstone_flow.drawio.svg)
+We collect public job ads from AV employers, clean and classify them with an LLM, and turn them into a searchable job board and skill-trend dashboard.
+
+![AV Job Finder homepage](media/homepage.png)
+
+![Top skills in demand over time](media/skill_trends.png)
+
+*Market Trends page: monthly count of job postings that list each skill.*
+
+## Highlights
+
+- 🔎 **Search every AV job in one place**, with filters such as salary range and country
+- 📈 **See skill demand over time**, including tools, languages and qualifications
+- 🧠 **LLM-assisted classification** finds AV roles, including adjacent ones that never say "autonomous"
+- 🔗 **Every job links back to its original posting** so results are easy to verify
+- 🗄️ **Bronze → silver → gold pipeline** keeps raw payloads, cleaned data and analytics separate
+
+## How It Works
+
+```
+Public ATS APIs ──► Scrapers ──► MinIO (bronze) ──► Cleaning + LLM (silver) ──► dbt (gold)
+                                                                                    │
+                                          Next.js frontend ◄── FastAPI ◄── PostgreSQL
+```
+
+| Layer | Tools |
+| --- | --- |
+| Ingest | Python, Greenhouse / Lever / Ashby / SmartRecruiters APIs |
+| Storage | MinIO (Parquet), PostgreSQL, Supabase mirror |
+| Processing | dbt, Groq LLM |
+| API | FastAPI |
+| Web | Next.js, React, TypeScript, Tailwind CSS |
+| Ops | Docker Compose, GitHub Actions, Vercel |
+
+## Quick Start
+
+```bash
+cp .env.sample .env        # fill in the required values
+docker compose up --build  # frontend on :3000, API on :8000
+```
+
+For local development without Docker, see the [Frontend](#frontend), [Backend](#backend) and [Scrapers](#scrapers) sections.
+
+## Table of Contents
+
+- [Highlights](#highlights)
+- [How It Works](#how-it-works)
+- [Quick Start](#quick-start)
+- [Problem](#problem)
+- [Architecture](#architecture)
+  - [Project Structure](#project-structure)
+- [Frontend](#frontend)
+- [Backend](#backend)
+- [Scrapers](#scrapers)
+- [Support](#support)
+
+## Problem
+
+> **One place to find, search and analyse autonomous vehicle job ads.**
+
+### Overview
+
+Autonomous vehicle (AV) jobs are spread across many separate employer career pages, and there is no single place to see what the industry is hiring for. This project solves that by:
+
+- **Consolidating** AV job ads from multiple employers into one structured, searchable platform
+- **Cutting fragmented searching** so users don't visit dozens of career pages by hand
+- **Analysing skill demand** (skills, tools, qualifications) over time, as evidence for curriculum planning
+- **Including adjacent technical roles**, not only titles that mention autonomous vehicles
+- **Keeping traceability** with original source links for validation
+
+## Architecture
+
+> **Scrapers archive raw ATS payloads, a pipeline cleans and classifies them, and the API and frontend serve the result.**
+
+![Main Architecture Diagram](./media/AV_mainarchitecture.drawio.svg)
+
+### Project Structure
+
+```
+Autonomous_Vehicle_Job_Profiles_Group3/
+├── api/                           # Vercel entrypoint
+├── backend/                       # FastAPI service
+│   ├── app/
+│   │   ├── config/  core/  dependencies/  enums/  middleware/
+│   │   ├── models/  schemas/  routers/  services/
+│   │   ├── sql/                   # migrations / rollbacks
+│   │   └── utils/
+│   ├── scripts/                   # one-off scripts (e.g. backfills)
+│   ├── evidence/
+│   └── tests/ (unit_test/, integration_test/)
+├── frontend/                      # Next.js + TypeScript + Tailwind
+│   ├── app/                       # routes: account, companies, favorites,
+│   │                              #   forgot-password, jobs, login, search,
+│   │                              #   signup, trends
+│   ├── components/ (ui/)
+│   ├── lib/ (services/)
+│   └── styles/  public/
+├── scrapers/                      # Data pipeline (bronze → silver → gold)
+│   ├── scraper_main.py            # fetch raw ATS payloads
+│   ├── pipeline_main.py           # clean + classify
+│   ├── config/  prompts/  script/  utils/
+│   ├── models/ (bronze/, silver/)
+│   ├── service/
+│   │   ├── fetch/  bronze_storage/  silver_cleaning/
+│   │   └── llm/    ml/
+│   ├── dbt/ (macros/, models/)    # gold layer
+│   ├── data/ (regression/, sample_data/, snapshots/)
+│   ├── docs/
+│   └── tests/ (unit_test/, integration_test/)
+├── notebooks/                     # classifier experiments
+├── document/                      # erd, gold-trend-mart, investigation,
+│                                  #   plan, report, meeting notes
+├── media/                         # README diagrams
+├── .github/ (scripts/, workflows/)
+├── docker-compose.yaml
+└── vercel.json
+```
 
 ## Frontend
 
+> **Next.js web app for searching jobs and viewing skill trends.**
+
+### Overview
+
 Frontend application for Autonomous Vehicle Job Profiles (Next.js, React, TypeScript, Tailwind CSS).
 
-<details>
-<summary>Technology</summary>
+### Technology
 
 - Next.js
 - React
@@ -20,18 +138,12 @@ Frontend application for Autonomous Vehicle Job Profiles (Next.js, React, TypeSc
 - ESLint
 - Prettier
 
-</details>
-
-<details>
-<summary>Requirements</summary>
+### Requirements
 
 - Node.js 20.9 or later
 - npm
 
-</details>
-
-<details>
-<summary>Installation</summary>
+### Installation
 
 From the repository root:
 
@@ -40,10 +152,7 @@ cd frontend
 npm install
 ```
 
-</details>
-
-<details>
-<summary>Environment variables</summary>
+### Environment variables
 
 Copy `.env.example` to `.env.local`.
 
@@ -51,10 +160,7 @@ Copy `.env.example` to `.env.local`.
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
-</details>
-
-<details>
-<summary>Run locally</summary>
+### Run locally
 
 ```bash
 npm run dev
@@ -65,10 +171,7 @@ Open the following pages:
 - http://localhost:3000
 - http://localhost:3000/search
 
-</details>
-
-<details>
-<summary>Code checks</summary>
+### Code checks
 
 ```bash
 npm run format
@@ -76,10 +179,7 @@ npm run lint
 npm run build
 ```
 
-</details>
-
-<details>
-<summary>Project structure</summary>
+### Project structure
 
 ```text
 app/              Next.js routes and pages
@@ -89,23 +189,21 @@ styles/           Shared styles and documentation
 public/           Static assets
 ```
 
-</details>
-
 ## Backend
+
+> **FastAPI service backed by PostgreSQL.**
+
+### Overview
 
 FastAPI API for autonomous vehicle job profiles.
 
-<details>
-<summary>Requirements</summary>
+### Requirements
 
 - Python 3.10+
 - PostgreSQL 14+ (local install)
 - Packages in `backend/requirements.txt`
 
-</details>
-
-<details>
-<summary>PostgreSQL setup</summary>
+### PostgreSQL setup
 
 Install and start PostgreSQL (Ubuntu/Debian):
 
@@ -156,10 +254,7 @@ docker run -d --name autojob-pg \
 
 Then use port `5433` in `.env`. Later starts: `docker start autojob-pg`.
 
-</details>
-
-<details>
-<summary>Python environment</summary>
+### Python environment
 
 ```bash
 cd backend
@@ -189,10 +284,7 @@ Keep `SEED_ON_STARTUP=false` (see `backend/.env.sample`): `true` reseeds compani
 
 Backend CI starts an ephemeral Postgres service with `POSTGRES_HOST_AUTH_METHOD=trust` (no password). That is for GitHub Actions only — local Postgres should still use a password in `.env`.
 
-</details>
-
-<details>
-<summary>Run the API</summary>
+### Run the API
 
 From the `backend/` directory (Postgres must already be running):
 
@@ -214,10 +306,7 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/health | Health check |
 | http://127.0.0.1:8000/api/v1/companies | Companies API |
 
-</details>
-
-<details>
-<summary>Companies API (testing)</summary>
+### Companies API (testing)
 
 **List companies**
 
@@ -247,10 +336,7 @@ curl -X POST http://127.0.0.1:8000/api/v1/companies \
 
 When `SEED_ON_STARTUP=true`, created rows are replaced on restart because startup reseeds from the SQL file.
 
-</details>
-
-<details>
-<summary>Supabase mirror (optional)</summary>
+### Supabase mirror (optional)
 
 Mirrors the backend's public schema - `company`, `jobposting`, `category`,
 `skill`, `location`, and their join tables, **never `user_account`** - to a
@@ -271,9 +357,11 @@ incremental sync), followed by `GRANT SELECT` on them for Supabase's
 `anon`/`authenticated` roles. Leave `SUPABASE_DATABASE_URL` unset to disable
 mirroring entirely.
 
-</details>
-
 ## Scrapers
+
+> **Fetches public ATS job payloads and archives them as Parquet in MinIO.**
+
+### Overview
 
 The scraper fetches public ATS job payloads (Greenhouse, Lever, Ashby,
 SmartRecruiters) for every **enabled** API company in
@@ -286,8 +374,34 @@ collect applicant information.
 Run all scraper commands from the **repository root**. YAML paths and
 `load_dotenv()` are relative to the current working directory.
 
-<details>
-<summary>Requirements</summary>
+### Job posting handling flow
+
+![Job posting handling flow](./media/jobposting_handling.drawio.svg)
+
+Each scraped posting fans out into three independent branches instead of
+passing through one long chain:
+
+| Branch | Steps | Output |
+|---|---|---|
+| Salary | Salary API + HTML extraction | Silver layer (backend ERD) |
+| Classification | Regex pre-filter → few-shot classifier → hand-off of AV jobs → LLM + regex category definition | Silver layer (backend ERD) |
+| Skills | Regex skill extraction | Extracted skills → star schema (gold layer) |
+
+Why this design:
+
+- **Cheap, deterministic steps first.** The regex pre-filter and few-shot
+  classifier drop clearly non-AV roles before the LLM sees them, so only the
+  hand-off set pays for LLM calls (see
+  [Pre-filter jobs before LLM classification](#pre-filter-jobs-before-llm-classification)).
+- **LLM and regex together for categories.** The LLM handles ambiguous titles;
+  regex rules keep the category taxonomy consistent and auditable.
+- **Independent branches.** Salary, classification and skills do not depend on
+  each other, so one failing (for example an LLM provider outage) does not block
+  the others, and each can be re-run or tuned on its own.
+- **Skills use regex, not the LLM.** Skill matching is a fixed vocabulary
+  lookup, which is repeatable and free to re-run over the whole bronze history.
+
+### Requirements
 
 - Python 3.10+
 - Docker (for a local MinIO server)
@@ -301,10 +415,7 @@ python3 -m pip install -r scrapers/requirements.txt
 python3 -m pip install -r scrapers/requirements-test.txt
 ```
 
-</details>
-
-<details>
-<summary>Initialize MinIO</summary>
+### Initialize MinIO
 
 The scraper writes bronze Parquet objects to MinIO. Start a local server, then
 create a `.env` file at the **repository root** so credentials match.
@@ -350,10 +461,7 @@ You do not need to create `scraped-jobs` by hand.
 Defaults in `scrapers/config/minio.py` are the same as the values above, so a
 local Docker MinIO with `minioadmin` works even without a `.env` file.
 
-</details>
-
-<details>
-<summary>Run the scraper</summary>
+### Run the scraper
 
 From the repository root:
 
@@ -384,10 +492,9 @@ skipped. Raw payloads are stored as:
 Browse them in the MinIO console at
 [http://localhost:9001](http://localhost:9001) under the `scraped-jobs` bucket.
 
-</details>
+![MinIO console showing bronze Parquet objects](./media/minio_bronze_sample.png)
 
-<details>
-<summary>Pre-filter jobs before LLM classification</summary>
+### Pre-filter jobs before LLM classification
 
 Run the deterministic pre-filter on a CSV, JSON array, or JSON Lines export of
 `bronze.job_postings` before sending rows to an LLM:
@@ -431,10 +538,60 @@ The existing notebook Groq model and API-key configuration remain unchanged.
 Only `llm_jobs_df` should be passed to the model. The LLM adapter can be changed
 later without changing or losing the pre-filter audit trail.
 
-</details>
+### How the scraped data shapes the design
 
 <details>
-<summary>Run tests</summary>
+<summary>From messy source payloads to the bronze / silver / gold layers</summary>
+
+| What the scraped data looks like | Design decision |
+|---|---|
+| 38 enabled companies on different sources: 30 ATS APIs, 7 HTML pages and 1 XML feed, each with its own JSON or markup | Store every raw payload untouched in MinIO and `bronze.raw_responses` (JSONB), then parse it with one dbt model per source |
+| Fields are inconsistent or missing across sources (salary, location, description) | Keep optional fields nullable and normalise only in the silver layer, so raw evidence is never lost |
+| Some list pages have no description | `RawFetch` also fetches each job's detail page and embeds it in the bronze payload |
+| The row id is a volatile `row_number()` between runs | Use `job_id`, the ATS-native posting id (falling back to the URL, then a content hash), for joins and cross-run comparison |
+| Descriptions are free text with no structured skills or category | Run regex skill extraction on the cleaned text, and use the pre-filter, classifier and LLM for AV relevance and category |
+| Salary appears in structured API fields for some sources and only in text for others | Run salary as its own branch, so it can be re-run or tuned independently |
+
+Because the bronze layer keeps the raw responses, any parser, classifier or skill list can be changed and re-run over the whole history without scraping again.
+
+</details>
+
+### Why this classifier
+
+<details>
+<summary>Model comparison: frozen embedding vs SetFit</summary>
+
+Both were tested on the same Groq-labelled seed set (202 AV / 197 non-AV, stratified 80/20 split).
+
+![Train vs test accuracy: frozen MiniLM embedding + logistic regression vs SetFit](media/model_comparison.png)
+
+- **Frozen MiniLM + logistic regression** trains and tests close together (about 80% train, 77% test), so it generalises steadily.
+- **SetFit** reaches 100% train accuracy almost immediately, while test accuracy peaks near 84% and then falls to 78-80%. It overfits on a seed set this small.
+
+</details>
+
+### Why not a full deep learning model
+
+<details>
+<summary>Project scale and why we went few-shot</summary>
+
+Training a deep model end to end needs thousands of labelled examples. Our scale is much smaller:
+
+| Factor | Our project |
+|---|---|
+| Labelled data | 399 Groq-labelled postings (319 train / 80 test) |
+| Sources | 38 enabled companies |
+| Postings | ~5,400 scraped; 1,229 AV postings shown on the platform |
+| Labelling cost | LLM labels cost money per call, so labelling thousands of postings was not practical |
+
+- **Too few labels for end-to-end training.** A large network fitted on about 400 examples memorises them. SetFit already shows this: 100% train accuracy but a test curve that peaks and then drops.
+- **Few-shot reuses a pretrained encoder.** MiniLM already understands language, so a small classifier head (or a short contrastive fine-tune) is enough to separate AV from non-AV roles.
+- **The classifier is a cheap first gate.** It drops clearly non-AV roles so the LLM only sees the hand-off set, which keeps LLM cost down as more companies are added.
+- **Easy to re-run.** A frozen embedding plus logistic regression fits in seconds, so the model can be retrained whenever the seed set grows.
+
+</details>
+
+### Run tests
 
 From the repository root:
 
@@ -442,4 +599,6 @@ From the repository root:
 python3 -m pytest scrapers/tests/unit_test scrapers/tests/integration_test -v
 ```
 
-</details>
+## Support
+
+If you find this project useful, please consider giving it a ⭐ on [GitHub](https://github.com/husthunterpy01/Autonomous_Vehicle_Job_Profiles_Group3). Every star is a free donation that helps the project get noticed and keeps us motivated.
