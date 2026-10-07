@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import engine
 from app.services.location_country import LocationCountryService
-from app.utils.cli import run_command
+from app.utils.cli import mirror_to_supabase, run_command
 from scripts.sync_to_supabase import sync_if_configured
 
 
@@ -23,7 +23,7 @@ def main():
             return LocationCountryService(db).refresh()
 
     run_command(parser, execute)
-    sync_if_configured()
+    mirror_to_supabase(sync_if_configured)
 
 
 if __name__ == "__main__":
