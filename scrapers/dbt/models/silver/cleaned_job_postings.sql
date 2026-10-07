@@ -39,7 +39,7 @@ with source_rows as (
             ),
             array[]::text[]
         ) as locations,
-        null::text as department,
+        nullif(btrim(regexp_replace(department, '\s+', ' ', 'g')), '') as department,
         null::text as team,
         nullif(btrim(job_url), '') as job_url,
         case

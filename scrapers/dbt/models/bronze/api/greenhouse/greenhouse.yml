@@ -52,3 +52,20 @@ unit_tests:
         - job_name: Intern
           salary_currency: USD
           salary_period: null
+
+  - name: greenhouse_maps_first_department
+    model: greenhouse
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'greenhouse'::text as source_system,
+            'Kodiak'::text as company_name,
+            'US'::text as headquarter,
+            $json${"jobs":[{"id":1,"title":"Engineer","content":"Build","location":{"name":"Mountain View"},"absolute_url":"https://job-boards.greenhouse.io/kodiak/jobs/1","departments":[{"id":9,"name":"Software"},{"id":10,"name":"Autonomy"}]}]}$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Engineer
+          department: Software

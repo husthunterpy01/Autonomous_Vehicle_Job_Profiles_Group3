@@ -18,7 +18,13 @@ select
     ) as job_description,
     src.headquarter,
     job->'location'->>'name' as location,
-    coalesce(job->>'position_url', job->>'url_comeet_hosted_page') as job_url,
+    -- position_url can be the careers-api detail endpoint (JSON, carries the
+    -- API token), not the readable posting page, so the hosted page wins.
+    coalesce(
+        nullif(btrim(job->>'url_comeet_hosted_page'), ''),
+        case when job->>'position_url' not like '%/careers-api/%' then job->>'position_url' end,
+        nullif(btrim(job->>'url_active_page'), '')
+    ) as job_url,
     job->>'time_updated' as job_uploaded_at,
     job->>'employment_type' as employment_type,
     -- No structured salary field on this ATS; carried as null to keep the
@@ -26,7 +32,8 @@ select
     null::numeric as salary_min,
     null::numeric as salary_max,
     null::text as salary_currency,
-    null::text as salary_period
+    null::text as salary_period,
+    nullif(btrim(job->>'department'), '') as department
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(
     case

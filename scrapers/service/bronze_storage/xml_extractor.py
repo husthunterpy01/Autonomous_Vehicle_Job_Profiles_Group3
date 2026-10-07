@@ -44,6 +44,7 @@ class XMLExtractor:
             "job_url": self._job_url(job_id),
             "job_uploaded_at": self._text(position.find("createdAt")),
             "employment_type": self._text(position.find("employmentType")),
+            "department": self._text(position.find("department")),
         }
 
     def _job_url(self, job_id: str | None) -> str | None:

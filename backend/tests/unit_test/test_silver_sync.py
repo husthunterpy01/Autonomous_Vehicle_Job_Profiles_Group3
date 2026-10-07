@@ -26,6 +26,17 @@ def test_sync_is_idempotent_and_normalizes_locations(db_session):
     assert job.salary_average is None
 
 
+def test_sync_sets_seniority_and_keeps_stored_source_url(db_session):
+    sync = SilverSync(db_session)
+    sync.run([{**record(job_url="https://jobs.example.com/1"), "job_name": "Senior Engineer"}])
+    job = db_session.query(JobPosting).one()
+    assert job.seniority_level == 3
+    assert job.source_url == "https://jobs.example.com/1"
+    sync.run([{**record(), "job_name": "Staff Engineer"}])
+    assert job.seniority_level == 4
+    assert job.source_url == "https://jobs.example.com/1"
+
+
 def test_sync_preserves_metadata_and_skills_when_not_provided(db_session, company_factory):
     company = company_factory("AV Company")
     db_session.add(company)

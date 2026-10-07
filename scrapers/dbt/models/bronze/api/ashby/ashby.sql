@@ -33,7 +33,8 @@ select
     ashby_comp.salary_min,
     ashby_comp.salary_max,
     ashby_comp.salary_currency,
-    ashby_comp.salary_period
+    ashby_comp.salary_period,
+    nullif(btrim(job->>'department'), '') as department
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
 cross join lateral (

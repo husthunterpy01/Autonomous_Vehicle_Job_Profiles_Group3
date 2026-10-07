@@ -79,6 +79,8 @@ class HTMLExtractor:
             }
             for field in ROW_FIELDS:
                 job[field] = self._text(row, self.config.get(field))
+            if self.config.get("location_all"):
+                job["location"] = self._all_text(row, self.config.get("location"))
             detail_entry = details.get(job["source_job_id"]) or details.get(job_url) or {}
             if not job["job_description"]:
                 job["job_description"] = detail_entry.get("description")
@@ -212,6 +214,16 @@ class HTMLExtractor:
             value = node.get(attr.strip())
             return value.strip() if isinstance(value, str) and value.strip() else None
         return node.get_text(" ", strip=True) or None
+
+    @staticmethod
+    def _all_text(row: Any, selector: str | None) -> str | None:
+        """Every distinct match of ``selector`` joined with " | " (multi-office rows)."""
+        if not selector:
+            return None
+        values = dict.fromkeys(
+            text for node in row.select(selector.strip()) if (text := node.get_text(" ", strip=True))
+        )
+        return " | ".join(values) or None
 
     @staticmethod
     def _as_text(content: str | bytes) -> str:

@@ -25,7 +25,7 @@ unit_tests:
           location: Toronto
           employment_type: Full-time
 
-  - name: lever_combines_body_and_lists_skipping_salary
+  - name: lever_combines_body_and_lists_keeping_salary
     model: lever
     given:
       - input: source("bronze", "raw_responses")
@@ -47,6 +47,9 @@ unit_tests:
 
             Required Skills:
             <li>7-10 years of experience</li>
+
+            Salary Range
+            <li>$200,000 - 280,000</li>
           location: "Santa Clara, CA"
           employment_type: Full-time
 
@@ -103,3 +106,37 @@ unit_tests:
       rows:
         - job_name: Engineer
           employment_type: null
+
+  - name: lever_joins_all_locations
+    model: lever
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'lever'::text as source_system,
+            'Waabi'::text as company_name,
+            'CA'::text as headquarter,
+            $json$[{"text":"Research Engineer, World Models","descriptionPlain":"Research.","categories":{"location":"Toronto","allLocations":["Toronto","San Francisco","Pittsburgh"]},"createdAt":1690000000000,"hostedUrl":"https://jobs.lever.co/waabi/abc"}]$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Research Engineer, World Models
+          location: "Toronto | San Francisco | Pittsburgh"
+
+  - name: lever_maps_department
+    model: lever
+    given:
+      - input: source("bronze", "raw_responses")
+        format: sql
+        rows: |
+          select
+            'api'::text as source,
+            'lever'::text as source_system,
+            'Zoox'::text as company_name,
+            'US'::text as headquarter,
+            $json$[{"text":"Engineer","descriptionPlain":"Build.","categories":{"location":"Foster City","department":" Engineering "},"createdAt":1690000000000,"hostedUrl":"https://jobs.lever.co/zoox/abc"}]$json$::jsonb as body
+    expect:
+      rows:
+        - job_name: Engineer
+          department: Engineering

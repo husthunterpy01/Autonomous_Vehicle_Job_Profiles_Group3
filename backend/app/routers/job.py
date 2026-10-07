@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.dependencies.job_write import require_job_write_key
 from app.enums.job_sort_field import JobSortField
+from app.enums.seniority_type import SeniorityLevel
 from app.enums.sort_direction import SortDirection
 from app.schemas.job import (
     CountryJobCountResponse,
@@ -78,6 +79,16 @@ def list_jobs(
     category_id: UUID | None = None,
     company_id: UUID | None = None,
     employment_type: int | None = Query(None, ge=1, le=6),
+    seniority_level: Annotated[
+        SeniorityLevel | None,
+        Query(
+            description=(
+                "Inferred from the job title: 1 junior, 2 mid, 3 senior, 4 principal, 5 lead, 6 manager, "
+                "7 director, 8 ceo, 9 other. A title with no level word is stored as 2 (mid), so 2 also "
+                "matches jobs whose level is not stated."
+            )
+        ),
+    ] = None,
     salary_min: float | None = Query(
         None, ge=0, description="Annual USD equivalent - converted/annualized server-side (BE-22)."
     ),
@@ -107,7 +118,7 @@ def list_jobs(
             )
     return job_service.list_jobs(
         db, q=q, location=location, country=country_name, skill=skill, category_id=category_id, company_id=company_id,
-        employment_type=employment_type, salary_min=salary_min, salary_max=salary_max,
+        employment_type=employment_type, seniority_level=seniority_level, salary_min=salary_min, salary_max=salary_max,
         salary_period=salary_period.value if salary_period else None,
         has_salary=has_salary, salary_disclosed=salary_disclosed, sort=sort, direction=direction, page=page, page_size=page_size,
     )

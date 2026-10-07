@@ -14,6 +14,7 @@ from app.services.category_sync import (
 from app.services.location_country import LocationCountryService
 from app.services.skill_sync import _collect_skill_keys, _preload_skills, sync_skills
 from app.utils.normalization import normalized
+from app.utils.seniority import infer_seniority
 
 EMPLOYMENT_TYPES = {"full-time": 1, "part-time": 2, "contract": 3, "temporary": 4, "internship": 5}
 
@@ -61,12 +62,14 @@ class SilverSync:
                 counts["updated"] += 1
             job.company_id = company.company_id
             job.title = row["job_name"].strip()
+            job.seniority_level = int(infer_seniority(job.title))
             job.raw_description = row["job_description"].strip()
             job.department = row.get("department")
             employment = row.get("employment_type")
             job.employment_type = EMPLOYMENT_TYPES.get(employment, 6) if employment else None
             job.source_platform = row.get("ats_name")
-            job.source_url = row.get("job_url")
+            # A row without a URL must not blank one that an earlier sync stored.
+            job.source_url = row.get("job_url") or job.source_url
             job.source_job_id = row.get("source_job_id")
             job.bronze_id = str(row["bronze_id"]) if row.get("bronze_id") is not None else None
             for source, destination in (("job_uploaded_at", "posted_date"), ("ingested_at", "ingested_at")):

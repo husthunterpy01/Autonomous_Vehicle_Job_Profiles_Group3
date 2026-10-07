@@ -40,6 +40,7 @@ def test_extracts_only_bronze_fields():
         "job_url": "https://momenta-europe-gmbh.jobs.personio.de/job/1784945",
         "job_uploaded_at": "2024-10-21T10:30:53+00:00",
         "employment_type": "permanent",
+        "department": "Business Development",
     }
 
 

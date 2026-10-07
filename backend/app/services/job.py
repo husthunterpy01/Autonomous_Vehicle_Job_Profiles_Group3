@@ -71,7 +71,7 @@ def to_response(job, *, include_body: bool = True):
         locations=sorted(location.name for location in job.locations),
         skills=sorted(skill.skill_name for skill in job.skills),
         category=_to_category_response(job.categories),
-        employment_type=job.employment_type,
+        employment_type=job.employment_type, seniority_level=job.seniority_level,
         raw_description=job.raw_description if include_body else None,
         source_url=job.source_url, posted_date=job.posted_date,
         salary_min=job.salary_min, salary_max=job.salary_max, salary_average=job.salary_average,
@@ -83,7 +83,6 @@ def to_detail_response(job) -> JobDetailResponse:
     return JobDetailResponse(
         **to_response(job).model_dump(),
         department=job.department,
-        seniority_level=job.seniority_level,
         requirements=job.requirements,
         source_platform=job.source_platform,
         source_job_id=job.source_job_id,
@@ -145,6 +144,7 @@ def list_jobs(
     db: Session, *, q: str | None = None, location: str | None = None, country: str | None = None,
     skill: str | None = None,
     category_id: UUID | None = None, company_id: UUID | None = None, employment_type: int | None = None,
+    seniority_level: int | None = None,
     salary_min: float | None = None, salary_max: float | None = None, salary_period: str | None = None,
     has_salary: bool | None = None, salary_disclosed: bool | None = None,
     sort: JobSortField = JobSortField.POSTED_DATE,
@@ -166,6 +166,8 @@ def list_jobs(
         query = query.filter(JobPosting.categories.any(Category.category_id == category_id))
     if employment_type is not None:
         query = query.filter(JobPosting.employment_type == employment_type)
+    if seniority_level is not None:
+        query = query.filter(JobPosting.seniority_level == seniority_level)
     if salary_min is not None or salary_max is not None:
         # Filters on each job's annualized, USD-converted salary (BE-22) -
         # not the raw salary_min/salary_max columns directly - so "60000 to

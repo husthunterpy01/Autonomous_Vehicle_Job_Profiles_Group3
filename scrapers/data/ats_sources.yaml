@@ -37,7 +37,8 @@ ats_sources:
 #   rendering.
 # css_list keys: item (required, selector for each job row), job_name,
 #   job_description, location, employment_type, job_uploaded_at (selectors
-#   relative to item; "selector@attr" reads an attribute instead of text), link
+#   relative to item; "selector@attr" reads an attribute instead of text;
+#   location_all: true joins every match of `location`, for multi-office rows), link
 #   (selector for the <a> holding the job URL, default "a"), job_id_pattern
 #   (regex applied to the resolved job URL, group 1 -> source_job_id).
 #   detail: {url, description} - when the list page has no description, RawFetch
@@ -49,6 +50,7 @@ html_sources:
     item: "div.careers-item"
     job_name: "h3"
     location: "[fs-cmsfilter-field='Regions']"
+    location_all: true
     employment_type: "[fs-cmsfilter-field='Jobtypes']"
     link: "a[href*='/careers/']"
     job_id_pattern: "/careers/(jd\\d+)"

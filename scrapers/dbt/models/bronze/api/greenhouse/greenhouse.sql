@@ -33,7 +33,8 @@ select
     case
         when gh_pay.salary_min is not null and gh_pay.salary_min >= 1000 then 'yearly'
         else null
-    end as salary_period
+    end as salary_period,
+    nullif(btrim(job->'departments'->0->>'name'), '') as department
 from {{ source("bronze", "raw_responses") }} as src
 cross join lateral jsonb_array_elements(coalesce(src.body->'jobs', '[]'::jsonb)) as job
 cross join lateral (

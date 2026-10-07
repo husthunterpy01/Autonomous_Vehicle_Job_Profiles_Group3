@@ -225,3 +225,19 @@ def test_paginated_snapshots_are_deduplicated():
     }
     jobs = HTMLExtractor(combined, cfg, page_url="https://x.test/careers").extract_jobs()
     assert [j["source_job_id"] for j in jobs] == ["jd1", "jd2"]
+
+
+def test_location_all_joins_every_matching_office():
+    page = """
+    <div class="careers-item">
+      <h3>System Engineer</h3>
+      <div fs-cmsfilter-field="Regions">San Jose</div>
+      <div fs-cmsfilter-field="Regions">Singapore</div>
+      <div fs-cmsfilter-field="Regions">San Jose</div>
+      <a href="/careers/jd9">Details</a>
+    </div>
+    """
+
+    jobs = HTMLExtractor(page, {**CONFIG, "location_all": True}, page_url="https://www.tensor.auto/careers").extract_jobs()
+
+    assert jobs[0]["location"] == "San Jose | Singapore"
