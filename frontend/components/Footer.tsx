@@ -1,34 +1,38 @@
 import Link from "next/link";
 
-export default function Footer() {
-  const columns: { title: string; links: { label: string; href: string }[] }[] =
-    [
-      {
-        title: "Product",
-        links: [
-          { label: "Find Jobs", href: "/search" },
-          { label: "Companies", href: "/companies" },
-          { label: "Categories", href: "/search" },
-        ],
-      },
-      {
-        title: "Company",
-        links: [
-          { label: "About", href: "#" },
-          { label: "Contact", href: "#" },
-          { label: "Careers", href: "#" },
-        ],
-      },
-      {
-        title: "Resources",
-        links: [
-          { label: "Help Center", href: "#" },
-          { label: "Privacy", href: "#" },
-          { label: "Terms", href: "#" },
-        ],
-      },
-    ];
+const REPO_URL =
+  "https://github.com/husthunterpy01/Autonomous_Vehicle_Job_Profiles_Group3";
 
+type FooterLink = { label: string; href: string; external?: boolean };
+
+export const FOOTER_COLUMNS: { title: string; links: FooterLink[] }[] = [
+  {
+    title: "Product",
+    links: [
+      { label: "Find Jobs", href: "/search" },
+      { label: "Companies", href: "/companies" },
+      { label: "Market Trends", href: "/trends" },
+    ],
+  },
+  {
+    title: "Account",
+    links: [
+      { label: "Favorites", href: "/favorites" },
+      { label: "My Account", href: "/account" },
+      { label: "Sign in", href: "/login" },
+    ],
+  },
+  {
+    title: "Project",
+    links: [
+      { label: "About", href: "/about" },
+      { label: "GitHub", href: REPO_URL, external: true },
+      { label: "Contact", href: `${REPO_URL}/issues`, external: true },
+    ],
+  },
+];
+
+export default function Footer() {
   return (
     <footer className="bg-ink text-white">
       <div className="mx-auto max-w-[1200px] px-6 py-14">
@@ -45,20 +49,32 @@ export default function Footer() {
             </p>
           </div>
 
-          {columns.map((col) => (
+          {FOOTER_COLUMNS.map((col) => (
             <div key={col.title}>
               <h4 className="text-sm font-semibold">{col.title}</h4>
               <ul className="mt-4 space-y-3">
-                {col.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-white/60 transition-colors hover:text-white"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {col.links.map((link) => {
+                  const className =
+                    "text-sm text-white/60 transition-colors hover:text-white";
+                  return (
+                    <li key={link.label}>
+                      {link.external ? (
+                        <a
+                          href={link.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={className}
+                        >
+                          {link.label}
+                        </a>
+                      ) : (
+                        <Link href={link.href} className={className}>
+                          {link.label}
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
