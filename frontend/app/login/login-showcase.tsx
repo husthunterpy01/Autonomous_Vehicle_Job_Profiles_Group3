@@ -1,10 +1,9 @@
-import type { ReactNode } from "react";
-import {
-  AV_CATEGORIES,
-  AV_COMPANIES,
-  ALL_JOBS,
-  getTopSkills,
-} from "@/lib/mock-data";
+"use client";
+
+import { useEffect, useState, type ReactNode } from "react";
+import { getCompaniesWithJobCounts } from "@/lib/services/company";
+import { getCategoryStats, type CategoryDemand } from "@/lib/services/home";
+import { getSkillTrends } from "@/lib/services/trend";
 
 /* ------------------------------------------------------------------ */
 /* Floating decorative badges                                          */
@@ -141,17 +140,26 @@ function UserAvatar() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mini category trend chart, built from real AV_CATEGORIES data       */
+/* Mini category chart, built from the live category counts             */
 /* ------------------------------------------------------------------ */
 
-function CategoryChart() {
+function CategoryChart({ categories }: { categories: CategoryDemand[] }) {
   const width = 320;
   const height = 78;
   const padding = 8;
-  const maxJobs = Math.max(...AV_CATEGORIES.map((c) => c.jobs));
-  const step = (width - padding * 2) / (AV_CATEGORIES.length - 1);
 
-  const points = AV_CATEGORIES.map((c, i) => {
+  if (categories.length < 2) {
+    return (
+      <p className="py-6 text-center text-xs text-ink-muted">
+        Live category data is not available right now.
+      </p>
+    );
+  }
+
+  const maxJobs = Math.max(...categories.map((c) => c.jobs), 1);
+  const step = (width - padding * 2) / (categories.length - 1);
+
+  const points = categories.map((c, i) => {
     const x = padding + i * step;
     const y = height - padding - (c.jobs / maxJobs) * (height - padding * 2);
     return { x, y, category: c };
@@ -195,7 +203,7 @@ function CategoryChart() {
         />
         {points.map((p) => (
           <circle
-            key={p.category.name}
+            key={p.category.id}
             cx={p.x}
             cy={p.y}
             r={p === peak ? 4 : 2.5}
@@ -241,14 +249,65 @@ const ACCENTS = [
   { text: "text-amber-600", tint: "bg-amber-50" },
 ];
 
-const STATS = [
-  { value: AV_COMPANIES.length, label: "Companies" },
-  { value: ALL_JOBS.length, label: "Open Roles" },
-  { value: AV_CATEGORIES.length, label: "Categories" },
-];
+type ShowcaseData = {
+  companies: number | null;
+  jobs: number | null;
+  categories: CategoryDemand[];
+  skills: string[];
+};
+
+const EMPTY_SHOWCASE: ShowcaseData = {
+  companies: null,
+  jobs: null,
+  categories: [],
+  skills: [],
+};
+
+/** Live numbers for the preview. Each request fails on its own, so a slow or
+ *  missing API only blanks that part of the card and never breaks the form. */
+function useShowcaseData(): ShowcaseData {
+  const [data, setData] = useState<ShowcaseData>(EMPTY_SHOWCASE);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.allSettled([
+      getCompaniesWithJobCounts(1, 100),
+      getCategoryStats(),
+      getSkillTrends(3, 1),
+    ]).then(([companies, categories, skills]) => {
+      if (cancelled) return;
+      setData({
+        companies:
+          companies.status === "fulfilled" ? companies.value.total : null,
+        jobs:
+          companies.status === "fulfilled"
+            ? companies.value.items.reduce(
+                (sum, company) => sum + company.number_of_jobs,
+                0,
+              )
+            : null,
+        categories: categories.status === "fulfilled" ? categories.value : [],
+        skills:
+          skills.status === "fulfilled"
+            ? skills.value.skills.map((skill) => skill.name)
+            : [],
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return data;
+}
 
 function DashboardPreview() {
-  const topSkills = getTopSkills(3);
+  const { companies, jobs, categories, skills } = useShowcaseData();
+  const stats = [
+    { value: companies, label: "Companies" },
+    { value: jobs, label: "Open Roles" },
+    { value: categories.length || null, label: "Categories" },
+  ];
 
   return (
     <div className="flex -rotate-2 overflow-hidden rounded-[2rem] border border-line bg-surface shadow-2xl transition-transform duration-500 ease-out hover:rotate-0 hover:scale-[1.02]">
@@ -284,10 +343,10 @@ function DashboardPreview() {
           </div>
         </div>
 
-        {/* Stat tiles — real numbers from mock-data, each tinted with its
+        {/* Stat tiles — live numbers from the API, each tinted with its
             own accent color instead of a flat neutral border box */}
         <div className="mt-3 grid grid-cols-3 gap-2">
-          {STATS.map((stat, i) => {
+          {stats.map((stat, i) => {
             const accent = ACCENTS[i];
             return (
               <div
@@ -295,7 +354,7 @@ function DashboardPreview() {
                 className={`rounded-lg px-2.5 py-2 ${accent.tint}`}
               >
                 <p className={`text-base font-semibold ${accent.text}`}>
-                  {stat.value}
+                  {stat.value ?? "-"}
                 </p>
                 <p className="text-[11px] text-ink-secondary">{stat.label}</p>
               </div>
@@ -308,7 +367,7 @@ function DashboardPreview() {
           <p className="mb-11 text-xs font-medium text-ink-secondary">
             Jobs by Category
           </p>
-          <CategoryChart />
+          <CategoryChart categories={categories} />
         </div>
 
         {/* Top skills — spaced-out colorful tag pills instead of a cramped
@@ -318,14 +377,14 @@ function DashboardPreview() {
             Top Skills in Demand
           </p>
           <div className="flex flex-wrap gap-2">
-            {topSkills.map((skill, i) => {
+            {skills.map((name, i) => {
               const accent = ACCENTS[i % ACCENTS.length];
               return (
                 <span
-                  key={skill.name}
+                  key={name}
                   className={`rounded-full px-3 py-1 text-xs font-medium ${accent.tint} ${accent.text}`}
                 >
-                  {skill.name}
+                  {name}
                 </span>
               );
             })}
