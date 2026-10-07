@@ -191,10 +191,11 @@ When `SUPABASE_DATABASE_URL` is set in `backend/.env`, `sync_silver`,
 `import_categories`, `import_skills`, and `import_salary` each automatically
 push a full mirror (`scripts/sync_to_supabase.py`: `pg_dump --schema public`
 locally, `pg_restore --clean --if-exists` into Supabase) after they succeed.
-A mirror failure is logged, not raised - it never fails the command that
-triggered it, since the local write already committed. Unset the variable to
-disable mirroring; run `python -m scripts.sync_to_supabase` directly to sync
-on demand without running an import. See the root README's "Supabase mirror"
+If the mirror fails, the command exits with status 1 and prints the error plus
+how to retry; the local write has already committed, so only Supabase is
+behind. If the variable is unset, mirroring is skipped and nothing fails. Unset
+the variable to disable mirroring; run `python -m scripts.sync_to_supabase`
+directly to retry or to sync on demand without running an import. See the root README's "Supabase mirror"
 section for setup (connection-pooler string, not the IPv6-only direct host).
 
 ## Known issue: missing/wrong locations, investigated 2026-10-01

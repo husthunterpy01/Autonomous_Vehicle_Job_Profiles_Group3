@@ -149,3 +149,32 @@ def test_sync_silver_disposes_the_source_engine_even_if_sync_raises(
         module.main()
 
     mock_source_engine.dispose.assert_called_once()
+
+
+@pytest.mark.parametrize("module_name", ["import_categories", "import_salary", "import_skills"])
+def test_import_commands_exit_non_zero_when_the_mirror_fails(module_name, tmp_path, monkeypatch, capsys):
+    import importlib
+
+    module = importlib.import_module(f"app.{module_name}")
+    path = _write_handoff(tmp_path, [])
+    monkeypatch.setattr("sys.argv", ["command", str(path)])
+    with (
+        patch.object(module, "SilverPipeline") as mock_pipeline_cls,
+        patch.object(module, "sync_if_configured", side_effect=RuntimeError("Supabase mirror sync failed: boom")) as mock_sync,
+        pytest.raises(SystemExit) as raised,
+    ):
+        getattr(mock_pipeline_cls.return_value, module_name).return_value = {"imported": 0}
+        module.main()
+
+    assert raised.value.code == 1
+    mock_sync.assert_called_once_with(required=True)
+    captured = capsys.readouterr()
+    assert "boom" in captured.err
+    assert "local write succeeded" in captured.err
+    assert captured.out.strip() != ""  # the summary was printed before the mirror ran
+
+
+def test_mirror_to_supabase_does_nothing_when_mirroring_is_skipped():
+    from app.utils.cli import mirror_to_supabase
+
+    mirror_to_supabase(lambda **kwargs: False)  # SUPABASE_DATABASE_URL unset -> not a failure

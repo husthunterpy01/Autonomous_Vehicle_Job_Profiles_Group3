@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 
 from app.core.database import engine
 from app.services.silver_pipeline import SilverPipeline
-from app.utils.cli import run_command
+from app.utils.cli import mirror_to_supabase, run_command
 from scripts.sync_to_supabase import sync_if_configured
 
 
@@ -27,10 +27,9 @@ def main():
             source.dispose()
 
     run_command(parser, execute)
-    # Best-effort: mirrors to Supabase when SUPABASE_DATABASE_URL is set,
-    # silently skipped otherwise. Never fails this command - the local write
-    # already committed by the time this runs.
-    sync_if_configured()
+    # Mirrors to Supabase when SUPABASE_DATABASE_URL is set, skipped otherwise.
+    # A failed mirror exits non-zero; the local write already committed.
+    mirror_to_supabase(sync_if_configured)
 
 
 if __name__ == "__main__":

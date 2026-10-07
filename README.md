@@ -346,7 +346,8 @@ serve it read-only. Off by default.
 Set `SUPABASE_DATABASE_URL` in `.env` (see `backend/.env.sample` for the
 connection-pooler string format) and it runs automatically after every
 successful `sync_silver`/`import_categories`/`import_skills`/`import_salary`.
-To run it manually instead:
+If the mirror fails, that command exits with status 1 (the local write has
+already committed). To run it manually instead:
 
 ```bash
 python -m scripts.sync_to_supabase
