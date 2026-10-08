@@ -179,6 +179,21 @@ npm run lint
 npm run build
 ```
 
+### End-to-end tests
+
+Playwright drives a real browser through Find Jobs (keyword, country and
+salary filters, pagination, empty and error states), the job detail page and
+Market Trends. The API is mocked in the browser (`frontend/e2e/mock-api.ts`),
+so no backend or database needs to be running.
+
+```bash
+npx playwright install chromium   # once, downloads the test browser
+npm run test:e2e
+```
+
+The tests start their own dev server on port `3100`. They also run in the
+frontend CI workflow on every pull request.
+
 ### Project structure
 
 ```text
@@ -316,9 +331,15 @@ curl http://127.0.0.1:8000/api/v1/companies
 
 **Get company by id**
 
+Use a `company_id` from the list response (or from the create response below):
+
 ```bash
-curl http://127.0.0.1:8000/api/v1/companies/11111111-1111-1111-1111-111111111035
+curl http://127.0.0.1:8000/api/v1/companies/<company_id>
 ```
+
+A new database with `SEED_ON_STARTUP=false` has no companies, so the list is
+`[]` and any id returns `404` until you create one. The demo id
+`11111111-1111-1111-1111-111111111035` only exists after seeding.
 
 **Create a company**
 
@@ -455,6 +476,23 @@ MINIO_JOBS_BUCKET=scraped-jobs
 
 `MINIO_ACCESS_KEY` and `MINIO_SECRET_KEY` must match MinIO's root user and
 password. `MINIO_SECURE=false` is required for local HTTP.
+
+After archiving, the scraper loads the payloads into Postgres (`bronze` schema)
+and builds the dbt models, so it also needs the database settings. Add them to
+the same `.env` (see `scrapers/.env.sample`); without a password the archive
+step still succeeds but the Postgres step fails with `no password supplied`:
+
+```bash
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DB=autojobdatabase
+POSTGRES_USER=team3
+POSTGRES_PASSWORD=<password>
+```
+
+AutoBrains is read through Comeet's API, which needs a token. Set
+`COMEET_TOKEN` in `.env` as well, or that company fails with
+`unset environment variable for params.token` and the others still run.
 
 The scraper creates the bucket on first archive if it does not already exist.
 You do not need to create `scraped-jobs` by hand.
