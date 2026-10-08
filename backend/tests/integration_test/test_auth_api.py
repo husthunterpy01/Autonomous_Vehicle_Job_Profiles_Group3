@@ -471,3 +471,52 @@ def test_email_change_requires_current_password(client, db_session):
         json={"email": new_email, "current_password": SIGNUP_PAYLOAD["password"]},
     ).status_code == 200
     assert db_session.query(User).one().email == new_email
+
+
+def test_wrong_current_password_on_profile_update_is_rate_limited(client):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    attempts = settings.auth_login_max_attempts
+    change = {"email": "new.address@example.com", "current_password": "Wrong!Password1"}
+
+    for _ in range(attempts):
+        assert client.patch("/api/v1/auth/me", json=change).status_code == 400
+
+    blocked = client.patch("/api/v1/auth/me", json=change)
+    assert blocked.status_code == 429
+    assert int(blocked.headers["Retry-After"]) >= 1
+    # Even the right password is refused until the window passes.
+    right = {**change, "current_password": SIGNUP_PAYLOAD["password"]}
+    assert client.patch("/api/v1/auth/me", json=right).status_code == 429
+
+
+def test_wrong_current_password_on_password_change_is_rate_limited(client):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    attempts = settings.auth_login_max_attempts
+    wrong = {"current_password": "Wrong!Password1", "new_password": "AnotherSecure!456"}
+
+    for _ in range(attempts):
+        assert client.patch("/api/v1/auth/me/password", json=wrong).status_code == 400
+
+    assert client.patch("/api/v1/auth/me/password", json=wrong).status_code == 429
+
+
+def test_successful_password_change_clears_the_failure_count(client):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    attempts = settings.auth_login_max_attempts
+    wrong = {"current_password": "Wrong!Password1", "new_password": "AnotherSecure!456"}
+    for _ in range(attempts - 1):
+        assert client.patch("/api/v1/auth/me/password", json=wrong).status_code == 400
+
+    right = {**wrong, "current_password": SIGNUP_PAYLOAD["password"]}
+    assert client.patch("/api/v1/auth/me/password", json=right).status_code == 204
+
+    # The earlier failures no longer count against the user.
+    again = {"current_password": "AnotherSecure!456", "new_password": "ThirdSecure!789"}
+    assert client.patch("/api/v1/auth/me/password", json=again).status_code == 204
+
+
+def test_profile_update_without_a_password_check_is_not_limited(client):
+    client.post("/api/v1/auth/signup", json=SIGNUP_PAYLOAD)
+    for index in range(settings.auth_login_max_attempts + 2):
+        response = client.patch("/api/v1/auth/me", json={"full_name": f"Name {index}"})
+        assert response.status_code == 200

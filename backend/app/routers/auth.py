@@ -73,10 +73,28 @@ login_rate_limiter = LoginRateLimiter(
     max_attempts=settings.auth_login_max_attempts,
     window_seconds=settings.auth_login_window_seconds,
 )
+# Failed "current password" checks on the signed-in profile endpoints, per user:
+# someone holding a session must not be able to guess the account password here.
+current_password_rate_limiter = LoginRateLimiter(
+    max_attempts=settings.auth_login_max_attempts,
+    window_seconds=settings.auth_login_window_seconds,
+)
 password_reset_rate_limiter = LoginRateLimiter(
     max_attempts=settings.password_reset_max_requests,
     window_seconds=settings.password_reset_window_seconds,
 )
+
+
+def _check_current_password_rate_limit(user: User) -> str:
+    key = f"user:{user.user_id}"
+    retry_after = current_password_rate_limiter.retry_after(key)
+    if retry_after is not None:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many incorrect passwords. Please try again later",
+            headers={"Retry-After": str(retry_after)},
+        )
+    return key
 
 
 def _raise_reset_token_error(error: Exception) -> None:
@@ -337,9 +355,11 @@ def update_me(
     current_user: CurrentUser,
     db: DbSession,
 ):
+    rate_limit_key = _check_current_password_rate_limit(current_user)
     try:
         return AuthService.update_profile(db, current_user, data)
     except IncorrectCurrentPasswordError as error:
+        current_password_rate_limiter.record_failure(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect or required to change email",
@@ -358,6 +378,7 @@ def change_password(
     current_user: CurrentUser,
     db: DbSession,
 ):
+    rate_limit_key = _check_current_password_rate_limit(current_user)
     try:
         AuthService.change_password(
             db,
@@ -366,7 +387,9 @@ def change_password(
             data.new_password,
         )
         _set_access_cookie(response, current_user, remember_me=False)
+        current_password_rate_limiter.clear(rate_limit_key)
     except IncorrectCurrentPasswordError as error:
+        current_password_rate_limiter.record_failure(rate_limit_key)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Current password is incorrect",
