@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import JobDetailClient from "./[id]/job-detail-client";
+
+export const metadata: Metadata = { title: "Job details | AV Job Finder" };
 
 export default function JobsPage() {
   return (

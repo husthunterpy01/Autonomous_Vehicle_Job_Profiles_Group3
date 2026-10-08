@@ -272,6 +272,7 @@ export default function CompanyClient() {
                 <input
                   type="number"
                   min={1}
+                  aria-label="Companies per page"
                   value={pageSizeInput}
                   onChange={(e) => setPageSizeInput(e.target.value)}
                   onBlur={() => handlePageSize(pageSizeInput)}

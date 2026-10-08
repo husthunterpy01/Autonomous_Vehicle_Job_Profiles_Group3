@@ -27,9 +27,9 @@ export default function DetailHeaderCard({
   return (
     <div className="mt-4 rounded-xl border border-line bg-surface p-6 shadow-sm">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-4">
+        <div className="flex flex-col items-start gap-4 sm:flex-row">
           <CompanyLogo text={logoText} size="h-14 w-14" />
-          <div>
+          <div className="min-w-0 break-words">
             <PageHeader title={title} subtitle={subtitle} />
             {meta && <div className="mt-3">{meta}</div>}
           </div>

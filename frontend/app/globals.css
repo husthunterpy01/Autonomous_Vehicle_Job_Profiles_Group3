@@ -10,11 +10,24 @@
   --color-surface: #ffffff;
   --color-section: #f5f7fb;
   --color-ink: #1e293b;
-  --color-ink-secondary: #64748b;
-  --color-ink-muted: #94a3b8;
+  --color-ink-secondary: #475569;
+  --color-ink-muted: #5f6f86;
   --color-line: #e5e7eb;
   --color-success: #10b981;
   --color-warning: #f59e0b;
+}
+
+/* Visible keyboard focus on links, buttons and other controls (WCAG 2.4.7). */
+:where(
+  a,
+  button,
+  select,
+  summary,
+  [role="button"],
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 body {

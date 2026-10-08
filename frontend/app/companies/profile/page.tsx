@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import CompanyDetailClient from "../[id]/company-detail-client";
+
+export const metadata: Metadata = { title: "Company profile | AV Job Finder" };
 
 export default function CompanyProfilePage() {
   return (
