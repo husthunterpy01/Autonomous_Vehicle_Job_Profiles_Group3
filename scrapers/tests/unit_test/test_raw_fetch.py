@@ -689,3 +689,75 @@ def test_fetch_and_archive_raises_on_http_403(mock_urlopen, mock_archive):
 
     with pytest.raises(RuntimeError, match="HTTP 403"):
         fetcher.fetch_and_archive("https://api.ashbyhq.com/posting-api/job-board/42dot")
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_max_jobs_keeps_only_the_first_postings_and_skips_their_detail_calls(
+    mock_urlopen, mock_archive, tmp_path, monkeypatch
+):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources:\n"
+        "  greenhouse:\n"
+        "    api_base: https://boards-api.greenhouse.io/v1/boards/{slug}/jobs\n"
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+    payload = {"jobs": [{"id": "1"}, {"id": "2"}, {"id": "3"}], "meta": {"total": 3}}
+    mock_urlopen.side_effect = [
+        _urlopen_body(payload),
+        _urlopen_body({"pay_input_ranges": []}),
+    ]
+    fetcher, url = RawFetch.from_company(
+        {"name": "Stack AV", "ats": "greenhouse", "slug": "stackav"}
+    )
+
+    fetcher.fetch_and_archive(url, timeout=5, max_jobs=1)
+
+    saved = mock_archive.return_value.save_raw_response.call_args.kwargs
+    assert saved["raw_response"]["jobs"] == [{"id": "1", "pay_input_ranges": []}]
+    # One list call plus one detail call, not three.
+    assert mock_urlopen.call_count == 2
+
+
+def test_limit_jobs_handles_bare_arrays_and_known_envelopes():
+    limit = RawFetch._limit_jobs
+
+    assert json.loads(limit(b'[{"id": 1}, {"id": 2}]', 1)) == [{"id": 1}]
+    assert json.loads(limit(b'{"jobPostings": [1, 2, 3], "total": 3}', 2)) == {
+        "jobPostings": [1, 2],
+        "total": 3,
+    }
+    assert json.loads(limit(b'{"content": [1, 2, 3]}', 2)) == {"content": [1, 2]}
+    # Fewer postings than the cap are left alone.
+    assert json.loads(limit(b'[{"id": 1}]', 5)) == [{"id": 1}]
+
+
+def test_limit_jobs_leaves_unrecognised_bodies_unchanged():
+    limit = RawFetch._limit_jobs
+
+    assert limit(b"<html>careers</html>", 1) == b"<html>careers</html>"
+    assert limit(b'{"other": [1, 2]}', 1) == b'{"other": [1, 2]}'
+    assert limit(b'"text"', 1) == b'"text"'
+
+
+@patch("scrapers.service.fetch.rawfetch.ResponseArchive")
+@patch("scrapers.service.fetch.rawfetch.urlopen")
+def test_without_max_jobs_every_posting_is_kept(
+    mock_urlopen, mock_archive, tmp_path, monkeypatch
+):
+    sources = tmp_path / "ats_sources.yaml"
+    sources.write_text(
+        "ats_sources:\n"
+        "  lever:\n"
+        "    api_base: https://api.lever.co/v0/postings/{slug}\n"
+    )
+    monkeypatch.setattr("scrapers.service.fetch.rawfetch.ATS_PATH", str(sources))
+    mock_urlopen.return_value = _urlopen_body([{"id": str(n)} for n in range(150)])
+    fetcher, url = RawFetch.from_company({"name": "Waabi", "ats": "lever", "slug": "waabi"})
+
+    fetcher.fetch_and_archive(url, timeout=5)
+
+    saved = mock_archive.return_value.save_raw_response.call_args.kwargs
+    assert len(json.loads(saved["raw_response"])) == 150
+

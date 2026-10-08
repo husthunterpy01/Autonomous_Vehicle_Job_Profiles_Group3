@@ -138,9 +138,11 @@ def test_stack_av_scrape_lands_raw_and_runs_dbt(
     assert inserted[2] == "api"
     assert inserted[3] == "greenhouse"
     assert isinstance(inserted[4], Json)
-    # The pay_transparency detail call (mocked with the same list payload,
-    # which has no pay_input_ranges) attaches an empty array to each posting.
+    # --max-jobs 1 keeps only the first of the two postings. The
+    # pay_transparency detail call (mocked with the same list payload, which
+    # has no pay_input_ranges) attaches an empty array to it.
     expected_archived_payload = json.loads(json.dumps(greenhouse_payload))
+    expected_archived_payload["jobs"] = expected_archived_payload["jobs"][:1]
     for job in expected_archived_payload["jobs"]:
         job["pay_input_ranges"] = []
     assert inserted[4].adapted == expected_archived_payload

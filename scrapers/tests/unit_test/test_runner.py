@@ -29,7 +29,19 @@ def test_scrape_company_archives_one_payload(mock_fetch):
     assert count == 1
     mock_fetch.from_company.assert_called_once_with(company)
     mock_fetch.return_value.fetch_and_archive.assert_called_once_with(
-        "https://example/jobs", timeout=5
+        "https://example/jobs", timeout=5, max_jobs=None
+    )
+
+
+@patch("scrapers.utils.company_scraper.RawFetch")
+def test_scrape_company_passes_max_jobs_to_the_fetcher(mock_fetch):
+    mock_fetch.from_company.return_value = (mock_fetch.return_value, "https://example/jobs")
+    company = {"name": "Stack AV", "ats": "greenhouse", "slug": "stackav"}
+
+    CompanyScraper.scrape_company(company, timeout=5, max_jobs=3)
+
+    mock_fetch.return_value.fetch_and_archive.assert_called_once_with(
+        "https://example/jobs", timeout=5, max_jobs=3
     )
 
 
@@ -64,6 +76,8 @@ def test_runner_continues_after_company_failure(mock_scraper, mock_upload):
 
     assert status == 1
     assert mock_scraper.scrape_company.call_count == 2
+    # The flag reaches every company.
+    assert [c.args[2] for c in mock_scraper.scrape_company.call_args_list] == [10, 10]
     mock_upload.assert_called_once_with()
 
 
@@ -138,7 +152,7 @@ def test_runner_also_scrapes_enabled_xml_sources(mock_scraper, mock_upload):
     status = ScraperRunner.scrape_data_from_sources([])
 
     assert status == 0
-    mock_scraper.scrape_company.assert_called_once_with(momenta, 30.0)
+    mock_scraper.scrape_company.assert_called_once_with(momenta, 30.0, None)
     mock_upload.assert_called_once_with()
 
 

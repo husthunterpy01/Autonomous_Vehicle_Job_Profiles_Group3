@@ -470,6 +470,11 @@ From the repository root:
 python3 -m scrapers.scraper_main
 ```
 
+A full run takes a long time: Greenhouse, SmartRecruiters and Workday need one
+request per job, and Bosch alone has about 4,800 postings on SmartRecruiters.
+Expect hours, not minutes. Use `--company` and `--max-jobs` to keep a run short
+while developing.
+
 Smoke-test a single company (use the `key` field from
 `list_companies.yaml`):
 
@@ -480,7 +485,7 @@ python3 -m scrapers.scraper_main --company stack_av --max-jobs 10
 | Flag | Default | Meaning |
 |---|---|---|
 | `--company` | all enabled API companies | Run one company by YAML `key` |
-| `--max-jobs` | `100` | Maximum jobs kept from each company response |
+| `--max-jobs` | no limit | Keep at most this many jobs from each API company response (applied before the per-job detail requests; HTML and XML sources are not trimmed) |
 | `--timeout` | `30` | HTTP timeout in seconds |
 
 Companies with `enabled: false`, or an ATS that is not an API source, are

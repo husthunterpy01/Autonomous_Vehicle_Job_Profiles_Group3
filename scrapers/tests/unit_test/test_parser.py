@@ -9,7 +9,7 @@ def test_parse_args_defaults():
 
     assert args.company is None
     assert args.timeout == 30.0
-    assert args.max_jobs == 100
+    assert args.max_jobs is None
 
 
 def test_parse_args_accepts_company_and_limits():

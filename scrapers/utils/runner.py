@@ -36,7 +36,9 @@ class ScraperRunner:
         for company in companies:
             name = company.get("name", company.get("key"))
             try:
-                archived += CompanyScraper.scrape_company(company, args.timeout)
+                archived += CompanyScraper.scrape_company(
+                    company, args.timeout, args.max_jobs
+                )
             except (RuntimeError, ValueError, KeyError, OSError) as exc:
                 logger.error("%s failed: %s", name, exc)
                 failures += 1
