@@ -200,7 +200,9 @@ npm run test:e2e
 ```
 
 The tests start their own dev server on port `3100`. They also run in the
-frontend CI workflow on every pull request.
+frontend CI workflow on every pull request. For how the mock works, what it
+cannot catch and how to add a test, see
+[frontend/e2e/README.md](./frontend/e2e/README.md).
 
 ### Project structure
 
