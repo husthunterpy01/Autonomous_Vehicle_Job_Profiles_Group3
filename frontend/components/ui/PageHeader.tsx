@@ -7,7 +7,9 @@ export default function PageHeader({
 }) {
   return (
     <div>
-      <h1 className="text-3xl font-bold tracking-tight text-ink">{title}</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
+        {title}
+      </h1>
       <p className="mt-2 text-ink-secondary">{subtitle}</p>
     </div>
   );
