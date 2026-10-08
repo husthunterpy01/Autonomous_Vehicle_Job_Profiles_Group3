@@ -31,15 +31,70 @@ test.describe("Market Trends", () => {
     await expect(python).toHaveAttribute("aria-pressed", "true");
   });
 
-  test("has zoom controls", async ({ page }) => {
+  test("zooming resizes the chart and reset restores it", async ({ page }) => {
     await mockApi(page);
     await page.goto("/trends");
 
-    await expect(page.getByRole("button", { name: "Zoom in" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Zoom out" })).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Reset zoom" }),
-    ).toBeVisible();
+    const plot = page.getByTestId("chart-plot");
+    const frame = page.getByTestId("chart-scroll");
+    const zoomIn = page.getByRole("button", { name: "Zoom in" });
+    const zoomOut = page.getByRole("button", { name: "Zoom out" });
+    const reset = page.getByRole("button", { name: "Reset zoom" });
+    const size = async () => ({
+      width: Number(await plot.getAttribute("width")),
+      height: Number(await plot.getAttribute("height")),
+    });
+    const scrolls = () =>
+      frame.evaluate((el) => el.scrollWidth > el.clientWidth);
+
+    // Starts at 100%: nothing to zoom out or reset, and the plot fits its frame.
+    await expect(page.getByText("100%", { exact: true })).toBeVisible();
+    await expect(zoomOut).toBeDisabled();
+    await expect(reset).toBeDisabled();
+    const base = await size();
+    expect(base.width).toBeGreaterThan(0);
+    expect(await scrolls()).toBe(false);
+
+    // 150%: both axes grow by half and the plot now scrolls inside its frame.
+    await zoomIn.click();
+    await expect(page.getByText("150%", { exact: true })).toBeVisible();
+    await expect(zoomOut).toBeEnabled();
+    await expect(reset).toBeEnabled();
+    await expect
+      .poll(async () => (await size()).width)
+      .toBeCloseTo(base.width * 1.5, 0);
+    expect((await size()).height).toBeCloseTo(base.height * 1.5, 0);
+    expect(await scrolls()).toBe(true);
+
+    // 200%.
+    await zoomIn.click();
+    await expect(page.getByText("200%", { exact: true })).toBeVisible();
+    await expect
+      .poll(async () => (await size()).width)
+      .toBeCloseTo(base.width * 2, 0);
+
+    // Zoom out one step, then reset all the way.
+    await zoomOut.click();
+    await expect(page.getByText("150%", { exact: true })).toBeVisible();
+    await expect
+      .poll(async () => (await size()).width)
+      .toBeCloseTo(base.width * 1.5, 0);
+    await reset.click();
+    await expect(page.getByText("100%", { exact: true })).toBeVisible();
+    await expect.poll(size).toEqual(base);
+    await expect(reset).toBeDisabled();
+  });
+
+  test("zoom in stops at the largest level", async ({ page }) => {
+    await mockApi(page);
+    await page.goto("/trends");
+
+    const zoomIn = page.getByRole("button", { name: "Zoom in" });
+    for (const label of ["150%", "200%", "300%", "400%"]) {
+      await zoomIn.click();
+      await expect(page.getByText(label, { exact: true })).toBeVisible();
+    }
+    await expect(zoomIn).toBeDisabled();
   });
 
   test("shows an empty state before any scrape is processed", async ({
