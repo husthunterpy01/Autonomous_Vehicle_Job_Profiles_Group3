@@ -37,7 +37,12 @@ export default function TextField({
     <div>
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
         {label}
-        {required && <span className="text-amber-800"> *</span>}
+        {required && (
+          <span aria-hidden="true" className="text-amber-800">
+            {" "}
+            *
+          </span>
+        )}
       </label>
       <div className="relative">
         <input
@@ -60,7 +65,6 @@ export default function TextField({
             type="button"
             onClick={() => setRevealed((value) => !value)}
             aria-label={`${revealed ? "Hide" : "Show"} ${label.toLowerCase()}`}
-            aria-pressed={revealed}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
           >
             <EyeIcon open={revealed} />

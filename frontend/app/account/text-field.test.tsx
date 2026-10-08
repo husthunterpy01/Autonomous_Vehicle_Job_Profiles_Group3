@@ -37,16 +37,14 @@ describe("password visibility", () => {
     const eye = screen.getByRole("button", { name: "Show new password" });
 
     expect(input.type).toBe("password");
-    expect(eye.getAttribute("aria-pressed")).toBe("false");
+    expect(eye.getAttribute("aria-pressed")).toBeNull();
 
     fireEvent.click(eye);
 
     expect(input.type).toBe("text");
-    expect(
-      screen
-        .getByRole("button", { name: "Hide new password" })
-        .getAttribute("aria-pressed"),
-    ).toBe("true");
+    // The name flips instead of a pressed state, so it is announced once.
+    const hide = screen.getByRole("button", { name: "Hide new password" });
+    expect(hide.getAttribute("aria-pressed")).toBeNull();
   });
 
   it("hides it again on the second press and keeps what was typed", () => {
@@ -58,6 +56,23 @@ describe("password visibility", () => {
 
     expect(input.type).toBe("password");
     expect(input.value).toBe("Secret!Pass123");
+  });
+
+  it("does not read the required marker aloud", () => {
+    render(
+      <TextField
+        id="n"
+        label="Full name"
+        required
+        value=""
+        onChange={() => {}}
+      />,
+    );
+
+    expect(screen.getByLabelText(/^Full name/).hasAttribute("required")).toBe(
+      true,
+    );
+    expect(screen.getByText("*").getAttribute("aria-hidden")).toBe("true");
   });
 
   it("is named after its own field", () => {
