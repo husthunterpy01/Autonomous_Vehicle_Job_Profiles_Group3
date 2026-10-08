@@ -33,7 +33,7 @@ export default function TextField({
     <div>
       <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-ink">
         {label}
-        {required && <span className="text-warning"> *</span>}
+        {required && <span className="text-amber-800"> *</span>}
       </label>
       <input
         id={id}
@@ -54,7 +54,7 @@ export default function TextField({
         </p>
       )}
       {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-sm text-warning">
+        <p id={`${id}-error`} className="mt-1.5 text-sm text-amber-800">
           {error}
         </p>
       )}

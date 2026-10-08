@@ -87,7 +87,7 @@ export default function AccountView({
         {notice && (
           <p
             role="status"
-            className="mt-4 rounded-lg bg-success/10 px-4 py-2.5 text-sm font-medium text-success"
+            className="mt-4 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800"
           >
             {notice}
           </p>

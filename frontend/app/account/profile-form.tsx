@@ -82,7 +82,7 @@ export default function ProfileForm({
       {formError && (
         <p
           role="alert"
-          className="rounded-lg bg-warning/10 px-4 py-2.5 text-sm font-medium text-warning"
+          className="rounded-lg bg-amber-50 px-4 py-2.5 text-sm font-medium text-amber-800"
         >
           {formError}
         </p>
