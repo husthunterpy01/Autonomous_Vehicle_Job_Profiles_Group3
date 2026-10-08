@@ -67,7 +67,9 @@ class CompanyScraper:
         return cls._enabled_by_ats(companies, "xml", company_key)
 
     @classmethod
-    def scrape_company(cls, company: dict[str, Any], timeout: float) -> int:
+    def scrape_company(
+        cls, company: dict[str, Any], timeout: float, max_jobs: int | None = None
+    ) -> int:
         name = company["name"]
         ats = company.get("ats")
         if ats not in ("html", "xml") and not company.get("slug") and not company.get("params"):
@@ -76,6 +78,6 @@ class CompanyScraper:
 
         logger.info("Fetching %s from %s.", name, ats)
         fetcher, url = RawFetch.from_company(company)
-        object_key = fetcher.fetch_and_archive(url, timeout=timeout)
+        object_key = fetcher.fetch_and_archive(url, timeout=timeout, max_jobs=max_jobs)
         logger.info("Archived %s to %s.", name, object_key)
         return 1

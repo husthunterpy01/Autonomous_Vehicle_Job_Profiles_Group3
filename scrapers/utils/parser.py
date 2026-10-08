@@ -54,13 +54,16 @@ class ScraperParser:
         parser.add_argument(
             "--max-jobs",
             type=int,
-            default=100,
-            help="Maximum jobs to keep from each company response (default: 100)",
+            default=None,
+            help=(
+                "Keep at most this many jobs from each API company response "
+                "(default: no limit)"
+            ),
         )
         args = parser.parse_args(argv)
         if args.timeout <= 0:
             parser.error("--timeout must be greater than 0")
-        if args.max_jobs < 1:
+        if args.max_jobs is not None and args.max_jobs < 1:
             parser.error("--max-jobs must be at least 1")
         return args
 

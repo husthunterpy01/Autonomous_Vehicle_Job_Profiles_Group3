@@ -164,12 +164,16 @@ class RawFetch:
             job_url,
         )
 
-    def fetch_and_archive(self, url: str, timeout: float = 30.0) -> str:
+    def fetch_and_archive(
+        self, url: str, timeout: float = 30.0, max_jobs: int | None = None
+    ) -> str:
         candidates = [url, *self.fallback_urls]
         last_error = RuntimeError(f"{self.source_system} had no URL to fetch")
         for index, candidate in enumerate(candidates):
             try:
-                return self._fetch_and_archive_one(candidate, timeout=timeout)
+                return self._fetch_and_archive_one(
+                    candidate, timeout=timeout, max_jobs=max_jobs
+                )
             except RuntimeError as exc:
                 last_error = exc
                 if index + 1 < len(candidates):
@@ -417,7 +421,40 @@ class RawFetch:
             (soup.body or soup).append(script)
         return str(soup)
 
-    def _fetch_and_archive_one(self, url: str, timeout: float = 30.0) -> str:
+    # Keys that hold the posting list in the ATS list responses we fetch
+    # (Greenhouse/Ashby/Workable "jobs", Workday "jobPostings", SmartRecruiters
+    # "content"); Lever and Comeet return a bare array.
+    JOB_LIST_KEYS = ("jobs", "jobPostings", "content")
+
+    @classmethod
+    def _limit_jobs(cls, body: bytes, max_jobs: int) -> bytes:
+        """Keep the first ``max_jobs`` postings of a JSON list response.
+
+        Runs before the per-job detail calls, so the cap also saves requests.
+        Non-JSON bodies (HTML, XML) and unrecognised JSON shapes are returned
+        unchanged.
+        """
+        try:
+            payload = json.loads(body)
+        except ValueError:
+            return body
+        if isinstance(payload, list):
+            limited: Any = payload[:max_jobs]
+        elif isinstance(payload, dict):
+            key = next(
+                (k for k in cls.JOB_LIST_KEYS if isinstance(payload.get(k), list)),
+                None,
+            )
+            if key is None:
+                return body
+            limited = {**payload, key: payload[key][:max_jobs]}
+        else:
+            return body
+        return json.dumps(limited).encode("utf-8")
+
+    def _fetch_and_archive_one(
+        self, url: str, timeout: float = 30.0, max_jobs: int | None = None
+    ) -> str:
         if self.render:
             body: Any = self._render_html(url, timeout=timeout)
             status, content_type = 200, "text/html"
@@ -431,6 +468,8 @@ class RawFetch:
                 method=self.request_method,
                 data=self.request_body,
             )
+            if max_jobs is not None:
+                body = self._limit_jobs(body, max_jobs)
         if self.detail:
             if self.list_strategy == "jobylon":
                 body = self._attach_jobylon_details(body, timeout=timeout)
