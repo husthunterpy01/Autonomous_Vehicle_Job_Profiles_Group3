@@ -8,6 +8,9 @@ export type AuthUser = {
   username: string;
   full_name: string;
   created_at: string;
+  /** Only in /auth/me responses. */
+  phone?: string | null;
+  address?: string | null;
 };
 
 export type AuthResponse = {
@@ -93,4 +96,36 @@ export function getCurrentUser(): Promise<AuthUser> {
 
 export function signOut(): Promise<void> {
   return authRequest<void>("/logout", { method: "POST" });
+}
+
+export type ProfileUpdatePayload = {
+  email?: string;
+  username?: string;
+  full_name?: string;
+  phone?: string | null;
+  address?: string | null;
+  current_password?: string;
+};
+
+export function updateProfile(
+  payload: ProfileUpdatePayload,
+): Promise<AuthUser> {
+  return authRequest<AuthUser>("/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** The backend re-issues the session cookie, so no re-login. */
+export function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  return authRequest<void>("/me/password", {
+    method: "PATCH",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
 }

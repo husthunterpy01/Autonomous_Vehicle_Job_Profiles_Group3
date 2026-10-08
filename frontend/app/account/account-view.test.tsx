@@ -11,6 +11,8 @@ const user: AuthUser = {
   username: "alex.driver",
   email: "alex@example.com",
   created_at: "2025-06-15T12:30:00Z",
+  phone: "+61 412 345 678",
+  address: "Perth, Western Australia",
 };
 
 describe("AccountView", () => {
@@ -26,9 +28,68 @@ describe("AccountView", () => {
       html,
       /<dt[^>]*>Member since<\/dt><dd[^>]*><time[^>]*>June 15, 2025<\/time><\/dd>/,
     );
+    assert.match(html, /<dt[^>]*>Phone<\/dt><dd[^>]*>\+61 412 345 678<\/dd>/);
+    assert.match(
+      html,
+      /<dt[^>]*>Address<\/dt><dd[^>]*>Perth, Western Australia<\/dd>/,
+    );
     assert.match(html, /<time dateTime="2025-06-15T12:30:00.000Z">/);
     assert.ok(!html.includes(user.user_id));
     assert.ok(!html.includes("Not provided"));
+  });
+
+  it("says Not provided for a phone and address that were never set", () => {
+    const withoutOptional = { ...user, phone: null, address: undefined };
+    const html = renderToStaticMarkup(
+      <AccountView state={{ status: "success", user: withoutOptional }} />,
+    );
+
+    assert.equal(html.match(/Not provided/g)?.length, 2);
+  });
+
+  it("offers Edit only when it can be used and not while editing", () => {
+    const state = { status: "success", user } as const;
+    const plain = renderToStaticMarkup(<AccountView state={state} />);
+    const withEdit = renderToStaticMarkup(
+      <AccountView state={state} onEdit={() => {}} />,
+    );
+    const editing = renderToStaticMarkup(
+      <AccountView
+        state={state}
+        onEdit={() => {}}
+        editor={<form aria-label="editor" />}
+      />,
+    );
+
+    assert.ok(!plain.includes("Edit information"));
+    assert.match(withEdit, /Edit information/);
+    assert.ok(!editing.includes("Edit information"));
+    assert.match(editing, /aria-label="editor"/);
+    assert.ok(!editing.includes("<dl"));
+  });
+
+  it("shows a confirmation notice and extra sections", () => {
+    const html = renderToStaticMarkup(
+      <AccountView
+        state={{ status: "success", user }}
+        notice="Your information has been saved."
+      >
+        <section aria-label="extra" />
+      </AccountView>,
+    );
+
+    assert.match(html, /role="status"[^>]*>Your information has been saved\./);
+    assert.match(html, /aria-label="extra"/);
+  });
+
+  it("does not render extra sections before the user is loaded", () => {
+    const html = renderToStaticMarkup(
+      <AccountView state={{ status: "loading" }}>
+        <section aria-label="extra" />
+      </AccountView>,
+    );
+
+    assert.ok(!html.includes('aria-label="extra"'));
   });
 
   it("uses the fallback for null, undefined, empty, and whitespace values", () => {

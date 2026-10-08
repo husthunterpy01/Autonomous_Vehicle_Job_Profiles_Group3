@@ -128,13 +128,23 @@ The API listens on [http://127.0.0.1:8000](http://127.0.0.1:8000).
 | http://127.0.0.1:8000/api/v1/companies | Companies API |
 | http://127.0.0.1:8000/api/v1/auth/signup | Account registration |
 | http://127.0.0.1:8000/api/v1/auth/login | JWT sign in |
-| http://127.0.0.1:8000/api/v1/auth/me | Current authenticated user |
+| http://127.0.0.1:8000/api/v1/auth/me | Current authenticated user (`GET`), update name, username, email, phone and address (`PATCH`) |
+| http://127.0.0.1:8000/api/v1/auth/me/password | Change the password (`PATCH`) |
 | http://127.0.0.1:8000/api/v1/auth/forgot-password | Request a password-reset email |
 | http://127.0.0.1:8000/api/v1/auth/reset-password | Complete a forgotten-password reset |
 | http://127.0.0.1:8000/api/v1/favorites/jobs | Current user's favorite jobs |
 | http://127.0.0.1:8000/api/v1/favorites/companies | Current user's favorite companies |
 
 ## Authentication API
+
+**Updating your own details.** `PATCH /auth/me` takes only the fields to change;
+`phone` and `address` accept `null` or an empty string to remove them. Changing
+the email also needs `current_password`. `PATCH /auth/me/password` takes
+`current_password` and `new_password` and signs the session in again. A wrong
+current password on either endpoint counts as a failed attempt for that user:
+after `AUTH_LOGIN_MAX_ATTEMPTS` of them within `AUTH_LOGIN_WINDOW_SECONDS` both
+endpoints return `429` with `Retry-After`, even for the right password, until
+the window passes. The counter is per process, like the login limiter.
 
 Passwords must contain at least 12 characters, including uppercase, lowercase,
 a number, and a special character. Passwords are stored as Argon2 hashes. The

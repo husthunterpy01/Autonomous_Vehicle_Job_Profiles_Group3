@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import PageHeader from "@/components/ui/PageHeader";
 import type { AuthUser } from "@/lib/services/auth";
 
@@ -33,28 +34,60 @@ function memberSince(value: unknown): { label: string; dateTime?: string } {
   };
 }
 
-export default function AccountView({ state }: { state: AccountState }) {
+export default function AccountView({
+  state,
+  onEdit,
+  editor,
+  notice,
+  children,
+}: {
+  state: AccountState;
+  onEdit?: () => void;
+  editor?: ReactNode;
+  notice?: string | null;
+  children?: ReactNode;
+}) {
   const joined =
     state.status === "success" ? memberSince(state.user.created_at) : null;
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6">
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
       <PageHeader
         title="My Account"
-        subtitle="Review the personal information on your account."
+        subtitle="Review and update the personal information on your account."
       />
 
       <section
         aria-labelledby="personal-information-heading"
         aria-busy={state.status === "loading"}
-        className="mt-8 max-w-3xl rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-8"
+        className="mt-8 rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-8"
       >
-        <h2
-          id="personal-information-heading"
-          className="text-xl font-semibold text-ink"
-        >
-          Personal Information
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2
+            id="personal-information-heading"
+            className="text-xl font-semibold text-ink"
+          >
+            Personal Information
+          </h2>
+          {state.status === "success" && onEdit && !editor && (
+            <button
+              type="button"
+              onClick={onEdit}
+              className="rounded-lg border border-line bg-surface px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-primary"
+            >
+              Edit information
+            </button>
+          )}
+        </div>
+
+        {notice && (
+          <p
+            role="status"
+            className="mt-4 rounded-lg bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-800"
+          >
+            {notice}
+          </p>
+        )}
 
         {state.status === "loading" && (
           <p role="status" className="mt-6 text-sm text-ink-secondary">
@@ -68,7 +101,9 @@ export default function AccountView({ state }: { state: AccountState }) {
           </p>
         )}
 
-        {state.status === "success" && joined && (
+        {state.status === "success" && editor}
+
+        {state.status === "success" && joined && !editor && (
           <dl className="mt-6 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
             <div className="min-w-0 border-t border-line py-4">
               <dt className="text-sm font-medium text-ink-secondary">
@@ -93,6 +128,20 @@ export default function AccountView({ state }: { state: AccountState }) {
               </dd>
             </div>
             <div className="min-w-0 border-t border-line py-4">
+              <dt className="text-sm font-medium text-ink-secondary">Phone</dt>
+              <dd className="mt-1 break-all text-base text-ink">
+                {displayText(state.user.phone)}
+              </dd>
+            </div>
+            <div className="min-w-0 border-t border-line py-4">
+              <dt className="text-sm font-medium text-ink-secondary">
+                Address
+              </dt>
+              <dd className="mt-1 break-words text-base text-ink">
+                {displayText(state.user.address)}
+              </dd>
+            </div>
+            <div className="min-w-0 border-t border-line py-4">
               <dt className="text-sm font-medium text-ink-secondary">
                 Member since
               </dt>
@@ -107,6 +156,8 @@ export default function AccountView({ state }: { state: AccountState }) {
           </dl>
         )}
       </section>
+
+      {state.status === "success" && children}
     </main>
   );
 }
