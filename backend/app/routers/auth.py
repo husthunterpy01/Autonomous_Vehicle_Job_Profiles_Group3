@@ -73,8 +73,6 @@ login_rate_limiter = LoginRateLimiter(
     max_attempts=settings.auth_login_max_attempts,
     window_seconds=settings.auth_login_window_seconds,
 )
-# Failed "current password" checks on the signed-in profile endpoints, per user:
-# someone holding a session must not be able to guess the account password here.
 current_password_rate_limiter = LoginRateLimiter(
     max_attempts=settings.auth_login_max_attempts,
     window_seconds=settings.auth_login_window_seconds,
