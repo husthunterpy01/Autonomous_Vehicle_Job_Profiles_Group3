@@ -1,5 +1,4 @@
-/* Eye (password visible) and crossed-out eye (password hidden). Decorative:
-   the button that holds it carries the accessible name. */
+/* Decorative; the button holding it carries the accessible name. */
 export default function EyeIcon({ open }: { open: boolean }) {
   return (
     <svg

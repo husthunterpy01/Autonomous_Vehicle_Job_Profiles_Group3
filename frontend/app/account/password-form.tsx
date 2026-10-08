@@ -36,7 +36,7 @@ export default function PasswordForm() {
       setDone(true);
     } catch (error) {
       if (error instanceof AuthApiError && error.status === 400) {
-        // "Current password is incorrect" or "New password must be different".
+        // 400: wrong current password, or new one equals it.
         setErrors(
           error.message.startsWith("Current")
             ? { current_password: error.message }

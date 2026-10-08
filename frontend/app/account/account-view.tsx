@@ -42,13 +42,9 @@ export default function AccountView({
   children,
 }: {
   state: AccountState;
-  /** Shows the Edit button. */
   onEdit?: () => void;
-  /** Replaces the read-only details while the profile is being edited. */
   editor?: ReactNode;
-  /** A confirmation shown above the details, such as "Saved". */
   notice?: string | null;
-  /** Extra sections below the personal information. */
   children?: ReactNode;
 }) {
   const joined =

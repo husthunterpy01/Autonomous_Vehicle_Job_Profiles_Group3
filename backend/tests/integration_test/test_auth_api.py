@@ -484,7 +484,6 @@ def test_wrong_current_password_on_profile_update_is_rate_limited(client):
     blocked = client.patch("/api/v1/auth/me", json=change)
     assert blocked.status_code == 429
     assert int(blocked.headers["Retry-After"]) >= 1
-    # Even the right password is refused until the window passes.
     right = {**change, "current_password": SIGNUP_PAYLOAD["password"]}
     assert client.patch("/api/v1/auth/me", json=right).status_code == 429
 
@@ -510,7 +509,6 @@ def test_successful_password_change_clears_the_failure_count(client):
     right = {**wrong, "current_password": SIGNUP_PAYLOAD["password"]}
     assert client.patch("/api/v1/auth/me/password", json=right).status_code == 204
 
-    # The earlier failures no longer count against the user.
     again = {"current_password": "AnotherSecure!456", "new_password": "ThirdSecure!789"}
     assert client.patch("/api/v1/auth/me/password", json=again).status_code == 204
 

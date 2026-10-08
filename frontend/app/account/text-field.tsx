@@ -1,7 +1,6 @@
 import { useState, type HTMLInputTypeAttribute } from "react";
 import EyeIcon from "@/components/ui/EyeIcon";
 
-/* A labelled input with its hint and error wired up for screen readers. */
 export default function TextField({
   id,
   label,
@@ -25,7 +24,6 @@ export default function TextField({
   required?: boolean;
   disabled?: boolean;
 }) {
-  // A password field gets an eye button that shows or hides what was typed.
   const [revealed, setRevealed] = useState(false);
   const isPassword = type === "password";
   const describedBy =

@@ -53,7 +53,6 @@ const profileForm = () =>
   within(screen.getByRole("form", { name: "Edit personal information" }));
 const passwordForm = () =>
   within(screen.getByRole("form", { name: "Change password" }));
-// Fields of the profile form; both forms have a "Current password".
 const field = (label: string) =>
   profileForm().getByLabelText(new RegExp(`^${label}`));
 

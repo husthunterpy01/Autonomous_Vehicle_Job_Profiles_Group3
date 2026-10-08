@@ -1,7 +1,5 @@
-/* Rules for the My Account forms. They mirror the backend's validation
-   (backend/app/schemas/auth.py) so people see a message before the request,
-   and the backend still has the final say. Pure functions, so they can be
-   tested without a browser. */
+/* My Account form rules; mirrors backend/app/schemas/auth.py, which has the
+   final say. */
 
 export const MIN_PASSWORD_LENGTH = 12;
 export const PASSWORD_REQUIREMENTS =
@@ -21,7 +19,6 @@ export type ProfileValues = {
   address: string;
 };
 
-/** What the account currently holds; phone and address may be missing. */
 export type ProfileSource = {
   full_name?: string | null;
   username?: string | null;
@@ -30,7 +27,7 @@ export type ProfileSource = {
   address?: string | null;
 };
 
-/** The PATCH /auth/me body. `null` clears phone or address. */
+/** PATCH /auth/me body; null clears phone or address. */
 export type ProfileUpdate = {
   full_name?: string;
   username?: string;
@@ -63,8 +60,7 @@ export function profileValuesFrom(user: ProfileSource): ProfileValues {
   };
 }
 
-/** The email in the form differs from the saved one (the backend compares
- *  lower-cased, trimmed values). */
+// Compared lower-cased and trimmed, like the backend.
 export function emailChanged(user: ProfileSource, values: ProfileValues) {
   return (
     values.email.trim().toLowerCase() !==
@@ -122,9 +118,7 @@ export function validateProfile(
   return errors;
 }
 
-/** Only the fields that changed, or null when nothing did. The current
- *  password is attached only when the email changes (the backend asks for it
- *  then and ignores it otherwise). */
+/** Only the changed fields, or null; current_password only with an email change. */
 export function buildProfileUpdate(
   user: ProfileSource,
   values: ProfileValues,

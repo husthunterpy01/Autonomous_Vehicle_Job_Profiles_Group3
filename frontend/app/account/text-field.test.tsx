@@ -42,7 +42,6 @@ describe("password visibility", () => {
     fireEvent.click(eye);
 
     expect(input.type).toBe("text");
-    // The name flips instead of a pressed state, so it is announced once.
     const hide = screen.getByRole("button", { name: "Hide new password" });
     expect(hide.getAttribute("aria-pressed")).toBeNull();
   });
