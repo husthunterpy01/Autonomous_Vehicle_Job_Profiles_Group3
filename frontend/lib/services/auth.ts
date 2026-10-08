@@ -8,6 +8,9 @@ export type AuthUser = {
   username: string;
   full_name: string;
   created_at: string;
+  /** Returned by GET/PATCH /auth/me; login and sign-up responses omit them. */
+  phone?: string | null;
+  address?: string | null;
 };
 
 export type AuthResponse = {
@@ -93,4 +96,38 @@ export function getCurrentUser(): Promise<AuthUser> {
 
 export function signOut(): Promise<void> {
   return authRequest<void>("/logout", { method: "POST" });
+}
+
+/** PATCH /auth/me body: only the fields to change; `null` clears phone or
+ *  address, and `current_password` is required when the email changes. */
+export type ProfileUpdatePayload = {
+  email?: string;
+  username?: string;
+  full_name?: string;
+  phone?: string | null;
+  address?: string | null;
+  current_password?: string;
+};
+
+export function updateProfile(
+  payload: ProfileUpdatePayload,
+): Promise<AuthUser> {
+  return authRequest<AuthUser>("/me", {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** The backend signs the session in again on success, so no re-login needed. */
+export function changePassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  return authRequest<void>("/me/password", {
+    method: "PATCH",
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
 }
