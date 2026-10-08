@@ -183,8 +183,16 @@ npm run build
 
 Playwright drives a real browser through Find Jobs (keyword, country and
 salary filters, pagination, empty and error states), the job detail page and
-Market Trends. The API is mocked in the browser (`frontend/e2e/mock-api.ts`),
-so no backend or database needs to be running.
+Market Trends (including that zooming resizes the chart). The API is mocked in
+the browser (`frontend/e2e/mock-api.ts`), so no backend or database needs to be
+running.
+
+**What the mock means.** These tests check the pages, not the contract with the
+backend. The mocked responses are written by hand, so if the real API renames a
+field, changes a type or stops returning something, the tests still pass and
+the page can break. Keep `mock-api.ts` in step with the backend schemas when an
+endpoint changes, and check a change that touches both sides against the real
+API (run the backend and the frontend, then try the page).
 
 ```bash
 npx playwright install chromium   # once, downloads the test browser
