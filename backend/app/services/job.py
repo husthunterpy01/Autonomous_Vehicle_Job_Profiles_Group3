@@ -16,7 +16,7 @@ from app.services.category_sync import (
 )
 from app.services.location_country import LocationCountryService
 from app.services.salary_conversion import annual_usd_range
-from app.utils.normalization import normalized
+from app.utils.normalization import clean_location_name, normalized
 from app.utils.pagination import PageResponse
 
 logger = logging.getLogger(__name__)
@@ -282,6 +282,9 @@ def _is_duplicate_job_violation(exc: IntegrityError) -> bool:
 def _merge_locations(db: Session, linked: list[Location], names: list[str]):
     by_key = {location.normalized_name: location for location in linked}
     for name in names:
+        name = clean_location_name(name)
+        if not name:
+            continue
         key = normalized(name)
         location = by_key.get(key)
         if location is None:

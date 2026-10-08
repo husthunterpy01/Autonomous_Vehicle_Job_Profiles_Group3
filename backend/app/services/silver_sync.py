@@ -13,7 +13,7 @@ from app.services.category_sync import (
 )
 from app.services.location_country import LocationCountryService
 from app.services.skill_sync import _collect_skill_keys, _preload_skills, sync_skills
-from app.utils.normalization import normalized
+from app.utils.normalization import clean_location_name, normalized
 from app.utils.seniority import infer_seniority
 
 EMPLOYMENT_TYPES = {"full-time": 1, "part-time": 2, "contract": 3, "temporary": 4, "internship": 5}
@@ -89,6 +89,9 @@ class SilverSync:
             for name in locations:
                 if not isinstance(name, str) or not name.strip():
                     raise ValueError("Location names must be non-empty strings")
+                name = clean_location_name(name)
+                if not name:
+                    continue
                 canonical = normalized(name)
                 location = self.db.query(Location).filter_by(normalized_name=canonical).one_or_none()
                 if location is None:

@@ -47,7 +47,12 @@ table, and two-letter state codes only when nothing else matched (so
 country during sync; after `app/sql/be31_location_country_column_migration.sql`,
 or when the rules change, run `python -m app.refresh_location_countries`. No
 city is stored.
-Location arrays replace the previous
+Location names are cleaned before they are stored:
+a leading "Location:" label and a trailing "+2 more" count (page furniture some
+career sites put in the field) are dropped, and a name with nothing left is
+skipped. To fix rows that already exist, apply
+`app/sql/clean_location_labels_migration.sql` (repeatable; jobs move to the clean
+location when one already exists). Location arrays replace the previous
 associations; an empty array, null, or missing field clears them, matching the
 full Silver snapshot contract. False, numbers, strings and objects are invalid
 and roll back the batch rather than silently clearing existing locations.
