@@ -5,7 +5,7 @@ export default function StatusBadge({ status }: { status: Job["status"] }) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium ${
-        open ? "bg-success/10 text-success" : "bg-section text-ink-muted"
+        open ? "bg-success/10 text-emerald-700" : "bg-section text-ink-muted"
       }`}
     >
       <span
