@@ -57,7 +57,7 @@ export default function PasswordForm() {
   return (
     <section
       aria-labelledby="change-password-heading"
-      className="mt-8 max-w-3xl rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-8"
+      className="mt-8 rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-8"
     >
       <h2
         id="change-password-heading"

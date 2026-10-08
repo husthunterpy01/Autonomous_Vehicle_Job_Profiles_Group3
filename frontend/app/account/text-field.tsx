@@ -1,4 +1,5 @@
-import type { HTMLInputTypeAttribute } from "react";
+import { useState, type HTMLInputTypeAttribute } from "react";
+import EyeIcon from "@/components/ui/EyeIcon";
 
 /* A labelled input with its hint and error wired up for screen readers. */
 export default function TextField({
@@ -24,6 +25,9 @@ export default function TextField({
   required?: boolean;
   disabled?: boolean;
 }) {
+  // A password field gets an eye button that shows or hides what was typed.
+  const [revealed, setRevealed] = useState(false);
+  const isPassword = type === "password";
   const describedBy =
     [hint ? `${id}-hint` : null, error ? `${id}-error` : null]
       .filter(Boolean)
@@ -35,19 +39,34 @@ export default function TextField({
         {label}
         {required && <span className="text-amber-800"> *</span>}
       </label>
-      <input
-        id={id}
-        name={id}
-        type={type}
-        value={value}
-        required={required}
-        disabled={disabled}
-        autoComplete={autoComplete}
-        onChange={(event) => onChange(event.target.value)}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm text-ink outline-none placeholder:text-ink-muted focus:border-primary disabled:opacity-60"
-      />
+      <div className="relative">
+        <input
+          id={id}
+          name={id}
+          type={isPassword && revealed ? "text" : type}
+          value={value}
+          required={required}
+          disabled={disabled}
+          autoComplete={autoComplete}
+          onChange={(event) => onChange(event.target.value)}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          className={`w-full rounded-lg border border-line bg-surface py-2.5 text-sm text-ink outline-none placeholder:text-ink-muted focus:border-primary disabled:opacity-60 ${
+            isPassword ? "pl-4 pr-11" : "px-4"
+          }`}
+        />
+        {isPassword && (
+          <button
+            type="button"
+            onClick={() => setRevealed((value) => !value)}
+            aria-label={`${revealed ? "Hide" : "Show"} ${label.toLowerCase()}`}
+            aria-pressed={revealed}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
+          >
+            <EyeIcon open={revealed} />
+          </button>
+        )}
+      </div>
       {hint && (
         <p id={`${id}-hint`} className="mt-1.5 text-xs text-ink-secondary">
           {hint}

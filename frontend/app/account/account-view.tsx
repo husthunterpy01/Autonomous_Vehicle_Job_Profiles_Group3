@@ -55,7 +55,7 @@ export default function AccountView({
     state.status === "success" ? memberSince(state.user.created_at) : null;
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6">
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
       <PageHeader
         title="My Account"
         subtitle="Review and update the personal information on your account."
@@ -64,7 +64,7 @@ export default function AccountView({
       <section
         aria-labelledby="personal-information-heading"
         aria-busy={state.status === "loading"}
-        className="mt-8 max-w-3xl rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-8"
+        className="mt-8 rounded-xl border border-line bg-surface p-5 shadow-sm sm:p-8"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2
