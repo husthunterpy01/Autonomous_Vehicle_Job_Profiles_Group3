@@ -1,0 +1,4 @@
+# The backend runs on Python 3.10 (CI and the Docker image). Without this,
+# newer ruff versions assume a later Python and suggest 3.11+ APIs such as
+# datetime.UTC, which would break the app.
+target-version = "py310"
