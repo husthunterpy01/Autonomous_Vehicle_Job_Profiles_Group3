@@ -1,6 +1,6 @@
 # Deployment
 
-How the platform is run and released: Docker Compose, Vercel, GitHub Pages, the database and its migrations. For the project overview and local development, see the [main README](../../README.md). For the scrapers, see [scrapers-setup.md](./scrapers-setup.md).
+How the platform is run and released: Docker Compose, Vercel, GitHub Pages, the database and its migrations. For the project overview and local development, see the [main README](../../README.md). For the scrapers, see [scrapers-setup.md](./SCRAPERS_SETUP.md).
 
 ## Contents
 

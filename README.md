@@ -72,7 +72,7 @@ docker compose up --build  # frontend on :3000, API on :8000
 
 Then open [http://localhost:3000](http://localhost:3000). The API's interactive docs are at [http://localhost:8000/docs](http://localhost:8000/docs).
 
-> **Heads up:** the Compose backend uses `SUPABASE_DATABASE_URL` as its database, so it works with the hosted data and anything you change (sign-ups, account edits) is real. To work against your own database, [run it without Docker](#run-it-without-docker). Details are in the [deployment guide](document/guides/deployment.md).
+> **Heads up:** the Compose backend uses `SUPABASE_DATABASE_URL` as its database, so it works with the hosted data and anything you change (sign-ups, account edits) is real. To work against your own database, [run it without Docker](#run-it-without-docker). Details are in the [deployment guide](document/guides/DEPLOYMENT.md).
 
 ## Run it without Docker
 
@@ -117,7 +117,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000), sign up (or create the [demo account](#try-it-with-the-demo-account)) and explore.
 
-**Real job data** comes from the scrapers; see [Scrapers: environment setup](document/guides/scrapers-setup.md).
+**Real job data** comes from the scrapers; see [Scrapers: environment setup](document/guides/SCRAPERS_SETUP.md).
 
 ## Tests and checks
 
@@ -134,8 +134,8 @@ All of them run in CI on every pull request. The end-to-end tests use a hand-wri
 
 | Guide | What it covers |
 | --- | --- |
-| [Scrapers: environment setup](document/guides/scrapers-setup.md) | MinIO, the scraper `.env`, running the scraper and the full pipeline, pre-filter, design notes |
-| [Deployment](document/guides/deployment.md) | Docker Compose, Vercel, GitHub Pages, environment variables, database migrations, release and security checklists |
+| [Scrapers: environment setup](document/guides/SCRAPERS_SETUP.md) | MinIO, the scraper `.env`, running the scraper and the full pipeline, pre-filter, design notes |
+| [Deployment](document/guides/DEPLOYMENT.md) | Docker Compose, Vercel, GitHub Pages, environment variables, database migrations, release and security checklists |
 | [Backend README](backend/README.md) | Authentication API, endpoints, configuration |
 | [Silver sync](backend/SILVER_SYNC.md) | Loading classified jobs into the backend tables |
 | [Pipeline README](scrapers/README.md) | Cleaning, classification and enrichment stages in detail |
