@@ -7,6 +7,7 @@ import {
   descriptionSections,
   getJob,
   getJobCountries,
+  getJobSeniorityLevels,
   getJobs,
   isJobUuid,
   jobCategoryLabels,
@@ -89,6 +90,34 @@ it("fetches the countries that have jobs from /api/v1/jobs/countries", async () 
 
   assert.deepEqual(await getJobCountries(), counts);
   assert.equal(requestedUrl?.pathname, "/api/v1/jobs/countries");
+});
+
+it("serializes the seniority level and omits it when not set", async () => {
+  let requestedUrl: URL | undefined;
+  mockSuccessfulFetch((url) => {
+    requestedUrl = url;
+  });
+
+  await getJobs({ seniority_level: 3 });
+  assert.equal(requestedUrl?.searchParams.get("seniority_level"), "3");
+
+  await getJobs({});
+  assert.equal(requestedUrl?.searchParams.has("seniority_level"), false);
+});
+
+it("fetches the levels that have jobs from /api/v1/jobs/seniority-levels", async () => {
+  let requestedUrl: URL | undefined;
+  const counts = [{ seniority_level: 3, job_count: 365 }];
+  globalThis.fetch = async (input) => {
+    requestedUrl = new URL(String(input));
+    return new Response(JSON.stringify(counts), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  assert.deepEqual(await getJobSeniorityLevels(), counts);
+  assert.equal(requestedUrl?.pathname, "/api/v1/jobs/seniority-levels");
 });
 
 it("treats backend UUIDs as job ids and mock slugs as not", () => {

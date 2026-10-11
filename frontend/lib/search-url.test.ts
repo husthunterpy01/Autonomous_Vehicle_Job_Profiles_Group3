@@ -40,6 +40,7 @@ test("defaults stay out of the URL", () => {
       q: "",
       category: "",
       country: "",
+      seniority: "",
       salaryMin: null,
       salaryMax: null,
       sort: DEFAULT_JOB_SORT,
@@ -55,6 +56,7 @@ test("page, per page and filters all go into the URL", () => {
     q: " lidar ",
     category: "abc",
     country: "United Kingdom",
+    seniority: "3",
     salaryMin: 60000,
     salaryMax: 100000,
     sort: { field: "company", direction: "asc" },
@@ -63,7 +65,7 @@ test("page, per page and filters all go into the URL", () => {
   });
   assert.equal(
     qs,
-    "q=lidar&category=abc&country=United+Kingdom&salary_min=60000&salary_max=100000&sort=company&direction=asc&page=50&per_page=20",
+    "q=lidar&category=abc&country=United+Kingdom&seniority=3&salary_min=60000&salary_max=100000&sort=company&direction=asc&page=50&per_page=20",
   );
 });
 
@@ -73,6 +75,7 @@ test("a salary bound alone goes into the URL without the other", () => {
       q: "",
       category: "",
       country: "",
+      seniority: "",
       salaryMin: 60000,
       salaryMax: null,
       sort: DEFAULT_JOB_SORT,
@@ -96,4 +99,21 @@ test("anything that isn't a non-negative whole number falls back to no bound", (
 
 test('a salary bound of exactly 0 is a real bound, not "no bound"', () => {
   assert.equal(parseSalaryBound("0"), 0);
+});
+
+test("a seniority level alone goes into the URL", () => {
+  assert.equal(
+    searchQueryString({
+      q: "",
+      category: "",
+      country: "",
+      seniority: "6",
+      salaryMin: null,
+      salaryMax: null,
+      sort: DEFAULT_JOB_SORT,
+      page: 1,
+      perPage: DEFAULT_PER_PAGE,
+    }),
+    "seniority=6",
+  );
 });

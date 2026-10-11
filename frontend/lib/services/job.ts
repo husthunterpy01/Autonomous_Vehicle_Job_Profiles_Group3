@@ -1,4 +1,5 @@
 import type { CountryCount } from "@/lib/country-filter";
+import type { SeniorityCount } from "@/lib/seniority-filter";
 import type { JobSort } from "@/lib/job-sort";
 import type { SalaryInput } from "@/lib/salary";
 import { apiFetch, type PageResponse } from "./api";
@@ -101,6 +102,8 @@ export function getJobs(
     /** Exact country name from GET /api/v1/jobs/countries. */
     country?: string;
     company_id?: string;
+    /** A seniority level, 1 (junior) to 9 (other); 2 also holds jobs with no stated level. */
+    seniority_level?: number;
     /** Only jobs whose employer published a salary range (no estimates). */
     salary_disclosed?: boolean;
     /** Annual USD bounds (FE-22) - the backend converts/annualizes each
@@ -119,6 +122,8 @@ export function getJobs(
   if (params.category_id) search.set("category_id", params.category_id);
   if (params.country) search.set("country", params.country);
   if (params.company_id) search.set("company_id", params.company_id);
+  if (params.seniority_level !== undefined)
+    search.set("seniority_level", String(params.seniority_level));
   if (params.salary_disclosed !== undefined)
     search.set("salary_disclosed", String(params.salary_disclosed));
   if (params.salary_min !== undefined)
@@ -140,6 +145,11 @@ export function getJobs(
 /** Countries that currently have jobs, with their job counts. */
 export function getJobCountries(): Promise<CountryCount[]> {
   return apiFetch<CountryCount[]>("/api/v1/jobs/countries");
+}
+
+/** Seniority levels that currently have jobs, with their job counts. */
+export function getJobSeniorityLevels(): Promise<SeniorityCount[]> {
+  return apiFetch<SeniorityCount[]>("/api/v1/jobs/seniority-levels");
 }
 
 export function getJob(jobId: string): Promise<JobDetail> {

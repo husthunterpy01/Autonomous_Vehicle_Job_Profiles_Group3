@@ -1,4 +1,4 @@
-/* Find Jobs keeps its state in the URL (?q=, ?category=, ?country=,
+/* Find Jobs keeps its state in the URL (?q=, ?category=, ?country=, ?seniority=,
    ?salary_min=, ?salary_max=, ?sort=, ?direction=, ?page=, ?per_page=), so a
    filtered list or a specific page (e.g. ?page=50) can be reloaded, shared,
    or jumped to directly. These are pure functions so they can be tested
@@ -38,6 +38,8 @@ export type SearchState = {
   q: string;
   category: string;
   country: string;
+  /** A seniority level as a string, or "" for any. */
+  seniority: string;
   salaryMin: number | null;
   salaryMax: number | null;
   sort: JobSort;
@@ -52,6 +54,7 @@ export function searchQueryString(state: SearchState): string {
   if (state.q.trim()) params.set("q", state.q.trim());
   if (state.category) params.set("category", state.category);
   if (state.country) params.set("country", state.country);
+  if (state.seniority) params.set("seniority", state.seniority);
   if (state.salaryMin !== null) {
     params.set("salary_min", String(state.salaryMin));
   }

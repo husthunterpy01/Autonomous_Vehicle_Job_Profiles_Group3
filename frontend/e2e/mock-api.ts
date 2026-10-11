@@ -17,6 +17,8 @@ function makeJob(n: number) {
     country: us ? "United States" : "Germany",
     skills: ["Python", "C++"],
     employment_type: 1,
+    // Jobs 1 to 6 are senior, the rest mid-level.
+    seniority_level: n <= 6 ? 3 : 2,
     raw_description: null,
     source_url: null,
     posted_date: "2026-09-01T00:00:00Z",
@@ -110,6 +112,18 @@ export async function mockApi(page: Page, options: ApiOptions = {}) {
         { country: "Germany", job_count: 8 },
       ]);
     }
+    if (path === "/api/v1/jobs/seniority-levels") {
+      return json(route, [
+        {
+          seniority_level: 2,
+          job_count: JOBS.filter((j) => j.seniority_level === 2).length,
+        },
+        {
+          seniority_level: 3,
+          job_count: JOBS.filter((j) => j.seniority_level === 3).length,
+        },
+      ]);
+    }
     if (path === "/api/v1/home/category-stats") {
       return json(route, [
         {
@@ -127,10 +141,12 @@ export async function mockApi(page: Page, options: ApiOptions = {}) {
       }
       const q = (url.searchParams.get("q") ?? "").toLowerCase();
       const country = url.searchParams.get("country");
+      const seniority = url.searchParams.get("seniority_level");
       const matching = JOBS.filter(
         (job) =>
           (!q || job.title.toLowerCase().includes(q)) &&
-          (!country || job.country === country),
+          (!country || job.country === country) &&
+          (!seniority || job.seniority_level === Number(seniority)),
       );
       const size = Number(url.searchParams.get("page_size") ?? 10);
       const current = Number(url.searchParams.get("page") ?? 1);
