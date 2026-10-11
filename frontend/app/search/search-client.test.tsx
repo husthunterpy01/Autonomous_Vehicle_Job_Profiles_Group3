@@ -11,6 +11,7 @@ import SearchClient from "./search-client";
 const mocks = vi.hoisted(() => ({
   getJobs: vi.fn(),
   getJobCountries: vi.fn(),
+  getJobSeniorityLevels: vi.fn(),
   getCategoryStatsRaw: vi.fn(),
   replace: vi.fn(),
   push: vi.fn(),
@@ -29,6 +30,13 @@ vi.mock("@/lib/services/home", () => ({
 vi.mock("@/lib/services/job", () => ({
   getJobs: mocks.getJobs,
   getJobCountries: mocks.getJobCountries,
+  getJobSeniorityLevels: mocks.getJobSeniorityLevels,
+  SENIORITY_LEVEL_LABELS: {
+    1: "Junior",
+    2: "Mid-level",
+    3: "Senior",
+    6: "Manager",
+  } as Record<number, string>,
 }));
 
 vi.mock("@/lib/services/favorite", () => ({
@@ -50,6 +58,11 @@ beforeEach(() => {
   mocks.getJobCountries.mockResolvedValue([
     { country: "Japan", job_count: 5 },
     { country: "Germany", job_count: 7 },
+  ]);
+  mocks.getJobSeniorityLevels.mockResolvedValue([
+    { seniority_level: 3, job_count: 12 },
+    { seniority_level: 1, job_count: 4 },
+    { seniority_level: 2, job_count: 30 },
   ]);
   mocks.getCategoryStatsRaw.mockResolvedValue([
     {
@@ -324,5 +337,130 @@ describe("salary filter", () => {
 
     // Throws if the empty-state text isn't rendered.
     await screen.findByText("No jobs match your salary range");
+  });
+});
+
+describe("seniority filter", () => {
+  const seniorityOptionsShown = () =>
+    screen
+      .getAllByRole<HTMLOptionElement>("option")
+      .filter((option) => option.closest("#seniority-filter"))
+      .map((option) => [option.value, option.textContent]);
+
+  it("lists the levels that have jobs, lowest first, and says mid-level also holds unstated ones", async () => {
+    render(<SearchClient />);
+
+    const seniority = screen.getByLabelText("Seniority");
+    expect(seniority.tagName).toBe("SELECT");
+    await screen.findByRole("option", { name: "Senior (12)" });
+    expect(seniorityOptionsShown()).toEqual([
+      ["", "All levels"],
+      ["1", "Junior (4)"],
+      ["2", "Mid-level or not stated (30)"],
+      ["3", "Senior (12)"],
+    ]);
+    expect(seniority).toHaveProperty("value", "");
+  });
+
+  it("uses the level in the URL and fetches only that level", async () => {
+    mocks.search = "seniority=3";
+
+    render(<SearchClient />);
+
+    await screen.findByRole("option", { name: "Senior (12)" });
+    expect(screen.getByLabelText("Seniority")).toHaveProperty("value", "3");
+    await waitFor(() => {
+      expect(mocks.getJobs).toHaveBeenCalledWith(
+        expect.objectContaining({ seniority_level: 3 }),
+        expect.any(AbortSignal),
+      );
+    });
+  });
+
+  it("drops a URL level that has no jobs", async () => {
+    mocks.search = "seniority=7";
+
+    render(<SearchClient />);
+
+    await screen.findByRole("option", { name: "Senior (12)" });
+    expect(screen.getByLabelText("Seniority")).toHaveProperty("value", "");
+    await waitFor(() => {
+      expect(mocks.getJobs).toHaveBeenLastCalledWith(
+        expect.objectContaining({ seniority_level: undefined }),
+        expect.any(AbortSignal),
+      );
+    });
+  });
+
+  it("a picked level only takes effect on Apply, then goes into the URL", async () => {
+    render(<SearchClient />);
+    await screen.findByRole("option", { name: "Senior (12)" });
+    const apply = screen.getByRole("button", { name: "Apply" });
+    expect(apply).toHaveProperty("disabled", true);
+
+    fireEvent.change(screen.getByLabelText("Seniority"), {
+      target: { value: "3" },
+    });
+    expect(apply).toHaveProperty("disabled", false);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(mocks.getJobs).not.toHaveBeenCalledWith(
+      expect.objectContaining({ seniority_level: 3 }),
+      expect.any(AbortSignal),
+    );
+
+    fireEvent.click(apply);
+    await waitFor(() => {
+      expect(mocks.getJobs).toHaveBeenCalledWith(
+        expect.objectContaining({ seniority_level: 3 }),
+        expect.any(AbortSignal),
+      );
+    });
+    expect(mocks.replace).toHaveBeenLastCalledWith("/search?seniority=3");
+    expect(apply).toHaveProperty("disabled", true);
+  });
+
+  it("combines with the other filters and keeps them when applied", async () => {
+    mocks.search = "q=lidar&country=Germany";
+
+    render(<SearchClient />);
+    await screen.findByRole("option", { name: "Senior (12)" });
+    fireEvent.change(screen.getByLabelText("Seniority"), {
+      target: { value: "1" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply" }));
+
+    expect(mocks.replace).toHaveBeenLastCalledWith(
+      "/search?q=lidar&country=Germany&seniority=1",
+    );
+    await waitFor(() => {
+      expect(mocks.getJobs).toHaveBeenCalledWith(
+        expect.objectContaining({
+          q: "lidar",
+          country: "Germany",
+          seniority_level: 1,
+        }),
+        expect.any(AbortSignal),
+      );
+    });
+  });
+
+  it("Clear resets the level but keeps the keyword", async () => {
+    mocks.search = "q=lidar&seniority=3";
+
+    render(<SearchClient />);
+    await screen.findByRole("option", { name: "Senior (12)" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(screen.getByLabelText("Seniority")).toHaveProperty("value", "");
+    expect(mocks.replace).toHaveBeenLastCalledWith("/search?q=lidar");
+  });
+
+  it("still shows the page when the levels cannot be loaded", async () => {
+    mocks.getJobSeniorityLevels.mockRejectedValue(new Error("offline"));
+
+    render(<SearchClient />);
+
+    expect(await screen.findByLabelText("Seniority")).toBeTruthy();
+    expect(seniorityOptionsShown()).toEqual([["", "All levels"]]);
   });
 });

@@ -167,11 +167,15 @@ separate work. A later curated taxonomy needs explicit mapping/version migration
 ## Job endpoints
 
 - `GET /api/v1/jobs`: `q`, `company_id`, `location`, `country`, `skill`,
-  `employment_type`, `category_id`, `page`, `page_size` (max 100). `location` is
+  `employment_type`, `seniority_level` (1 to 9, 422 otherwise), `category_id`, `page`,
+  `page_size` (max 100). `location` is
   a loose substring match on the label; `country` is an exact, case-insensitive
   country name (400 when unknown, ignored when empty).
 - `GET /api/v1/jobs/countries`: countries that currently have jobs, with job
   counts, most first; a job in two countries counts for both.
+- `GET /api/v1/jobs/seniority-levels`: seniority levels that currently have jobs,
+  with job counts, lowest level first (jobs without a level are left out). The
+  Find Jobs seniority dropdown is built from it.
 - `GET /api/v1/jobs/{job_id}`: returns 404 for an unknown UUID.
 - Existing company job counts now include synced rows.
 
@@ -367,7 +371,8 @@ all of them. At the last measurement about 37% of the jobs on Supabase (453 of 1
 this reason only. Consequences:
 
 - `seniority_level=2` returns jobs whose title says nothing about level as well as genuine mid-level
-  roles. It cannot tell the two apart.
+  roles. It cannot tell the two apart. The Find Jobs filter labels that option "Mid-level or not
+  stated" for this reason.
 - The Junior, Senior, Principal, Lead, Manager, Director and CEO values are only set when the title
   states them, so those are reliable. Mid is the only value that can be a guess.
 - Deliverable 1 (section 2.7) says seniority is not inferred. Storing Mid by default goes beyond that;

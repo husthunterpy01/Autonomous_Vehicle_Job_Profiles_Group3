@@ -25,6 +25,11 @@ import {
   resolveCountry,
 } from "@/lib/country-filter";
 import {
+  ALL_SENIORITIES,
+  resolveSeniority,
+  seniorityOptions,
+} from "@/lib/seniority-filter";
+import {
   DEFAULT_JOB_SORT,
   isDefaultJobSort,
   nextJobSort,
@@ -45,7 +50,13 @@ import {
   sanitizeSalaryDigits,
 } from "@/lib/salary-filter";
 import { getCategoryStatsRaw } from "@/lib/services/home";
-import { getJobCountries, getJobs, type JobListItem } from "@/lib/services/job";
+import {
+  getJobCountries,
+  getJobSeniorityLevels,
+  getJobs,
+  SENIORITY_LEVEL_LABELS,
+  type JobListItem,
+} from "@/lib/services/job";
 
 /* Debounce keyword input before hitting the API — unlike the Companies list
    (fetched once, filtered client-side), jobs are paginated server-side, so
@@ -74,6 +85,12 @@ export default function SearchClient() {
   const [country, setCountry] = useState(
     searchParams.get("country") ?? ALL_COUNTRIES,
   );
+  const [seniorityOptionList, setSeniorityOptionList] = useState(() =>
+    seniorityOptions([], SENIORITY_LEVEL_LABELS),
+  );
+  const [seniority, setSeniority] = useState(
+    searchParams.get("seniority") ?? ALL_SENIORITIES,
+  );
   // null means "no bound". Committed (affects the request/URL) separately
   // from the draft the filter row edits - same reasoning as
   // draftCategory/draftCountry below, so Apply/Clear treats salary exactly
@@ -88,6 +105,7 @@ export default function SearchClient() {
   // What the filter row shows; the list only uses it once Apply is pressed.
   const [draftCategory, setDraftCategory] = useState(category);
   const [draftCountry, setDraftCountry] = useState(country);
+  const [draftSeniority, setDraftSeniority] = useState(seniority);
   const [draftSalaryMin, setDraftSalaryMin] = useState(salaryMin);
   const [draftSalaryMax, setDraftSalaryMax] = useState(salaryMax);
   // Validated on the draft so Apply itself is blocked while min > max,
@@ -193,6 +211,23 @@ export default function SearchClient() {
     };
   }, []);
 
+  // And for seniority levels: only the levels that have jobs are offered.
+  useEffect(() => {
+    let cancelled = false;
+    getJobSeniorityLevels()
+      .then((counts) => {
+        if (cancelled) return;
+        const options = seniorityOptions(counts, SENIORITY_LEVEL_LABELS);
+        setSeniorityOptionList(options);
+        setSeniority((current) => resolveSeniority(current, options));
+        setDraftSeniority((current) => resolveSeniority(current, options));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   useEffect(() => {
     // Committed salary can only be invalid from a hand-edited or shared URL
     // (Apply itself is disabled while the draft is invalid - see
@@ -207,6 +242,7 @@ export default function SearchClient() {
           q: keyword.trim() || undefined,
           category_id: category || undefined,
           country: country || undefined,
+          seniority_level: seniority ? Number(seniority) : undefined,
           salary_min: salaryMin ?? undefined,
           salary_max: salaryMax ?? undefined,
           sort,
@@ -260,6 +296,7 @@ export default function SearchClient() {
     keyword,
     category,
     country,
+    seniority,
     salaryMin,
     salaryMax,
     sort,
@@ -272,6 +309,7 @@ export default function SearchClient() {
     keyword.trim() !== "" ||
     category !== ALL_CATEGORIES ||
     country !== ALL_COUNTRIES ||
+    seniority !== ALL_SENIORITIES ||
     salaryMin !== null ||
     salaryMax !== null ||
     !isDefaultJobSort(sort);
@@ -285,6 +323,7 @@ export default function SearchClient() {
       q: urlKeyword,
       category,
       country,
+      seniority,
       salaryMin,
       salaryMax,
       sort,
@@ -296,6 +335,7 @@ export default function SearchClient() {
     urlKeyword,
     category,
     country,
+    seniority,
     salaryMin,
     salaryMax,
     sort,
@@ -307,12 +347,14 @@ export default function SearchClient() {
   const draftChanged =
     draftCategory !== category ||
     draftCountry !== country ||
+    draftSeniority !== seniority ||
     draftSalaryMin !== salaryMin ||
     draftSalaryMax !== salaryMax;
   const filterRowSet =
     draftChanged ||
     category !== ALL_CATEGORIES ||
     country !== ALL_COUNTRIES ||
+    seniority !== ALL_SENIORITIES ||
     salaryMin !== null ||
     salaryMax !== null;
 
@@ -320,6 +362,7 @@ export default function SearchClient() {
     if (draftSalaryError) return;
     setCategory(draftCategory);
     setCountry(draftCountry);
+    setSeniority(draftSeniority);
     setSalaryMin(draftSalaryMin);
     setSalaryMax(draftSalaryMax);
     setPage(1);
@@ -328,10 +371,12 @@ export default function SearchClient() {
   const clearFilterRow = () => {
     setDraftCategory(ALL_CATEGORIES);
     setDraftCountry(ALL_COUNTRIES);
+    setDraftSeniority(ALL_SENIORITIES);
     setDraftSalaryMin(null);
     setDraftSalaryMax(null);
     setCategory(ALL_CATEGORIES);
     setCountry(ALL_COUNTRIES);
+    setSeniority(ALL_SENIORITIES);
     setSalaryMin(null);
     setSalaryMax(null);
     setPage(1);
@@ -394,8 +439,10 @@ export default function SearchClient() {
     setUrlKeyword("");
     setCategory(ALL_CATEGORIES);
     setCountry(ALL_COUNTRIES);
+    setSeniority(ALL_SENIORITIES);
     setDraftCategory(ALL_CATEGORIES);
     setDraftCountry(ALL_COUNTRIES);
+    setDraftSeniority(ALL_SENIORITIES);
     setSalaryMin(null);
     setSalaryMax(null);
     setDraftSalaryMin(null);
@@ -437,16 +484,29 @@ export default function SearchClient() {
           value={draftCategory}
           onChange={setDraftCategory}
           options={categoryOptionList}
-          className="sm:w-64"
+          className="sm:max-w-64 sm:min-w-36 sm:flex-[1.1_1_0%]"
         />
         <select
           id="country-filter"
           aria-label="Country"
           value={draftCountry}
           onChange={(event) => setDraftCountry(event.target.value)}
-          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:w-56"
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-56 sm:min-w-36 sm:flex-1"
         >
           {countryOptionList.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <select
+          id="seniority-filter"
+          aria-label="Seniority"
+          value={draftSeniority}
+          onChange={(event) => setDraftSeniority(event.target.value)}
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-72 sm:min-w-36 sm:flex-[1.4_1_0%]"
+        >
+          {seniorityOptionList.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -458,7 +518,7 @@ export default function SearchClient() {
             column's combined height - a grid row auto-sizes to its
             tallest cell (the input boxes), so self-center on the dash
             centers it against that, with no guessed padding/height. */}
-        <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-1">
+        <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-1 sm:shrink-0">
           <label
             htmlFor="salary-min-filter"
             className="text-sm text-ink-secondary"
