@@ -14,7 +14,7 @@
 
 ## Snapshot
 
-![Job API and category filter snapshot](be9-api-snapshot.png)
+![Job API and category filter snapshot](../../../backend/evidence/be9-api-snapshot.png)
 
 This screenshot shows live responses from the actual job router and service,
 using an isolated in-memory SQLite database with explicitly synthetic data.

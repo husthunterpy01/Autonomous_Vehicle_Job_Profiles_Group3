@@ -157,7 +157,7 @@ To re-run only the processing stages on data already in Postgres, for example af
 python3 -m scrapers.pipeline_main --skip-scrape --skip-silver-build
 ```
 
-The result is `data/job_classification/av_jobs.jsonl`, the AV-relevant jobs with categories and skills. All flags are listed by `python3 -m scrapers.pipeline_main --help` and described in [scrapers/README.md](../../scrapers/README.md).
+The result is `data/job_classification/av_jobs.jsonl`, the AV-relevant jobs with categories and skills. All flags are listed by `python3 -m scrapers.pipeline_main --help` and described in [document/scrapers/README.md](../scrapers/README.md).
 
 ## 7. Load the results into the backend
 
@@ -169,7 +169,7 @@ python3 -m scrapers.utils.build_classification_handoff \
   --output data/job_classification/handoff.json
 ```
 
-The sync, category, skill and salary imports, and the Supabase mirror, are described in [backend/SILVER_SYNC.md](../../backend/SILVER_SYNC.md).
+The sync, category, skill and salary imports, and the Supabase mirror, are described in [document/backend/SILVER_SYNC.md](../backend/SILVER_SYNC.md).
 
 ## Run the tests
 

@@ -8,7 +8,7 @@ from sentence_transformers import SentenceTransformer
 from sklearn.linear_model import LogisticRegression
 
 _MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-# Where `train` publishes the logistic probe (see scrapers/README.md); `load`
+# Where `train` publishes the logistic probe (see document/scrapers/README.md); `load`
 # falls back to this when no local joblib exists, so scoring works on a fresh
 # checkout without training first.
 _HF_REPO_ID = "husthunterpy01/av-job-relevance-embedding"

@@ -61,7 +61,7 @@ Seniority is inferred from the title (`app/utils/seniority.py`) during sync, so 
 in `document/erd-job-categorizing/README.md`) is populated separately via `python -m
 app.import_salary handoff.json` (`app/services/salary_sync.py`) - not part of
 `SilverSync`/`sync_silver`, since the Silver staging table itself carries no
-salary data for most ATS sources; see `scrapers/README.md` for how the
+salary data for most ATS sources; see `document/scrapers/README.md` for how the
 scraper pipeline derives it. Existing company metadata is preserved; new
 companies have null URLs/type and `datasource_status=unverified`.
 

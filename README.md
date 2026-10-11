@@ -128,7 +128,7 @@ Open [http://localhost:3000](http://localhost:3000), sign up (or create the [dem
 | Frontend end-to-end (Playwright, mocked API) | `cd frontend && npx playwright install chromium && npm run test:e2e` |
 | Scrapers | `python3 -m pytest scrapers/tests/unit_test scrapers/tests/integration_test` |
 
-All of them run in CI on every pull request. The end-to-end tests use a hand-written mock API, so they check the pages but not the contract with the real backend; see [frontend/e2e/README.md](frontend/e2e/README.md).
+All of them run in CI on every pull request. The end-to-end tests use a hand-written mock API, so they check the pages but not the contract with the real backend; see [document/frontend/E2E_TESTING.md](document/frontend/E2E_TESTING.md).
 
 ## Documentation
 
@@ -136,9 +136,11 @@ All of them run in CI on every pull request. The end-to-end tests use a hand-wri
 | --- | --- |
 | [Scrapers: environment setup](document/guides/SCRAPERS_SETUP.md) | MinIO, the scraper `.env`, running the scraper and the full pipeline, pre-filter, design notes |
 | [Deployment](document/guides/DEPLOYMENT.md) | Docker Compose, Vercel, GitHub Pages, environment variables, database migrations, release and security checklists |
-| [Backend README](backend/README.md) | Authentication API, endpoints, configuration |
-| [Silver sync](backend/SILVER_SYNC.md) | Loading classified jobs into the backend tables |
-| [Pipeline README](scrapers/README.md) | Cleaning, classification and enrichment stages in detail |
+| [Backend README](document/backend/README.md) | Authentication API, endpoints, configuration |
+| [Frontend README](document/frontend/README.md) | Pages, environment, code checks |
+| [End-to-end tests](document/frontend/E2E_TESTING.md) | The Playwright suite, the mock API and its limits |
+| [Silver sync](document/backend/SILVER_SYNC.md) | Loading classified jobs into the backend tables |
+| [Pipeline README](document/scrapers/README.md) | Cleaning, classification and enrichment stages in detail |
 | [Accessibility audit](document/report/accessibility_audit.md) | WCAG 2.1 AA findings and fixes |
 | [Data quality check](document/report/data_quality_sample_check.md) | Spot check of the data against the source pages |
 

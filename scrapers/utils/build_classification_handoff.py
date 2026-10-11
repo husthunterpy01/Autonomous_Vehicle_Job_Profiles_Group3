@@ -121,7 +121,7 @@ def build_handoff_records(
     company_salary_cache_path: Path | None = DEFAULT_COMPANY_SALARY_CACHE_PATH,
 ) -> list[dict]:
     """Reshape av_jobs*.jsonl rows into the backend's classification handoff
-    contract (see backend/SILVER_SYNC.md): `deduplication_key` +
+    contract (see document/backend/SILVER_SYNC.md): `deduplication_key` +
     `functional_area` (our `categories`, as plain sub_type strings - the
     backend owns the static sub_type -> main_type mapping itself, in
     app/config/category_main_types.yaml, since main_type is a property of

@@ -1,7 +1,7 @@
 # Job scrapers
 
 Setup, MinIO, and run instructions live in the
-[Scrapers section of the root README](../README.md#scrapers).
+[scrapers setup guide](../guides/SCRAPERS_SETUP.md).
 
 # Silver cleaning
 
@@ -48,7 +48,7 @@ handoff point between the dbt-managed Silver table and the file-based stages
 below.
 
 **2. Pre-filter (deterministic, no LLM)** - see
-[Pre-filter jobs before LLM classification](../README.md#scrapers) in the root
+[Pre-filter jobs before the LLM](../guides/SCRAPERS_SETUP.md#5-pre-filter-jobs-before-the-llm) in the root
 README for the full write-up.
 
 ```bash
@@ -129,7 +129,7 @@ rotates to the next key in the pool. See `scrapers/config/groq.py` and
 ## Run the full pipeline end to end
 
 One command chains every stage above (plus scraping and MinIO/bronze ingest
-from the [Scrapers section](../README.md#scrapers)):
+from the [scrapers setup guide](../guides/SCRAPERS_SETUP.md)):
 
 ```bash
 python3 -m scrapers.pipeline_main
@@ -163,7 +163,7 @@ The final output of the whole pipeline is
 `data/job_classification/av_jobs.jsonl` - AV-relevant jobs with categories and
 skills assigned. Loading that into the backend's ERD tables
 (`jobposting`/`category`/`skill`/...) is a separate, currently manual step; see
-`backend/SILVER_SYNC.md`.
+`document/backend/SILVER_SYNC.md`.
 
 ## Building the backend classification handoff
 

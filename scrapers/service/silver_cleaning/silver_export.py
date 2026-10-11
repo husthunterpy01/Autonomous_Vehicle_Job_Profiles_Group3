@@ -19,7 +19,7 @@ class SilverExport:
     """Pulls the dbt-built Silver staging table out to a JSONL file.
 
     The AV prefilter/classify/enrich stages are file-based (they predate any
-    direct Postgres wiring - see backend/SILVER_SYNC.md), so this is the
+    direct Postgres wiring - see document/backend/SILVER_SYNC.md), so this is the
     handoff point between the dbt-managed `silver.cleaned_job_postings` table
     and the rest of the LLM categorization pipeline.
     """

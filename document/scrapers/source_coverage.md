@@ -1,6 +1,6 @@
 # Job Scraper — Source Coverage
 
-Status of every company in [`scrapers/data/list_companies.yaml`](../data/list_companies.yaml):
+Status of every company in [`scrapers/data/list_companies.yaml`](../../scrapers/data/list_companies.yaml):
 how its jobs are fetched, and — for the three that cannot be scraped — exactly what blocks them.
 
 _Last verified: 2026-09-07 (live checks against each source)._

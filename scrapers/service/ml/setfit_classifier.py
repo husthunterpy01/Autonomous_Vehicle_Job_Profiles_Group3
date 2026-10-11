@@ -6,7 +6,7 @@ from datasets import Dataset
 from setfit import SetFitModel, Trainer, TrainingArguments
 
 _MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-# Where `train` publishes fine-tuned weights (see scrapers/README.md); `load`
+# Where `train` publishes fine-tuned weights (see document/scrapers/README.md); `load`
 # falls back to this when no local copy exists, so scoring works on a fresh
 # checkout without training first.
 _HF_REPO_ID = "husthunterpy01/av-job-relevance-setfit"
