@@ -116,6 +116,33 @@ test.describe("Find Jobs", () => {
     expect(listRequests.at(-1)?.get("seniority_level")).toBe("3");
   });
 
+  test("the filters and buttons share one row on a desktop screen", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await mockApi(page);
+    await openSearch(page);
+
+    const controls = [
+      page.getByRole("button", { name: "Category", exact: true }),
+      page.getByLabel("Country"),
+      page.getByLabel("Seniority"),
+      page.getByLabel("Min salary (USD/yr)"),
+      page.getByLabel("Max salary (USD/yr)"),
+      page.getByRole("button", { name: "Apply", exact: true }),
+      page.getByRole("button", { name: "Clear" }).first(),
+    ];
+    const bottoms = await Promise.all(
+      controls.map(async (control) => {
+        const box = await control.boundingBox();
+        return box ? box.y + box.height : -1;
+      }),
+    );
+
+    // Controls on one row end at the same height (within rounding).
+    expect(Math.max(...bottoms) - Math.min(...bottoms)).toBeLessThan(3);
+  });
+
   test("sends the salary range to the API", async ({ page }) => {
     const { listRequests } = await mockApi(page);
     await openSearch(page);

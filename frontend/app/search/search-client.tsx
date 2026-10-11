@@ -484,14 +484,14 @@ export default function SearchClient() {
           value={draftCategory}
           onChange={setDraftCategory}
           options={categoryOptionList}
-          className="sm:w-64"
+          className="sm:max-w-64 sm:min-w-36 sm:flex-[1.1_1_0%]"
         />
         <select
           id="country-filter"
           aria-label="Country"
           value={draftCountry}
           onChange={(event) => setDraftCountry(event.target.value)}
-          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:w-56"
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-56 sm:min-w-36 sm:flex-1"
         >
           {countryOptionList.map((option) => (
             <option key={option.value} value={option.value}>
@@ -504,7 +504,7 @@ export default function SearchClient() {
           aria-label="Seniority"
           value={draftSeniority}
           onChange={(event) => setDraftSeniority(event.target.value)}
-          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:w-56"
+          className="w-full rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-medium text-ink outline-none transition-colors hover:border-primary focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 sm:max-w-72 sm:min-w-36 sm:flex-[1.4_1_0%]"
         >
           {seniorityOptionList.map((option) => (
             <option key={option.value} value={option.value}>
@@ -518,7 +518,7 @@ export default function SearchClient() {
             column's combined height - a grid row auto-sizes to its
             tallest cell (the input boxes), so self-center on the dash
             centers it against that, with no guessed padding/height. */}
-        <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-1">
+        <div className="grid grid-cols-[auto_auto_auto] gap-x-2 gap-y-1 sm:shrink-0">
           <label
             htmlFor="salary-min-filter"
             className="text-sm text-ink-secondary"
