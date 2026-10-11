@@ -15,6 +15,7 @@ from app.schemas.job import (
     JobDetailResponse,
     JobResponse,
     SalaryPeriod,
+    SeniorityJobCountResponse,
 )
 from app.services import job as job_service
 from app.services.location_country import LocationCountryService
@@ -85,7 +86,7 @@ def list_jobs(
             description=(
                 "Inferred from the job title: 1 junior, 2 mid, 3 senior, 4 principal, 5 lead, 6 manager, "
                 "7 director, 8 ceo, 9 other. A title with no level word is stored as 2 (mid), so 2 also "
-                "matches jobs whose level is not stated."
+                "matches jobs whose level is not stated. GET /jobs/seniority-levels lists the levels that have jobs."
             )
         ),
     ] = None,
@@ -129,6 +130,12 @@ def list_jobs(
 def list_countries(db: DbSession):
     """Countries that currently have jobs, with their job counts, for the country filter."""
     return LocationCountryService(db).country_job_counts()
+
+
+@router.get("/seniority-levels", response_model=list[SeniorityJobCountResponse])
+def list_seniority_levels(db: DbSession):
+    """Seniority levels that currently have jobs, with their job counts, for the seniority filter."""
+    return job_service.seniority_job_counts(db)
 
 
 @router.get("/{job_id}", response_model=JobDetailResponse)

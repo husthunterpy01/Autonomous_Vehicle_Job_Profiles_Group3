@@ -60,6 +60,11 @@ class CountryJobCountResponse(BaseModel):
     job_count: int
 
 
+class SeniorityJobCountResponse(BaseModel):
+    seniority_level: int
+    job_count: int
+
+
 class SubCategoryResponse(BaseModel):
     category_id: UUID
     sub_type: str

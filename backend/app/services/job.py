@@ -140,6 +140,18 @@ def _apply_sort(query, sort: JobSortField, direction: SortDirection | None):
     return _sort_join(query, sort).order_by(*_sort_clauses(sort, direction))
 
 
+def seniority_job_counts(db: Session) -> list[dict[str, int]]:
+    """Seniority levels that have jobs, lowest level first, with their counts."""
+    rows = (
+        db.query(JobPosting.seniority_level, func.count(JobPosting.job_id))
+        .filter(JobPosting.seniority_level.isnot(None))
+        .group_by(JobPosting.seniority_level)
+        .order_by(JobPosting.seniority_level)
+        .all()
+    )
+    return [{"seniority_level": level, "job_count": count} for level, count in rows]
+
+
 def list_jobs(
     db: Session, *, q: str | None = None, location: str | None = None, country: str | None = None,
     skill: str | None = None,
