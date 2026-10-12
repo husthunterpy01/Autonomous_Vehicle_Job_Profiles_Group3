@@ -139,7 +139,7 @@ All of them run in CI on every pull request. The end-to-end tests use a hand-wri
 | [Backend README](document/backend/README.md) | Authentication API, endpoints, configuration |
 | [Frontend README](document/frontend/README.md) | Pages, environment, code checks |
 | [End-to-end tests](document/frontend/E2E_TESTING.md) | The Playwright suite, the mock API and its limits |
-| [User guide](document/guides/USER_GUIDE.md) | Annotated tour of each page: what every button does |
+| [User guide](document/guides/USER_GUIDE.md) ([PDF](document/guides/USER_GUIDE.pdf)) | Annotated tour of each page: what every button does |
 | [Silver sync](document/backend/SILVER_SYNC.md) | Loading classified jobs into the backend tables |
 | [Pipeline README](document/scrapers/README.md) | Cleaning, classification and enrichment stages in detail |
 | [Accessibility audit](document/report/accessibility_audit.md) | WCAG 2.1 AA findings and fixes |
