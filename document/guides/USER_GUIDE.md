@@ -5,6 +5,7 @@ A tour of the AV Job Finder pages. Each screenshot has numbered arrows; the list
 ## Contents
 
 - [Before you start](#before-you-start)
+- [Where the data comes from](#where-the-data-comes-from)
 - [1. Sign up](#1-sign-up)
 - [2. Log in](#2-log-in)
 - [3. Home](#3-home)
@@ -17,6 +18,25 @@ A tour of the AV Job Finder pages. Each screenshot has numbered arrows; the list
 ## Before you start
 
 You can browse jobs, companies and trends without an account. **Saving** jobs and companies, and the account pages, need you to sign in. Create an account on the **Sign Up** page (section 1) and use it on the **Log in** page (section 2), or use the [demo account](../../README.md#try-it-with-the-demo-account). Once you are signed in, the **Login** and **Sign Up** buttons are replaced by a round profile button.
+
+## Where the data comes from
+
+The jobs and trends on the site are collected automatically from public sources, not typed in by hand.
+
+- **Sources.** Public job ads that autonomous-vehicle employers publish on their own career systems (such as Greenhouse, Lever, Ashby, SmartRecruiters and Workday) and on a few company career pages. Only the job ads are read, nothing about applicants.
+- **Preparation.** A program collects the ads, cleans them, and keeps the roles that are really about autonomous vehicles, including related engineering roles that never use the word. It then gives each job a category (such as Perception or Planning) and a list of skills.
+- **Not live.** The collection runs in batches, so the site shows the latest batch and not the employers' sites in real time. A job may have been filled or taken down since. Use **View original posting** on a job to check.
+
+What you see on a job, and where it comes from:
+
+- **Salary.** A figure without a mark is the pay the employer published. A figure with a **~** in front is a company-wide estimate, shown only when the ad gives no pay. If neither exists, the salary is left blank.
+- **Posted date.** The date given by the employer, or "Date unknown" when the ad has none.
+- **Seniority.** Worked out from the words in the job title, so **Mid-level or not stated** also contains jobs whose title says nothing about level.
+- **Category and skills.** Assigned automatically, so a few may be off.
+- **Location.** Shown as the ad writes it, so a job with several offices, or "Remote", can appear as one line of text.
+- **Market Trends.** Uses the last collection of each month and counts the postings that list a skill, so each month is one snapshot.
+
+How the collection is run is described in the [scrapers setup guide](./SCRAPERS_SETUP.md).
 
 ## 1. Sign up
 
