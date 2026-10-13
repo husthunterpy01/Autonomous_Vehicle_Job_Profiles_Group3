@@ -12,6 +12,19 @@ We collect public job ads from AV employers, clean and classify them with an LLM
 
 *Market Trends page: monthly count of job postings that list each skill.*
 
+## Table of contents
+
+- [Highlights](#highlights)
+- [How it works](#how-it-works)
+- [Try it with the demo account](#try-it-with-the-demo-account)
+- [Quick start (Docker)](#quick-start-docker)
+- [Run it without Docker](#run-it-without-docker)
+- [Tests and checks](#tests-and-checks)
+- [Documentation](#documentation)
+- [Project structure](#project-structure)
+- [Team](#team)
+- [Support](#support)
+
 ## Highlights
 
 - 🔎 **Search every AV job in one place**, with filters such as salary range and country
@@ -160,6 +173,20 @@ Autonomous_Vehicle_Job_Profiles_Group3/
 ├── docker-compose.yaml
 └── vercel.json
 ```
+
+## Team
+
+CITS5206 Capstone Project (UWA), Group 3.
+
+| Member | Student ID | Main contribution |
+| --- | --- | --- |
+| Martin Dang | 24715379 | Data pipeline and deployment: scrapers for the employer career systems, the bronze and silver layers with dbt, LLM and embedding classification, salary extraction, and CI/CD on Vercel and GitHub Actions. Later the seniority filter, account editing, end-to-end tests, and the user, scrapers and deployment guides. |
+| Weishan Li | 24746589 | Silver-layer cleaning and deduplication, backend integration with the job APIs, salary rules and the country filter in the database, the job list and Market Trends frontend, the gold star schema for skill demand, the accessibility audit and the data quality check. |
+| Nimit Sureshbhai Gelani | 24765784 | Frontend screens and their integration with the backend: login, favorites, job and company detail, and the Top Paid Jobs and Top Skills home sections. The salary range filter in the API and the search page, and the project plans and management documents. |
+| Celine Xu | 24714078 | Frontend foundation: project setup, navigation bar, profile menu, sign-up page, personal information view and the job trend chart. The problem statement and the risk and technology assessments. |
+| Harshil Prafulbhai Ratanpara | 24585822 | Backend authentication: sign-up and sign-in with JWT, forgotten-password reset, and updating personal information and password. The first API scrapers (Waabi, Stack AV, Bosch), the job pre-filter, and the client communication and requirements reports. |
+
+The contributions summarise each member's main merged work, taken from the repository history.
 
 ## Support
 
